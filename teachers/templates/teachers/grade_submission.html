@@ -1,0 +1,58 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:assignment_submissions' assignment.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' assignment.offering.pk %}">{{ assignment.offering.course.code }}</a><span class="sep">/</span>
+  <a href="{% url 'teachers:assignment_submissions' assignment.pk %}">Submissions</a><span class="sep">/</span>
+  <span>Grade</span>
+</div>
+<div style="max-width:640px;">
+
+  <!-- Submission info -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Submission Details</span></div>
+    <div class="card-body">
+      <div class="detail-row"><span class="detail-label">Student</span><span class="detail-value">{{ submission.student.get_full_name }} — {{ submission.student.email }}</span></div>
+      <div class="detail-row"><span class="detail-label">Assignment</span><span class="detail-value">{{ assignment.title }}</span></div>
+      <div class="detail-row"><span class="detail-label">Submitted At</span><span class="detail-value">{{ submission.submitted_at|date:"d M Y H:i" }} {% if submission.is_late %}<span class="badge badge-inactive">Late</span>{% endif %}</span></div>
+      <div class="detail-row"><span class="detail-label">Total Marks</span><span class="detail-value">{{ assignment.total_marks }}</span></div>
+      {% if submission.file %}
+      <div class="detail-row"><span class="detail-label">Submission File</span><span class="detail-value"><a href="{{ submission.file.url }}" target="_blank" style="color:var(--accent);">Download file</a></span></div>
+      {% endif %}
+      {% if submission.text_answer %}
+      <div class="detail-row">
+        <span class="detail-label">Text Answer</span>
+        <span class="detail-value" style="white-space:pre-wrap;font-size:13px;">{{ submission.text_answer }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Grade form -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Enter Grade</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="message message-error">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+        {% endif %}
+        {% for field in form %}
+        <div class="field-group">
+          <label class="field-label">{{ field.label }}{% if field.field.required %} <span style="color:var(--danger)">*</span>{% endif %}</label>
+          {{ field }}
+          {% if field.errors %}<p class="field-error">{% for e in field.errors %}{{ e }}{% endfor %}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display:flex;gap:9px;margin-top:20px;">
+          <button type="submit" class="btn btn-primary">Save Grade</button>
+          <a href="{% url 'teachers:assignment_submissions' assignment.pk %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

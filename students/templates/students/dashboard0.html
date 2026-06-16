@@ -1,0 +1,106 @@
+{% extends "students/base.html" %}
+{% block content %}
+<div class="page-header fade-up">
+  <h1>Welcome{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %} 👋</h1>
+  {% if current_semester %}
+  <span class="pill pill-blue">{{ current_semester }}</span>
+  {% endif %}
+</div>
+
+<!-- Stats row -->
+<div class="grid g4 fade-up delay-1" style="margin-bottom:22px">
+  <div class="stat-card">
+    <span class="stat-label">Current Courses</span>
+    <span class="stat-value">{{ current_count }}</span>
+    <span class="stat-sub">Active enrolments</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Pending Assignments</span>
+    <span class="stat-value" style="color:var(--warning)">{{ pending_assignments }}</span>
+    <span class="stat-sub">Awaiting submission</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Open Quizzes</span>
+    <span class="stat-value" style="color:var(--accent2)">{{ open_quizzes }}</span>
+    <span class="stat-sub">Available now</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Notifications</span>
+    <span class="stat-value" style="color:var(--accent)">{{ unread_count }}</span>
+    <span class="stat-sub">Unread</span>
+  </div>
+</div>
+
+<div class="grid g2 fade-up delay-2">
+  <!-- Enrolled Courses -->
+  <div class="card">
+    <div class="card-title">Enrolled Courses</div>
+    {% if enrolments %}
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% for enrol in enrolments %}
+      <a href="{% url 'students:course_home' enrol.offering.pk %}" style="text-decoration:none">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;transition:border-color .15s;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div>
+            <div style="font-weight:600;font-size:.9rem;color:var(--text)">{{ enrol.offering.course.code }}</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:2px">{{ enrol.offering.course.title|truncatechars:40 }}</div>
+          </div>
+          <span class="pill pill-blue" style="font-size:.68rem">{{ enrol.offering.semester }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    <a href="{% url 'students:my_courses' %}" class="btn btn-secondary btn-sm" style="margin-top:14px">View All →</a>
+    {% else %}
+    <div class="empty-state" style="padding:30px">
+      <p>No enrolled courses yet.</p>
+      <a href="{% url 'students:course_registration' %}" class="btn btn-primary btn-sm" style="margin-top:10px">Register Now</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <!-- Recent Results -->
+    <div class="card">
+      <div class="card-title">Recent Results</div>
+      {% if recent_results %}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for r in recent_results %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+          <div>
+            <div style="font-size:.875rem;font-weight:500;color:var(--text)">{{ r.result_sheet.offering.course.code }}</div>
+            <div style="font-size:.75rem;color:var(--muted)">{{ r.result_sheet.offering.semester.session.name }}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--accent)">{{ r.grade|default:"—" }}</div>
+            <div style="font-size:.7rem;color:var(--muted)">{{ r.total_score|default:"—" }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <a href="{% url 'students:results_list' %}" class="btn btn-secondary btn-sm" style="margin-top:14px">All Results →</a>
+      {% else %}
+      <p style="font-size:.85rem;color:var(--muted)">No results published yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="card">
+      <div class="card-title">Notifications</div>
+      {% if recent_notifications %}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for n in recent_notifications %}
+        <div style="padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid {% if not n.is_read %}var(--accent){% else %}var(--border){% endif %}">
+          <div style="font-size:.85rem;color:var(--text){% if not n.is_read %};font-weight:600{% endif %}">{{ n.message|truncatechars:80 }}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:3px">{{ n.created_at|timesince }} ago</div>
+        </div>
+        {% endfor %}
+      </div>
+      <a href="{% url 'students:notifications' %}" class="btn btn-secondary btn-sm" style="margin-top:14px">All Notifications →</a>
+      {% else %}
+      <p style="font-size:.85rem;color:var(--muted)">No notifications.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

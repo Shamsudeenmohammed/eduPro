@@ -1,0 +1,36 @@
+{% extends "teachers/base.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">My Allocated Courses</span>
+    <span style="font-size:13px;color:var(--muted);">{{ allocations|length }} course{{ allocations|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if allocations %}
+    <table>
+      <thead>
+        <tr><th>Code</th><th>Title</th><th>Program / Level</th><th>Semester</th><th>Role</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for alloc in allocations %}
+        <tr>
+          <td><strong>{{ alloc.offering.course.code }}</strong></td>
+          <td>{{ alloc.offering.course.title }}</td>
+          <td>{{ alloc.offering.level.program.name }} — {{ alloc.offering.level.name }}</td>
+          <td>{{ alloc.offering.semester }}</td>
+          <td><span class="badge badge-amber">{{ alloc.role }}</span></td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a href="{% url 'teachers:course_detail' alloc.offering.pk %}" class="btn btn-primary btn-sm">Open</a>
+            <a href="{% url 'teachers:material_list' alloc.offering.pk %}" class="btn btn-secondary btn-sm">Materials</a>
+            <a href="{% url 'teachers:attendance_list' alloc.offering.pk %}" class="btn btn-secondary btn-sm">Attendance</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📭</span>No courses allocated to you yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

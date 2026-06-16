@@ -1,0 +1,46 @@
+{% extends "students/base.html" %}
+{% block content %}
+<div class="page-header fade-up">
+  <h1>My Courses</h1>
+  <a href="{% url 'students:course_registration' %}" class="btn btn-primary">+ Register</a>
+</div>
+
+{% if enrolments %}
+<div class="grid g3 fade-up delay-1">
+  {% for enrol in enrolments %}
+  <a href="{% url 'students:course_home' enrol.offering.pk %}" style="text-decoration:none">
+    <div class="card" style="height:100%;transition:border-color .2s,transform .2s;cursor:pointer"
+         onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div style="background:linear-gradient(135deg,var(--accent2),var(--accent));width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;color:#000;flex-shrink:0">
+          {{ enrol.offering.course.code|slice:":3" }}
+        </div>
+        <span class="pill pill-green" style="font-size:.68rem">Active</span>
+      </div>
+      <div style="font-weight:600;font-size:.95rem;color:var(--text);margin-bottom:4px">{{ enrol.offering.course.code }}</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px;line-height:1.4">{{ enrol.offering.course.title|truncatechars:55 }}</div>
+      <div style="font-size:.75rem;color:var(--muted);display:flex;flex-direction:column;gap:4px">
+        <span>📅 {{ enrol.offering.semester }}</span>
+        {% if enrol.offering.course.department %}
+        <span>🏛 {{ enrol.offering.course.department.name|truncatechars:30 }}</span>
+        {% endif %}
+        {% if enrol.offering.level %}
+        <span>🎓 {{ enrol.offering.level }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card fade-up delay-1">
+  <div class="empty-state">
+    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <h3 style="font-size:1rem;color:var(--text);margin-bottom:6px">No Courses Yet</h3>
+    <p>You are not enrolled in any courses. Register now to get started.</p>
+    <a href="{% url 'students:course_registration' %}" class="btn btn-primary" style="margin-top:16px">Register for a Course</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:attendance_take' offering.pk %}" class="btn btn-primary btn-sm">+ Take Attendance</a>
+<a href="{% url 'teachers:course_detail' offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' offering.pk %}">{{ offering.course.code }}</a><span class="sep">/</span>
+  <span>Attendance</span>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Attendance Records — {{ offering.course.code }}</span>
+    <span style="font-size:13px;color:var(--muted);">{{ sheets|length }} session{{ sheets|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if sheets %}
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Week</th><th>Topic Covered</th><th>Present</th><th>Total</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for sheet in sheets %}
+        <tr>
+          <td><strong>{{ sheet.date|date:"d M Y" }}</strong></td>
+          <td>{{ sheet.week_number|default:"—" }}</td>
+          <td>{{ sheet.topic_covered|default:"—"|truncatechars:50 }}</td>
+          <td><span class="badge badge-active">{{ sheet.present_count }}</span></td>
+          <td>{{ sheet.total_count }}</td>
+          <td><a href="{% url 'teachers:attendance_sheet_detail' sheet.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📋</span>No attendance records yet. <a href="{% url 'teachers:attendance_take' offering.pk %}" style="color:var(--accent);">Take first attendance</a>.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

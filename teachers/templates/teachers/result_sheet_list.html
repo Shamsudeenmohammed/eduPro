@@ -1,0 +1,112 @@
+{% extends "teachers/base.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Result Sheets</span>
+    <span style="font-size:13px;color:var(--muted);">{{ sheets|length }} sheet{{ sheets|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if sheets %}
+    <table>
+      <thead>
+        <tr>
+          <th>Course</th><th>Semester</th><th>CA%</th><th>Exam%</th>
+          <th>Status</th><th>Submitted</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sheet in sheets %}
+        <tr>
+          <td>
+            <strong>{{ sheet.offering.course.code }}</strong><br>
+            <span style="font-size:12px;color:var(--muted);">{{ sheet.offering.course.title }}</span>
+          </td>
+          <td>{{ sheet.offering.semester }}</td>
+          <td>{{ sheet.ca_weight }}%</td>
+          <td>{{ sheet.exam_weight }}%</td>
+          <td>
+            {% if sheet.status == "open" %}<span class="badge badge-open">Open</span>
+            {% elif sheet.status == "submitted" %}<span class="badge badge-submitted">Submitted</span>
+            {% elif sheet.status == "approved" %}<span class="badge badge-approved">Approved</span>
+            {% elif sheet.status == "rejected" %}
+              <span class="badge badge-rejected">Rejected</span>
+              {% if sheet.rejection_note %}
+              <br><span style="font-size:11px;color:var(--danger);" title="{{ sheet.rejection_note }}">
+                {{ sheet.rejection_note|truncatechars:50 }}
+              </span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td>{{ sheet.submitted_at|date:"d M Y"|default:"—" }}</td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap;">
+            <a href="{% url 'teachers:result_sheet_view' sheet.pk %}" class="btn btn-secondary btn-sm">View</a>
+            {% if sheet.status == "open" or sheet.status == "rejected" %}
+            <a href="{% url 'teachers:result_entry' sheet.pk %}" class="btn btn-primary btn-sm">Enter Results</a>
+            {% endif %}
+            {% if sheet.status == "open" or sheet.status == "rejected" %}
+            <form method="post" action="{% url 'teachers:result_submit' sheet.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success btn-sm"
+                onclick="return confirm('Submit this result sheet for approval?')">Submit</button>
+            </form>
+            {% endif %}
+            {% if user.is_admin or user.is_superuser %}
+              {% if sheet.status == "submitted" %}
+              <form method="post" action="{% url 'teachers:result_approve' sheet.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm"
+                  onclick="return confirm('Approve and lock this result sheet?')">Approve</button>
+              </form>
+              <button class="btn btn-danger btn-sm"
+                onclick="openRejectModal('{{ sheet.pk }}', '{{ sheet.offering.course.code|escapejs }}')">
+                Reject
+              </button>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📊</span>No result sheets yet. Open a course and set up a result sheet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Reject modal -->
+<div id="rejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:12px;padding:28px;max-width:440px;width:94%;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+    <h3 style="margin:0 0 6px;font-size:17px;">Reject Result Sheet</h3>
+    <p id="rejectSubtitle" style="margin:0 0 16px;font-size:13px;color:var(--muted);"></p>
+    <form id="rejectForm" method="post" action="">
+      {% csrf_token %}
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">
+        Rejection Note <span style="color:var(--danger)">*</span>
+      </label>
+      <textarea name="rejection_note" rows="4"
+        style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;resize:vertical;"
+        placeholder="Explain why this sheet is being returned for correction…" required></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
+        <button type="submit" class="btn btn-danger">Reject & Return</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openRejectModal(sheetPk, courseCode) {
+  document.getElementById('rejectSubtitle').textContent = 'Course: ' + courseCode;
+  document.getElementById('rejectForm').action = '/teachers/results/' + sheetPk + '/reject/';
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').style.display = 'none';
+}
+document.getElementById('rejectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRejectModal();
+});
+</script>
+{% endblock %}

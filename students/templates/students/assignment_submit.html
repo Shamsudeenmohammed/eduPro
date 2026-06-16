@@ -1,0 +1,187 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .submit-wrapper {
+    max-width: 720px; margin: 0 auto;
+  }
+  .submit-hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1a5276 100%);
+    border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem; color: #fff;
+  }
+  .submit-hero h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 .5rem; }
+  .submit-hero .meta { display: flex; flex-wrap: wrap; gap: 1.25rem; font-size: .85rem; opacity: .8; }
+  .submit-hero .meta span { display: flex; align-items: center; gap: .35rem; }
+
+  .card-form {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+  }
+  .form-label { font-weight: 600; font-size: .9rem; margin-bottom: .45rem; }
+  .form-control, .form-select {
+    border-radius: 8px; border: 1.5px solid #d1d5db;
+    padding: .6rem .9rem; font-size: .92rem;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .form-control:focus, .form-select:focus {
+    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+    outline: none;
+  }
+  .dropzone {
+    border: 2px dashed #d1d5db; border-radius: 12px;
+    padding: 2.5rem 1rem; text-align: center; cursor: pointer;
+    transition: border-color .2s, background .2s; background: #f9fafb;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: #6366f1; background: #eef2ff;
+  }
+  .dropzone .dz-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+  .dropzone .dz-hint { color: #6b7280; font-size: .88rem; }
+
+  .existing-sub {
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    border-radius: 10px; padding: 1rem 1.25rem;
+    display: flex; align-items: center; gap: .75rem;
+    margin-bottom: 1.5rem;
+  }
+  .existing-sub .icon { font-size: 1.5rem; }
+  .existing-sub .info { flex: 1; font-size: .88rem; color: #166534; }
+  .existing-sub strong { display: block; font-weight: 700; }
+
+  .deadline-bar {
+    background: #fff7ed; border: 1px solid #fdba74;
+    border-radius: 10px; padding: .85rem 1.1rem;
+    font-size: .87rem; color: #9a3412; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .deadline-bar.ok     { background: #f0fdf4; border-color: #86efac; color: #166534; }
+  .deadline-bar.urgent { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+
+  .btn-submit-main {
+    background: #4f46e5; color: #fff; border: none;
+    padding: .75rem 2rem; border-radius: 10px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: background .15s, transform .1s;
+    width: 100%;
+  }
+  .btn-submit-main:hover { background: #4338ca; transform: translateY(-1px); }
+  .btn-submit-main:active { transform: translateY(0); }
+
+  .char-counter { font-size: .78rem; color: #9ca3af; text-align: right; margin-top: .3rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="submit-wrapper">
+  <div class="mb-3">
+    <a href="{% url 'students:assignment_list' offering_pk=assignment.offering.pk %}"
+       class="btn btn-sm btn-outline-secondary">← Back to Assignments</a>
+  </div>
+
+  <div class="submit-hero">
+    <h1>{{ page_title }}</h1>
+    <div class="meta">
+      <span>📘 {{ assignment.offering.course.code }}</span>
+      <span>📅 Due: {{ assignment.due_date|date:"M d, Y g:i A" }}</span>
+      <span>🏆 Total Marks: {{ assignment.total_marks }}</span>
+    </div>
+  </div>
+
+  {% if assignment.description %}
+  <div class="card-form mb-3" style="background:#f8fafc;">
+    <strong style="font-size:.85rem;color:#374151;display:block;margin-bottom:.5rem;">📌 Instructions</strong>
+    <div style="font-size:.92rem;color:#374151;white-space:pre-line;">{{ assignment.description }}</div>
+  </div>
+  {% endif %}
+
+  {% if existing %}
+  <div class="existing-sub">
+    <div class="icon">✅</div>
+    <div class="info">
+      <strong>Previous Submission</strong>
+      Submitted {{ existing.submitted_at|date:"M d, Y g:i A" }}
+      {% if existing.is_late %} &mdash; <span style="color:#d97706;">Late</span>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card-form">
+    <form method="post" enctype="multipart/form-data" id="submitForm">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-4">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% if field.field.widget.input_type == "file" %}
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('{{ field.id_for_label }}').click()">
+              <div class="dz-icon">📎</div>
+              <div style="font-weight:600;margin-bottom:.3rem;" id="fileName">Click or drag file here</div>
+              <div class="dz-hint">PDF, DOCX, ZIP — Max 20MB</div>
+            </div>
+            <div style="display:none;">{{ field }}</div>
+          {% else %}
+            {{ field }}
+            {% if field.field.widget.input_type == "textarea" %}
+              <div class="char-counter" id="charCount"></div>
+            {% endif %}
+          {% endif %}
+          {% if field.errors %}
+            <div style="color:#dc2626;font-size:.82rem;margin-top:.3rem;">{{ field.errors }}</div>
+          {% endif %}
+          {% if field.help_text %}
+            <div style="font-size:.8rem;color:#9ca3af;margin-top:.3rem;">{{ field.help_text }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn-submit-main" id="submitBtn">
+        {% if existing %}Update Submission{% else %}Submit Assignment{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Dropzone file name display
+  const dz   = document.getElementById('dropzone');
+  const fn   = document.getElementById('fileName');
+  const fi   = document.querySelector('input[type="file"]');
+  if (fi && dz) {
+    fi.addEventListener('change', () => {
+      fn.textContent = fi.files[0] ? fi.files[0].name : 'Click or drag file here';
+      dz.style.borderColor = '#6366f1';
+    });
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        const dt = new DataTransfer();
+        dt.items.add(e.dataTransfer.files[0]);
+        fi.files = dt.files;
+        fn.textContent = e.dataTransfer.files[0].name;
+        dz.style.borderColor = '#6366f1';
+      }
+    });
+  }
+
+  // Char counter for textarea
+  const ta  = document.querySelector('textarea');
+  const cc  = document.getElementById('charCount');
+  if (ta && cc) {
+    const update = () => cc.textContent = ta.value.length + ' characters';
+    ta.addEventListener('input', update); update();
+  }
+
+  // Submit button state
+  const form = document.getElementById('submitForm');
+  const btn  = document.getElementById('submitBtn');
+  if (form && btn) {
+    form.addEventListener('submit', () => {
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+    });
+  }
+})();
+</script>
+{% endblock %}

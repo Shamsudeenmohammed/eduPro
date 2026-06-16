@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard — eduPro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-10 space-y-8">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-800">
+        Welcome back, {{ request.user.get_short_name }}
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">
+        {% if current_semester %}{{ current_semester }} — {{ current_session }}{% else %}No active semester{% endif %}
+      </p>
+    </div>
+
+    <!-- Responsibility badges -->
+    <div class="flex flex-wrap gap-2">
+      {% for resp in responsibilities %}
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+        {% if resp == 'hod' %}bg-purple-100 text-purple-700 border border-purple-200
+        {% elif resp == 'dean' %}bg-amber-100 text-amber-700 border border-amber-200
+        {% elif resp == 'program_coordinator' %}bg-teal-100 text-teal-700 border border-teal-200
+        {% else %}bg-indigo-100 text-indigo-700 border border-indigo-200{% endif %}">
+        {{ resp|title|replace:"_":" " }}
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Quick stats row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-slate-800">{{ allocation_count }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">Active Courses</p>
+      </div>
+    </div>
+
+    {% if is_hod %}
+    <div class="bg-white rounded-xl border border-purple-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-slate-800">{{ pending_count|default:0 }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">Sheets Awaiting HOD Approval</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center">
+        <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-slate-800">{{ hod_departments.count|default:0 }}</p>
+        <p class="text-xs text-slate-500 mt-0.5">Departments as HOD</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-slate-800">—</p>
+        <p class="text-xs text-slate-500 mt-0.5">Results Submitted</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TEACHER MODULE: My Courses ───────────────────────────────────── -->
+  <section class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-50">
+      <h2 class="font-semibold text-slate-800 flex items-center gap-2">
+        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+        </svg>
+        My Assigned Courses
+      </h2>
+      <a href="{% url 'academics:my_courses' %}" class="text-xs text-indigo-600 hover:underline">View all →</a>
+    </div>
+
+    {% if my_allocations %}
+    <div class="divide-y divide-slate-50">
+      {% for alloc in my_allocations|slice:":5" %}
+      <div class="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition">
+        <div>
+          <p class="font-medium text-slate-800 text-sm">
+            {{ alloc.offering.course.code }} — {{ alloc.offering.course.title }}
+          </p>
+          <p class="text-xs text-slate-500 mt-0.5">
+            {{ alloc.offering.level }} ·
+            {{ alloc.offering.semester.get_name_display }} ·
+            {{ alloc.get_role_display }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="{% url 'academics:result_sheet_create' %}"
+            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg
+                   bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100 transition">
+            + Results
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-6 py-10 text-center text-slate-400 text-sm">
+      No courses assigned yet. Contact the admin to get allocated.
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── HOD MODULE: Pending Result Sheets ─────────────────────────────── -->
+  {% if is_hod %}
+  <section class="bg-white rounded-2xl border border-purple-100 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-purple-50 bg-purple-50">
+      <h2 class="font-semibold text-purple-800 flex items-center gap-2">
+        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        Department Result Sheets — Awaiting HOD Approval
+        {% if pending_count %}
+        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-purple-600 text-white">
+          {{ pending_count }}
+        </span>
+        {% endif %}
+      </h2>
+      <a href="{% url 'academics:result_sheet_list' %}?status=submitted" class="text-xs text-purple-600 hover:underline">View all →</a>
+    </div>
+
+    {% if pending_sheets %}
+    <div class="divide-y divide-purple-50">
+      {% for sheet in pending_sheets|slice:":6" %}
+      <div class="px-6 py-4 flex items-center justify-between hover:bg-purple-50/30 transition">
+        <div>
+          <p class="font-medium text-slate-800 text-sm">
+            {{ sheet.offering.course.code }} — {{ sheet.offering.course.title }}
+          </p>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Dept: {{ sheet.department.name }} ·
+            Submitted by: {{ sheet.submitted_by.get_full_name }} ·
+            {{ sheet.submitted_at|date:"M d, Y" }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- HOD Approve -->
+          <form method="post" action="{% url 'academics:result_sheet_hod_approve' pk=sheet.pk %}">
+            {% csrf_token %}
+            <button type="submit"
+              class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg
+                     bg-purple-600 hover:bg-purple-700 text-white transition">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Approve
+            </button>
+          </form>
+          <a href="{% url 'academics:result_sheet_detail' pk=sheet.pk %}"
+            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg
+                   bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition">
+            View
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-6 py-8 text-center text-purple-300 text-sm">
+      No result sheets awaiting your approval.
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <!-- ── Quick actions row ────────────────────────────────────────────── -->
+  <section>
+    <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Quick Actions</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <a href="{% url 'academics:result_sheet_create' %}"
+        class="flex flex-col items-center gap-2 p-4 bg-white border border-slate-100 rounded-xl
+               hover:border-indigo-200 hover:bg-indigo-50 transition text-center group">
+        <div class="w-9 h-9 rounded-lg bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-slate-600 group-hover:text-indigo-700">New Result Sheet</span>
+      </a>
+
+      <a href="{% url 'academics:result_sheet_list' %}"
+        class="flex flex-col items-center gap-2 p-4 bg-white border border-slate-100 rounded-xl
+               hover:border-indigo-200 hover:bg-indigo-50 transition text-center group">
+        <div class="w-9 h-9 rounded-lg bg-slate-50 group-hover:bg-indigo-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-slate-600 group-hover:text-indigo-700">My Result Sheets</span>
+      </a>
+
+      <a href="{% url 'academics:my_courses' %}"
+        class="flex flex-col items-center gap-2 p-4 bg-white border border-slate-100 rounded-xl
+               hover:border-indigo-200 hover:bg-indigo-50 transition text-center group">
+        <div class="w-9 h-9 rounded-lg bg-slate-50 group-hover:bg-indigo-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-slate-600 group-hover:text-indigo-700">My Courses</span>
+      </a>
+
+      <a href="{% url 'accounts:profile' %}"
+        class="flex flex-col items-center gap-2 p-4 bg-white border border-slate-100 rounded-xl
+               hover:border-indigo-200 hover:bg-indigo-50 transition text-center group">
+        <div class="w-9 h-9 rounded-lg bg-slate-50 group-hover:bg-indigo-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+        </div>
+        <span class="text-xs font-medium text-slate-600 group-hover:text-indigo-700">My Profile</span>
+      </a>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

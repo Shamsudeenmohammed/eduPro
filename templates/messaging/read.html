@@ -1,0 +1,2 @@
+{% extends "base_dashboard.html" %}
+{% block content %}<div class="card"><p><strong>From:</strong> {{ message.sender.get_full_name }}</p><p>{{ message.body }}</p><p style="color:var(--text-muted);font-size:.85rem">{{ message.created_at }}</p></div>{% endblock %}

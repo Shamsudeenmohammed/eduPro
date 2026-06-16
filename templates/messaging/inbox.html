@@ -1,0 +1,8 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<a href="{% url 'messaging:compose' %}" class="btn btn-primary" style="margin-bottom:1rem">Compose</a>
+<div class="grid grid-2">
+  <div class="card"><h3>Inbox</h3>{% for m in received %}<div style="padding:.5rem 0;border-bottom:1px solid var(--border)"><a href="{% url 'messaging:read' m.pk %}">{{ m.sender.get_full_name }}: {{ m.body|truncatewords:8 }}</a></div>{% endfor %}</div>
+  <div class="card"><h3>Sent</h3>{% for m in sent %}<div style="padding:.5rem 0">To {{ m.recipient.get_full_name }}: {{ m.body|truncatewords:8 }}</div>{% endfor %}</div>
+</div>
+{% endblock %}

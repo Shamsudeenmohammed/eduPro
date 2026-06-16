@@ -1,0 +1,272 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:result_sheet_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:result_sheet_list' %}">Result Sheets</a><span class="sep">/</span>
+  <span>{{ sheet.offering.course.code }} — Entry</span>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">Result Sheet Info</span></div>
+  <div class="card-body result-info-grid">
+    <div><div class="detail-label">Course</div><div class="detail-value">{{ sheet.offering.course.code }}</div></div>
+    <div><div class="detail-label">Semester</div><div class="detail-value">{{ sheet.offering.semester }}</div></div>
+    <div><div class="detail-label">CA Weight</div><div class="detail-value">{{ sheet.ca_weight }}%</div></div>
+    <div><div class="detail-label">Exam Weight</div><div class="detail-value">{{ sheet.exam_weight }}%</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Enter Student Results</span>
+    <span style="font-size:13px;color:var(--muted);">{{ student_forms|length }} student{{ student_forms|length|pluralize }}</span>
+  </div>
+  {% if student_forms %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="table-wrap">
+      <table class="responsive-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>CA Test</th>
+            <th>Assignment</th>
+            <th>Quiz</th>
+            <th>CA Total</th>
+            <th>Exam Score</th>
+            <th>Total</th>
+            <th>Grade</th>
+            <th>Absent</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in student_forms %}
+          {% with rid=item.result.pk|default:forloop.counter %}
+          <tr>
+            <td data-label="Student">
+              <strong>{{ item.enrolment.student.get_full_name }}</strong><br>
+              <span style="font-size:11px;color:var(--muted);">{{ item.enrolment.student.email }}</span>
+              {% for hidden in item.form.hidden_fields %}{{ hidden }}{% endfor %}
+            </td>
+
+            {# CA Test #}
+            <td data-label="CA Test">
+              <input type="number"
+                name="{{ item.form.ca_test_score.html_name }}"
+                value="{{ item.form.ca_test_score.value|default:'' }}"
+                min="0" step="0.01"
+                id="ca_test_{{ rid }}"
+                oninput="calcCA('{{ rid }}', {{ sheet.ca_weight }}, {{ sheet.exam_weight }})">
+              {% if item.form.ca_test_score.errors %}<p class="field-error">{{ item.form.ca_test_score.errors|join:", " }}</p>{% endif %}
+            </td>
+
+            {# Assignment #}
+            <td data-label="Assignment">
+              <input type="number"
+                name="{{ item.form.ca_assignment_score.html_name }}"
+                value="{{ item.form.ca_assignment_score.value|default:'' }}"
+                min="0" step="0.01"
+                id="ca_asgn_{{ rid }}"
+                oninput="calcCA('{{ rid }}', {{ sheet.ca_weight }}, {{ sheet.exam_weight }})">
+              {% if item.form.ca_assignment_score.errors %}<p class="field-error">{{ item.form.ca_assignment_score.errors|join:", " }}</p>{% endif %}
+            </td>
+
+            {# Quiz #}
+            <td data-label="Quiz">
+              <input type="number"
+                name="{{ item.form.ca_quiz_score.html_name }}"
+                value="{{ item.form.ca_quiz_score.value|default:'' }}"
+                min="0" step="0.01"
+                id="ca_quiz_{{ rid }}"
+                oninput="calcCA('{{ rid }}', {{ sheet.ca_weight }}, {{ sheet.exam_weight }})">
+              {% if item.form.ca_quiz_score.errors %}<p class="field-error">{{ item.form.ca_quiz_score.errors|join:", " }}</p>{% endif %}
+            </td>
+
+            {# CA Total — auto-filled sum #}
+            <td data-label="CA Total">
+              <input type="number"
+                name="{{ item.form.ca_score.html_name }}"
+                value="{{ item.form.ca_score.value|default:'' }}"
+                min="0" step="0.01"
+                id="ca_total_{{ rid }}"
+                style="background:var(--surface);font-weight:700;color:var(--success);"
+                readonly>
+              {% if item.form.ca_score.errors %}<p class="field-error">{{ item.form.ca_score.errors|join:", " }}</p>{% endif %}
+            </td>
+
+            {# Exam Score #}
+            <td data-label="Exam Score">
+              <input type="number"
+                name="{{ item.form.exam_score.html_name }}"
+                value="{{ item.form.exam_score.value|default:'' }}"
+                min="0" max="100" step="0.01"
+                id="exam_{{ rid }}"
+                oninput="calcCA('{{ rid }}', {{ sheet.ca_weight }}, {{ sheet.exam_weight }})">
+              {% if item.form.exam_score.errors %}<p class="field-error">{{ item.form.exam_score.errors|join:", " }}</p>{% endif %}
+            </td>
+
+            {# Weighted Total — display only #}
+            <td data-label="Total" id="wtotal_{{ rid }}" style="font-weight:700;font-size:14px;color:var(--text);">
+              {% if item.result.total_score is not None %}{{ item.result.total_score }}{% else %}—{% endif %}
+            </td>
+
+            {# Grade — display only #}
+            <td data-label="Grade" id="grade_{{ rid }}">
+              {% if item.result.grade %}
+              <span class="badge {% if item.result.grade == 'F' %}badge-inactive{% elif item.result.grade == 'A' or item.result.grade == 'A+' %}badge-active{% else %}badge-blue{% endif %}">{{ item.result.grade }}</span>
+              {% else %}—{% endif %}
+            </td>
+
+            <td data-label="Absent" style="text-align:center;">{{ item.form.is_absent }}</td>
+            <td data-label="Remark">{{ item.form.remark }}</td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:16px 18px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:9px;align-items:center;">
+      <button type="submit" class="btn btn-primary">Save All Results</button>
+      <a href="{% url 'teachers:result_sheet_view' sheet.pk %}" class="btn btn-secondary">Preview</a>
+      <span style="font-size:12px;color:var(--muted);">Totals and grades are computed automatically on save.</span>
+    </div>
+  </form>
+  {% else %}
+  <div class="empty-state"><span class="icon">👤</span>No enrolled students found for this offering.</div>
+  {% endif %}
+</div>
+
+<script>
+function calcCA(rid, caWeight, examWeight) {
+    const testVal = parseFloat(document.getElementById('ca_test_' + rid).value) || 0;
+    const asgnVal = parseFloat(document.getElementById('ca_asgn_' + rid).value) || 0;
+    const quizVal = parseFloat(document.getElementById('ca_quiz_' + rid).value) || 0;
+    const examVal = parseFloat(document.getElementById('exam_' + rid).value) || 0;
+
+    // 1. Add all continuous assessments together
+    const sumRawCA = testVal + asgnVal + quizVal;
+    
+    // Display the unweighted sum raw total in the CA Total box
+    document.getElementById('ca_total_' + rid).value = sumRawCA.toFixed(2);
+
+    // 2. Take the configured percentage of the raw sum
+    const weightedCA = sumRawCA * (caWeight / 100);
+
+    // 3. Take the configured percentage of the exam score (Exam score is over 100)
+    const weightedExam = examVal * (examWeight / 100);
+
+    // 4. Combine parts for absolute total
+    const totalScore = weightedCA + weightedExam;
+
+    // Update display column
+    document.getElementById('wtotal_' + rid).textContent = totalScore.toFixed(2);
+
+    // Dynamic grade display preview wrapper
+    const gradeCell = document.getElementById('grade_' + rid);
+    let letterGrade = '—';
+    let badgeClass = 'badge-blue';
+
+    if (totalScore >= 80) { letterGrade = 'A'; badgeClass = 'badge-active'; }
+    else if (totalScore >= 70) { letterGrade = 'B'; }
+    else if (totalScore >= 60) { letterGrade = 'C'; }
+    else if (totalScore >= 50) { letterGrade = 'D'; }
+    else if (totalScore > 0 || examVal > 0 || sumRawCA > 0) { letterGrade = 'F'; badgeClass = 'badge-inactive'; }
+
+    if (letterGrade !== '—') {
+        gradeCell.innerHTML = `<span class="badge ${badgeClass}">${letterGrade}</span>`;
+    } else {
+        gradeCell.textContent = '—';
+    }
+}
+</script>
+
+<style>
+  .result-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px;
+  }
+  
+  .table-wrap {
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  .table-wrap input[type=number], 
+  .table-wrap input[type=text] {
+    background: var(--surface2); 
+    color: var(--text); 
+    border: 1px solid var(--border);
+    border-radius: 6px; 
+    padding: 5px 8px; 
+    font-size: 13px; 
+    width: 100%;
+    max-width: 90px;
+    box-sizing: border-box;
+  }
+  
+  .table-wrap input[type=checkbox] { 
+    width: 16px; 
+    height: 16px; 
+    accent-color: var(--accent); 
+  }
+  
+  .table-wrap input[type=number]:focus, 
+  .table-wrap input[type=text]:focus { 
+    outline: none; 
+    border-color: var(--accent); 
+  }
+
+  /* Responsive Mobile Transformations */
+  @media (max-width: 992px) {
+    .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td {
+      display: block;
+      width: 100%;
+    }
+    
+    .responsive-table headings, .responsive-table thead {
+      display: none;
+    }
+    
+    .responsive-table tr {
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--surface);
+    }
+    
+    .responsive-table td {
+      text-align: right;
+      padding: 8px 12px;
+      border: none;
+      border-bottom: 1px dashed var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .responsive-table td:last-child {
+      border-bottom: none;
+    }
+    
+    .responsive-table td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--muted);
+      margin-right: 16px;
+      text-align: left;
+    }
+
+    .table-wrap input[type=number], 
+    .table-wrap input[type=text] {
+      max-width: 140px;
+      text-align: right;
+    }
+  }
+</style>
+{% endblock %}

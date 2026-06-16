@@ -1,0 +1,154 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:my_courses' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a>
+  <span class="sep">/</span><span>{{ offering.course.code }}</span>
+</div>
+
+<!-- Info -->
+<div class="detail-grid" style="margin-bottom:20px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Course Info</span></div>
+    <div class="card-body">
+      <div class="detail-row"><span class="detail-label">Code</span><span class="detail-value">{{ offering.course.code }}</span></div>
+      <div class="detail-row"><span class="detail-label">Title</span><span class="detail-value">{{ offering.course.title }}</span></div>
+      <div class="detail-row"><span class="detail-label">Program</span><span class="detail-value">{{ offering.level.program.name }} — {{ offering.level.name }}</span></div>
+      <div class="detail-row"><span class="detail-label">Semester</span><span class="detail-value">{{ offering.semester }}</span></div>
+      <div class="detail-row"><span class="detail-label">Enrolled</span><span class="detail-value">{{ offering.enrolments.count }} student{{ offering.enrolments.count|pluralize }}</span></div>
+    </div>
+  </div>
+  <!-- Quick actions -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Quick Actions</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:9px;">
+      <a href="{% url 'teachers:material_create' offering.pk %}" class="btn btn-primary">+ Upload Material</a>
+      <a href="{% url 'teachers:assignment_create' offering.pk %}" class="btn btn-secondary">+ Create Assignment</a>
+      <a href="{% url 'teachers:quiz_create' offering.pk %}" class="btn btn-secondary">+ Create Quiz</a>
+      <a href="{% url 'teachers:attendance_take' offering.pk %}" class="btn btn-secondary">📋 Take Attendance</a>
+      <a href="{% url 'teachers:result_sheet_setup' offering.pk %}" class="btn btn-secondary">📊 Result Sheet</a>
+    </div>
+  </div>
+</div>
+
+<!-- Tab sections -->
+<div class="tab-row">
+  <span class="tab active">Overview</span>
+</div>
+
+<!-- Materials -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Recent Materials</span>
+    <a href="{% url 'teachers:material_list' offering.pk %}" class="btn btn-secondary btn-sm">View All</a>
+  </div>
+  <div class="table-wrap">
+    {% if materials %}
+    <table>
+      <thead><tr><th>Title</th><th>Type</th><th>Week</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for mat in materials %}
+        <tr>
+          <td>{{ mat.title }}</td>
+          <td><span class="badge badge-blue">{{ mat.material_type|default:"—" }}</span></td>
+          <td>{{ mat.week_number|default:"—" }}</td>
+          <td style="display:flex;gap:5px;">
+            <a href="{% url 'teachers:material_edit' mat.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'teachers:material_delete' mat.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this material?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:30px;"><span class="icon">📄</span>No materials yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Assignments -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Assignments</span>
+    <a href="{% url 'teachers:assignment_list' offering.pk %}" class="btn btn-secondary btn-sm">View All</a>
+  </div>
+  <div class="table-wrap">
+    {% if assignments %}
+    <table>
+      <thead><tr><th>Title</th><th>Due Date</th><th>Max Score</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for asgn in assignments %}
+        <tr>
+          <td>{{ asgn.title }}</td>
+          <td>{{ asgn.due_date|date:"d M Y" }}</td>
+          <td>{{ asgn.max_score }}</td>
+          <td><a href="{% url 'teachers:assignment_submissions' asgn.pk %}" class="btn btn-secondary btn-sm">Submissions</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:30px;"><span class="icon">📝</span>No assignments yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Quizzes -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Quizzes</span>
+    <a href="{% url 'teachers:quiz_list' offering.pk %}" class="btn btn-secondary btn-sm">View All</a>
+  </div>
+  <div class="table-wrap">
+    {% if quizzes %}
+    <table>
+      <thead><tr><th>Title</th><th>Starts</th><th>Duration</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for quiz in quizzes %}
+        <tr>
+          <td>{{ quiz.title }}</td>
+          <td>{{ quiz.start_datetime|date:"d M Y H:i" }}</td>
+          <td>{{ quiz.duration_minutes }} min</td>
+          <td style="display:flex;gap:5px;">
+            <a href="{% url 'teachers:quiz_questions' quiz.pk %}" class="btn btn-secondary btn-sm">Questions</a>
+            <a href="{% url 'teachers:quiz_results' quiz.pk %}" class="btn btn-secondary btn-sm">Results</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:30px;"><span class="icon">❓</span>No quizzes yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Enrolled students -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Enrolled Students</span></div>
+  <div class="table-wrap">
+    {% if offering.enrolments.all %}
+    <table>
+      <thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Performance</th></tr></thead>
+      <tbody>
+        {% for enrol in offering.enrolments.all %}
+        <tr>
+          <td>{{ enrol.student.get_full_name }}</td>
+          <td>{{ enrol.student.email }}</td>
+          <td>{% if enrol.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+          <td><a href="{% url 'teachers:student_performance' offering.pk enrol.student.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:30px;"><span class="icon">👤</span>No students enrolled.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

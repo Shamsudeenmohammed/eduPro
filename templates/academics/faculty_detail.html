@@ -1,0 +1,77 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:faculty_edit' faculty.pk %}" class="btn btn-secondary btn-sm">Edit Faculty</a>
+<a href="{% url 'academics:faculty_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'academics:faculty_list' %}">Faculties</a>
+  <span class="sep">/</span>
+  <span>{{ faculty.name }}</span>
+</div>
+
+<div class="detail-grid" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Faculty Info</span></div>
+    <div class="card-body">
+      <div class="detail-row">
+        <span class="detail-label">Name</span>
+        <span class="detail-value">{{ faculty.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Institution</span>
+        <span class="detail-value">{{ faculty.institution.name|default:"—" }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Dean</span>
+        <span class="detail-value">{{ faculty.dean.get_full_name|default:"—" }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+          {% if faculty.is_active %}<span class="badge badge-active">Active</span>
+          {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Departments in this Faculty</span>
+    <a href="{% url 'academics:department_create' %}" class="btn btn-secondary btn-sm">+ Add Department</a>
+  </div>
+  <div class="table-wrap">
+    {% if faculty.departments.all %}
+    <table>
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>HOD</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in faculty.departments.all %}
+        <tr>
+          <td><a href="{% url 'academics:department_detail' dept.pk %}">{{ dept.name }}</a></td>
+          <td>{{ dept.hod.get_full_name|default:"—" }}</td>
+          <td>
+            {% if dept.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+          <td><a href="{% url 'academics:department_edit' dept.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">🏢</span>No departments in this faculty yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

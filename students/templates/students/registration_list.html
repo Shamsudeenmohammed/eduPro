@@ -1,0 +1,56 @@
+{% extends "students/base.html" %}
+{% block content %}
+<div class="page-header fade-up">
+  <h1>My Registration Requests</h1>
+  <a href="{% url 'students:course_registration' %}" class="btn btn-primary">+ New Request</a>
+</div>
+
+<div class="card fade-up delay-1">
+  {% if requests %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Semester</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Reviewed</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr>
+          <td>
+            <div style="font-weight:600;color:var(--text)">{{ req.offering.course.code }}</div>
+            <div style="font-size:.78rem;color:var(--muted)">{{ req.offering.course.title|truncatechars:38 }}</div>
+          </td>
+          <td style="color:var(--muted);font-size:.875rem">{{ req.offering.semester }}</td>
+          <td>
+            {% if req.status == 'approved' %}
+            <span class="pill pill-green">Approved</span>
+            {% elif req.status == 'rejected' %}
+            <span class="pill pill-red">Rejected</span>
+            {% else %}
+            <span class="pill pill-yellow">Pending</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.82rem;color:var(--muted)">{{ req.created_at|date:"M j, Y" }}</td>
+          <td style="font-size:.82rem;color:var(--muted)">{{ req.reviewed_at|date:"M j, Y"|default:"—" }}</td>
+          <td style="font-size:.8rem;color:var(--muted)">{{ req.rejection_note|default:"—"|truncatechars:40 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    <h3 style="font-size:1rem;color:var(--text);margin-bottom:6px">No requests yet</h3>
+    <p>You haven't submitted any registration requests.</p>
+    <a href="{% url 'students:course_registration' %}" class="btn btn-primary" style="margin-top:14px">Register for a Course</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

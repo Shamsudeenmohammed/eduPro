@@ -1,0 +1,104 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+{% if cancel_url %}
+<a href="{% url cancel_url %}" class="btn btn-secondary btn-sm">← Cancel</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+  {% if object %}
+  <div class="breadcrumb">
+    {% if cancel_url %}<a href="{% url cancel_url %}">Back</a><span class="sep">/</span>{% endif %}
+    <span>{{ page_title }}</span>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">{{ page_title }}</span>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        <div style="margin-bottom:18px;">
+          <label style="display:block;font-size:12px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">
+            {{ field.label }}{% if field.field.required %} <span style="color:var(--danger)">*</span>{% endif %}
+          </label>
+          {% if field.field.widget.input_type == 'checkbox' %}
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text);">
+              {{ field }}
+              <span style="font-size:14px;">{{ field.label }}</span>
+            </label>
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% if field.errors %}
+          <ul style="margin-top:5px;padding:0;list-style:none;">
+            {% for error in field.errors %}
+            <li style="font-size:12px;color:var(--danger);">⚠ {{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if field.help_text %}
+          <p style="margin-top:4px;font-size:12px;color:var(--muted);">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+        <div class="message message-error" style="margin-bottom:16px;">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:10px;margin-top:24px;">
+          <button type="submit" class="btn btn-primary">
+            {% if object %}Save Changes{% else %}Create{% endif %}
+          </button>
+          {% if cancel_url %}
+          <a href="{% url cancel_url %}" class="btn btn-secondary">Cancel</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Style all form widgets */
+  .card-body input[type=text],
+  .card-body input[type=email],
+  .card-body input[type=number],
+  .card-body input[type=date],
+  .card-body input[type=url],
+  .card-body textarea,
+  .card-body select {
+    width: 100%;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 13px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .card-body input:focus,
+  .card-body textarea:focus,
+  .card-body select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .card-body textarea { min-height: 100px; resize: vertical; }
+  .card-body select[multiple] { min-height: 140px; }
+  .card-body input[type=checkbox] {
+    width: 16px; height: 16px; accent-color: var(--accent);
+  }
+  .card-body input[type=file] {
+    color: var(--muted); font-size: 13px;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:quiz_list' quiz.offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' quiz.offering.pk %}">{{ quiz.offering.course.code }}</a><span class="sep">/</span>
+  <a href="{% url 'teachers:quiz_list' quiz.offering.pk %}">Quizzes</a><span class="sep">/</span>
+  <span>Results</span>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">{{ quiz.title }} — Results</span></div>
+  <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;">
+    <div><div class="detail-label">Total Attempts</div><div class="detail-value">{{ attempts|length }}</div></div>
+    <div><div class="detail-label">Total Marks</div><div class="detail-value">{{ quiz.total_marks }}</div></div>
+    <div><div class="detail-label">Duration</div><div class="detail-value">{{ quiz.duration_minutes }} min</div></div>
+    <div>
+      <div class="detail-label">Has Short Answers</div>
+      <div class="detail-value">
+        {% if quiz.questions.filter %}
+          {% with sq=quiz.questions.all %}
+            {% for q in sq %}{% if q.question_type == "short" %}Yes{% endif %}{% endfor %}
+          {% endwith %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Completed Attempts</span>
+    <span style="font-size:13px;color:var(--muted);">Click "Grade" to manually mark short-answer questions</span>
+  </div>
+  <div class="table-wrap">
+    {% if attempts %}
+    <table>
+      <thead>
+        <tr>
+          <th>Student</th><th>Attempt #</th><th>Started</th><th>Submitted</th>
+          <th>Score</th><th>Percentage</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attempt in attempts %}
+        <tr>
+          <td>
+            {{ attempt.student.get_full_name }}<br>
+            <span style="font-size:12px;color:var(--muted);">{{ attempt.student.email }}</span>
+          </td>
+          <td>{{ attempt.attempt_number }}</td>
+          <td>{{ attempt.started_at|date:"d M Y H:i" }}</td>
+          <td>{{ attempt.submitted_at|date:"d M Y H:i"|default:"—" }}</td>
+          <td>
+            {% if attempt.score is not None %}
+              <strong>{{ attempt.score }}</strong>
+            {% else %}
+              <span style="color:var(--warning);font-size:12px;">Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if attempt.score is not None %}
+              {% widthratio attempt.score quiz.total_marks 100 %}%
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'teachers:quiz_attempt_grade' attempt.pk %}" class="btn btn-primary btn-sm">
+              ✏️ Grade
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📊</span>No completed attempts yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

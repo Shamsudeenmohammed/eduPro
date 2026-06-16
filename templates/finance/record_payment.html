@@ -1,0 +1,4 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="card" style="max-width:500px"><p>Balance: {{ fee.balance }}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Record Payment</button></form></div>
+{% endblock %}

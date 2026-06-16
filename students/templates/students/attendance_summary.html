@@ -1,0 +1,196 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .att-hero {
+    background: linear-gradient(135deg, #134e4a 0%, #0d9488 100%);
+    border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem;
+    color: #fff; display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .att-hero .icon { font-size: 2.5rem; }
+  .att-hero h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 .25rem; }
+  .att-hero p  { margin: 0; opacity: .75; font-size: .9rem; }
+
+  .att-pct-ring {
+    width: 120px; height: 120px; flex-shrink: 0;
+  }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  @media (max-width: 600px){ .stats-row { grid-template-columns: repeat(2,1fr); } }
+
+  .stat-box {
+    background: #fff; border-radius: 12px; padding: 1.25rem;
+    text-align: center; border: 1px solid #e5e7eb;
+  }
+  .stat-box .val { font-size: 2rem; font-weight: 900; }
+  .stat-box .lbl { font-size: .75rem; color: #9ca3af; margin-top: .2rem; }
+  .stat-box.present .val { color: #16a34a; }
+  .stat-box.late    .val { color: #d97706; }
+  .stat-box.absent  .val { color: #dc2626; }
+  .stat-box.excused .val { color: #6366f1; }
+
+  .pct-bar-wrap {
+    background: #e5e7eb; border-radius: 99px; height: 10px;
+    overflow: hidden; margin-bottom: .4rem;
+  }
+  .pct-bar-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, #10b981, #059669);
+    transition: width 1s ease;
+  }
+  .pct-bar-fill.warn   { background: linear-gradient(90deg, #f59e0b, #d97706); }
+  .pct-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+  .att-table-wrap {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; overflow: hidden;
+  }
+  .att-table-wrap .tbl-header {
+    background: #f8fafc; padding: .85rem 1.25rem;
+    font-weight: 700; font-size: .9rem; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  table.att-table { width: 100%; border-collapse: collapse; }
+  table.att-table th {
+    font-size: .78rem; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: #6b7280; padding: .75rem 1.25rem;
+    background: #f9fafb; border-bottom: 1px solid #e5e7eb;
+  }
+  table.att-table td {
+    padding: .8rem 1.25rem; font-size: .88rem;
+    border-bottom: 1px solid #f3f4f6; color: #374151;
+  }
+  table.att-table tr:last-child td { border-bottom: none; }
+  table.att-table tr:hover td { background: #f9fafb; }
+
+  .status-dot {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-weight: 600; font-size: .82rem; padding: .22rem .7rem;
+    border-radius: 99px;
+  }
+  .st-present { background: #dcfce7; color: #16a34a; }
+  .st-late    { background: #fef9c3; color: #b45309; }
+  .st-absent  { background: #fee2e2; color: #dc2626; }
+  .st-excused { background: #ede9fe; color: #6d28d9; }
+
+  .empty-state {
+    text-align: center; padding: 3rem 1rem; color: #6b7280;
+  }
+  .filter-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-tab {
+    padding: .3rem .85rem; border-radius: 99px; font-size: .82rem; font-weight: 600;
+    cursor: pointer; border: 1.5px solid #e5e7eb; background: #fff; color: #374151;
+    transition: all .15s;
+  }
+  .filter-tab.active, .filter-tab:hover { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="att-hero">
+  <div class="icon">📆</div>
+  <div style="flex:1;">
+    <h1>{{ page_title }}</h1>
+    <p>{{ offering.course.title }} &mdash; {{ offering.semester }}</p>
+    <div style="margin-top:.75rem;">
+      <div class="pct-bar-wrap" style="max-width:320px;">
+        <div class="pct-bar-fill {% if attendance_pct < 50 %}danger{% elif attendance_pct < 75 %}warn{% endif %}"
+             style="width:{{ attendance_pct }}%;" id="pctBar"></div>
+      </div>
+      <span style="font-size:.88rem;font-weight:700;">{{ attendance_pct }}% attendance</span>
+      {% if attendance_pct < 75 %}
+        <span style="font-size:.78rem;color:#fca5a5;margin-left:.5rem;">⚠ Below 75%</span>
+      {% endif %}
+    </div>
+  </div>
+  <div>
+    <a href="{% url 'students:course_home' offering_pk=offering.pk %}" class="btn btn-light btn-sm" style="font-weight:700;">← Course Home</a>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-box present">
+    <div class="val">{{ present }}</div>
+    <div class="lbl">Present</div>
+  </div>
+  <div class="stat-box late">
+    <div class="val">{{ late }}</div>
+    <div class="lbl">Late</div>
+  </div>
+  <div class="stat-box absent">
+    <div class="val">{{ absent }}</div>
+    <div class="lbl">Absent</div>
+  </div>
+  <div class="stat-box excused">
+    <div class="val">{{ excused }}</div>
+    <div class="lbl">Excused</div>
+  </div>
+</div>
+
+<div class="mb-3">
+  <div class="filter-tabs" id="filterTabs">
+    <button class="filter-tab active" data-filter="all">All ({{ total_sessions }})</button>
+    <button class="filter-tab" data-filter="present">Present ({{ present }})</button>
+    <button class="filter-tab" data-filter="late">Late ({{ late }})</button>
+    <button class="filter-tab" data-filter="absent">Absent ({{ absent }})</button>
+    <button class="filter-tab" data-filter="excused">Excused ({{ excused }})</button>
+  </div>
+</div>
+
+<div class="att-table-wrap">
+  <div class="tbl-header">
+    <span>📋 Attendance Records</span>
+    <span style="font-size:.82rem;font-weight:400;color:#9ca3af;">{{ total_sessions }} session{{ total_sessions|pluralize }}</span>
+  </div>
+
+  {% if records %}
+  <table class="att-table" id="attTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date</th>
+        <th>Session / Topic</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+      <tr data-status="{{ r.status }}">
+        <td>{{ forloop.counter }}</td>
+        <td>{{ r.sheet.date|date:"M d, Y" }}</td>
+        <td>{{ r.sheet.topic|default:"—" }}</td>
+        <td>
+          <span class="status-dot st-{{ r.status }}">
+            {% if r.status == 'present' %}✓{% elif r.status == 'late' %}⏰{% elif r.status == 'absent' %}✗{% else %}~{% endif %}
+            {{ r.status|capfirst }}
+          </span>
+        </td>
+        <td style="color:#9ca3af;">{{ r.remark|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div style="font-size:2.5rem;margin-bottom:1rem;">📭</div>
+    <p>No attendance records found for this course.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+document.getElementById('filterTabs')?.addEventListener('click', e=>{
+  const btn = e.target.closest('.filter-tab');
+  if(!btn) return;
+  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const f = btn.dataset.filter;
+  document.querySelectorAll('#attTable tbody tr').forEach(row=>{
+    row.style.display = (f==='all' || row.dataset.status===f) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

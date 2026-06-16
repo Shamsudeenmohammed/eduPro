@@ -1,0 +1,51 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:teacher_dept_create' %}" class="btn btn-primary btn-sm">+ Assign Teacher</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Teacher–Department Assignments</span>
+    <span style="font-size:13px;color:var(--muted);">{{ memberships|length }} record{{ memberships|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if memberships %}
+    <table>
+      <thead>
+        <tr>
+          <th>Teacher</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Faculty</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in memberships %}
+        <tr>
+          <td>{{ m.teacher.get_full_name }}</td>
+          <td>{{ m.teacher.email }}</td>
+          <td>
+            <a href="{% url 'academics:department_detail' m.department.pk %}">{{ m.department.name }}</a>
+          </td>
+          <td>{{ m.department.faculty.name|default:"—" }}</td>
+          <td>
+            {% if m.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">🔗</span>
+      No teacher–department assignments yet.
+      <a href="{% url 'academics:teacher_dept_create' %}" style="color:var(--accent);">Add one</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

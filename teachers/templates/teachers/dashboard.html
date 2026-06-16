@@ -1,0 +1,584 @@
+{% load static role_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Teacher Dashboard · eduPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --brand:#f59e0b;--brand-dark:#d97706;--brand-light:#fffbeb;
+      --surface:#fff;--bg:#f1f5f9;--text:#0f172a;--muted:#64748b;
+      --border:#e2e8f0;--radius:14px;--radius-sm:9px;
+      --sidebar-w:268px;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.06);
+      --t:160ms ease;
+    }
+    html,body{height:100%}
+    body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
+
+    /* SIDEBAR */
+    .sidebar{width:var(--sidebar-w);background:#0f0e1a;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .28s cubic-bezier(.4,0,.2,1);border-right:1px solid rgba(255,255,255,.05)}
+    @media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}}
+    .sidebar-header{padding:1.5rem 1.25rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
+    .sidebar-logo{font-size:1.45rem;font-weight:800;letter-spacing:-.5px;color:#fff;text-decoration:none;display:flex;align-items:center;gap:.4rem}
+    .logo-dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block;margin-bottom:2px}
+    .sidebar-logo span{color:#fcd34d}
+    .sidebar-close{display:none;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:4px;line-height:1}
+    @media(max-width:1024px){.sidebar-close{display:block}}
+    .sidebar-role{margin:.9rem 1.25rem;padding:.4rem .85rem;border-radius:20px;font-size:.7rem;font-weight:700;text-align:center;letter-spacing:.08em;text-transform:uppercase;font-family:'DM Mono',monospace;background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.25)}
+    .sidebar-nav{flex:1;overflow-y:auto;padding:.25rem 0 1rem;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+    .nav-section{padding:1rem 1.25rem .3rem;font-size:.65rem;font-weight:700;color:rgba(253,211,77,.3);text-transform:uppercase;letter-spacing:.14em;font-family:'DM Mono',monospace}
+    .nav-link{display:flex;align-items:center;gap:.75rem;padding:.6rem 1.25rem;color:rgba(255,255,255,.5);text-decoration:none;font-size:.875rem;font-weight:500;transition:background var(--t),color var(--t);position:relative}
+    .nav-link:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.85)}
+    .nav-link.active{background:rgba(245,158,11,.12);color:#fff}
+    .nav-link.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;border-radius:0 3px 3px 0;background:#f59e0b}
+    .nav-link svg{width:17px;height:17px;flex-shrink:0;opacity:.8}
+    .nav-link .badge{margin-left:auto;background:#ef4444;color:#fff;font-size:.65rem;font-weight:700;padding:.15rem .45rem;border-radius:10px;min-width:20px;text-align:center;font-family:'DM Mono',monospace}
+    .nav-divider{height:1px;background:rgba(255,255,255,.05);margin:.5rem 1.25rem}
+    .sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.06)}
+    .user-info{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;border-radius:var(--radius-sm);background:rgba(255,255,255,.04)}
+    .avatar-circle{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0}
+    .user-name{font-size:.84rem;font-weight:600;color:#fff;line-height:1.2}
+    .user-email{font-size:.72rem;color:rgba(253,211,77,.4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+    .logout-btn{width:100%;margin-top:.6rem;background:transparent;border:1px solid rgba(239,68,68,.2);color:rgba(252,165,165,.7);font-size:.8rem;font-weight:600;padding:.5rem 1rem;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--t)}
+    .logout-btn:hover{background:rgba(239,68,68,.15);color:#fca5a5}
+
+    /* TOPBAR */
+    .main-wrap{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh}
+    @media(max-width:1024px){.main-wrap{margin-left:0}}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .topbar-left{display:flex;align-items:center;gap:1rem}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--muted);padding:6px}
+    @media(max-width:1024px){.hamburger{display:flex}}
+    .page-breadcrumb{font-size:.85rem;color:var(--muted)}
+    .page-breadcrumb strong{color:var(--text);font-weight:700}
+    .topbar-right{display:flex;align-items:center;gap:.75rem}
+    .tb-btn{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.38rem .6rem;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:.35rem;font-size:.82rem;font-weight:500;text-decoration:none;transition:all var(--t)}
+    .tb-btn:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-light)}
+    .tb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;text-decoration:none}
+    .notif-btn{position:relative}
+    .notif-dot{position:absolute;top:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:2px solid var(--surface)}
+    .content{flex:1;padding:1.75rem 2rem;max-width:1440px}
+    @media(max-width:640px){.content{padding:1rem}}
+
+    /* WELCOME BANNER */
+    .welcome-banner{border-radius:var(--radius);padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;color:#fff;position:relative;overflow:hidden;background:linear-gradient(135deg,#78350f 0%,#b45309 45%,#d97706 100%)}
+    .welcome-banner::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+    .wb-text{position:relative}
+    .wb-title{font-size:1.1rem;font-weight:700;margin-bottom:.2rem}
+    .wb-sub{font-size:.855rem;opacity:.8;line-height:1.5}
+    .wb-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:.55rem 1.1rem;border-radius:var(--radius-sm);font-size:.83rem;font-weight:700;text-decoration:none;transition:background var(--t);flex-shrink:0;position:relative}
+    .wb-btn:hover{background:rgba(255,255,255,.25)}
+
+    /* STATS */
+    .stat-grid{display:grid;gap:1rem;margin-bottom:1.75rem}
+    .stat-grid-4{grid-template-columns:repeat(4,1fr)}
+    @media(max-width:1000px){.stat-grid-4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:520px){.stat-grid-4{grid-template-columns:1fr}}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.4rem;display:flex;align-items:flex-start;gap:1rem;transition:box-shadow var(--t),transform var(--t);text-decoration:none;color:inherit}
+    .stat-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+    .stat-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.3rem}
+    .ic-amber{background:#fef3c7;color:#b45309}
+    .ic-blue{background:#dbeafe;color:#1d4ed8}
+    .ic-green{background:#dcfce7;color:#15803d}
+    .ic-purple{background:#ede9fe;color:#7c3aed}
+    .ic-rose{background:#ffe4e6;color:#be123c}
+    .ic-teal{background:#ccfbf1;color:#0f766e}
+    .stat-body{flex:1;min-width:0}
+    .stat-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+    .stat-value{font-size:1.85rem;font-weight:800;color:var(--text);letter-spacing:-.5px;margin-top:.1rem;line-height:1}
+    .stat-delta{font-size:.74rem;font-weight:600;margin-top:.3rem;color:var(--muted)}
+    .stat-delta.up{color:#15803d}
+    .stat-delta.down{color:#be123c}
+
+    /* LAYOUT */
+    .dash-grid{display:grid;grid-template-columns:1fr 320px;gap:1.25rem;margin-bottom:1.5rem}
+    @media(max-width:1100px){.dash-grid{grid-template-columns:1fr}}
+    .dash-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
+    @media(max-width:900px){.dash-grid-3{grid-template-columns:1fr}}
+
+    /* PANELS */
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .panel-head{padding:.95rem 1.4rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+    .panel-title{font-size:.92rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem}
+    .panel-action{font-size:.8rem;color:#f59e0b;font-weight:600;text-decoration:none}
+    .panel-action:hover{color:#d97706}
+    .panel-body{padding:1.1rem 1.4rem}
+
+    /* COURSE CARDS */
+    .course-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:.85rem;transition:box-shadow var(--t),transform var(--t);text-decoration:none;color:inherit;display:block}
+    .course-card:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+    .course-card:last-child{margin-bottom:0}
+    .cc-header{display:flex;align-items:flex-start;gap:.85rem;margin-bottom:.75rem}
+    .cc-icon{width:42px;height:42px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+    .cc-title{font-weight:700;font-size:.95rem;margin-bottom:.2rem}
+    .cc-meta{font-size:.78rem;color:var(--muted)}
+    .cc-stats{display:flex;gap:1rem;margin-top:.75rem}
+    .cc-stat{font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.3rem}
+    .cc-stat strong{color:var(--text);font-weight:700}
+    .progress-bar{height:4px;border-radius:2px;background:#e2e8f0;overflow:hidden;margin-top:.75rem}
+    .progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#f59e0b,#d97706)}
+
+    /* SUBMISSIONS TABLE */
+    .sub-table{width:100%;border-collapse:collapse}
+    .sub-table th{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:.6rem 1rem;text-align:left;border-bottom:1px solid var(--border);background:#f8fafc;font-family:'DM Mono',monospace}
+    .sub-table td{padding:.75rem 1rem;border-bottom:1px solid #f8fafc;font-size:.86rem;color:var(--text)}
+    .sub-table tr:last-child td{border-bottom:none}
+    .sub-table tr:hover td{background:#fafbfc}
+    .s-avatar{width:28px;height:28px;border-radius:50%;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;flex-shrink:0}
+    .cell-user{display:flex;align-items:center;gap:.6rem}
+    .cell-name{font-weight:600;line-height:1.2}
+    .cell-sub{font-size:.75rem;color:var(--muted)}
+    .badge-grade{font-size:.7rem;font-weight:700;padding:.2rem .6rem;border-radius:99px}
+    .bg-pending{background:#fef3c7;color:#92400e}
+    .bg-graded{background:#dcfce7;color:#14532d}
+    .bg-late{background:#fee2e2;color:#991b1b}
+    .btn-grade{font-size:.78rem;color:#f59e0b;font-weight:700;text-decoration:none}
+    .btn-grade:hover{color:#d97706}
+
+    /* SCHEDULE */
+    .sched-row{display:flex;align-items:center;gap:.9rem;padding:.75rem 0;border-bottom:1px solid #f8fafc}
+    .sched-row:last-child{border-bottom:none}
+    .sched-time{font-size:.75rem;font-weight:700;color:var(--muted);font-family:'DM Mono',monospace;width:60px;flex-shrink:0;text-align:right}
+    .sched-bar{width:3px;height:36px;border-radius:99px;flex-shrink:0}
+    .sb-amber{background:#f59e0b}
+    .sb-blue{background:#3b82f6}
+    .sb-green{background:#22c55e}
+    .sb-purple{background:#8b5cf6}
+    .sched-info{flex:1;min-width:0}
+    .sched-title{font-weight:600;font-size:.87rem}
+    .sched-meta{font-size:.74rem;color:var(--muted);margin-top:.1rem}
+
+    /* QUICK ACTIONS */
+    .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+    .qa-btn{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.85rem .5rem;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);text-decoration:none;color:var(--text);font-size:.77rem;font-weight:600;text-align:center;transition:all .15s}
+    .qa-btn:hover{border-color:#f59e0b;background:#fffbeb;transform:translateY(-1px)}
+    .qa-icon{font-size:1.35rem}
+
+    /* ANALYTICS BARS */
+    .perf-row{display:flex;align-items:center;gap:.9rem;padding:.55rem 0;border-bottom:1px solid #f8fafc}
+    .perf-row:last-child{border-bottom:none}
+    .perf-label{width:90px;font-size:.8rem;color:var(--muted);flex-shrink:0}
+    .perf-bar-wrap{flex:1;height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+    .perf-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#d97706)}
+    .perf-pct{font-size:.78rem;font-weight:700;color:var(--text);width:36px;text-align:right;flex-shrink:0;font-family:'DM Mono',monospace}
+
+    /* DEPT ROW */
+    .dept-row{display:flex;justify-content:space-between;align-items:center;font-size:.83rem;padding:.5rem 0;border-bottom:1px solid #f8fafc}
+    .dept-row:last-child{border-bottom:none}
+    .dept-name{font-weight:600;color:var(--text)}
+    .dept-tag{font-size:.7rem;font-weight:700;padding:.18rem .6rem;border-radius:99px;background:#fef3c7;color:#b45309}
+
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;backdrop-filter:blur(2px)}
+    .overlay.open{display:block}
+    .empty-hint{color:#9ca3af;font-size:.85rem;text-align:center;padding:1.5rem 0}
+    @media(max-width:480px){.welcome-banner{flex-direction:column;text-align:center}.content{padding:1rem}}
+  </style>
+</head>
+<body>
+<div class="overlay" id="overlay"></div>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="{% url 'accounts:dashboard' %}" class="sidebar-logo">edu<span>Pro</span><span class="logo-dot"></span></a>
+    <button class="sidebar-close" id="sidebar-close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-role">{% if request.user|has_role:"HOD" or request.user|has_role:"ADMIN" %}HOD &amp; Lecturer{% else %}Lecturer{% endif %}</div>
+  <div class="sidebar-nav">
+    {% comment %} {% if user.is_admin or user.is_hod or user|has_role:"hod" %}
+      <div class="nav-section">Department Head</div>
+      <a href="{% url 'teachers:hod_result_sheets' %}" class="nav-item {% if request.resolver_match.url_name == 'hod_result_sheets' %}active{% endif %}">
+        <span class="nav-icon">✅</span>
+        <span>Department Results</span>
+        
+        {% if pending_hod_approvals_count %}
+          <span class="badge badge-amber" style="margin-left: auto;">{{ pending_hod_approvals_count }}</span>
+        {% endif %}
+      </a>
+    {% endif %} {% endcomment %}
+
+    <div class="nav-section">Teaching</div>
+    <a href="{% url 'teachers:dashboard' %}" class="nav-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a href="{% url 'teachers:my_courses' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      My Courses
+    </a>
+    <a href="{% url 'teachers:result_sheet_list' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Results &amp; Grading
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Course Tools</div>
+    <a href="{% url 'teachers:my_courses' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Materials
+    </a>
+    <a href="{% url 'teachers:my_courses' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      Assignments
+    </a>
+    <a href="{% url 'teachers:my_courses' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Quizzes / CBT
+    </a>
+    <a href="{% url 'teachers:my_courses' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Attendance
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Academic</div>
+    <a href="{% url 'academics:course_list' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Course Catalogue
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Account</div>
+    <a href="{% url 'teachers:profile_edit' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Teaching Profile
+    </a>
+    <a href="{% url 'accounts:profile' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Account Profile
+    </a>
+    <a href="{% url 'accounts:change_password' %}" class="nav-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Change Password
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar-circle">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</div>
+      <div style="min-width:0">
+        <div class="user-name">{{ request.user.get_full_name }}</div>
+        <div class="user-email">{{ request.user.email }}</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'accounts:logout' %}" style="margin-top:.5rem">
+      {% csrf_token %}<button type="submit" class="logout-btn">Sign Out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="main-wrap">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="page-breadcrumb">eduPro / <strong>Teacher Dashboard</strong></div>
+    </div>
+    <div class="topbar-right">
+      <button class="tb-btn notif-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="notif-dot"></div>
+      </button>
+      <a href="{% url 'teachers:profile_edit' %}" class="tb-avatar">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</a>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="welcome-banner">
+      <div class="wb-text">
+        <div class="wb-title">Hello, {{ request.user.get_short_name }} 👋 — Teacher Dashboard</div>
+        <div class="wb-sub">
+          {% if pending_hod_approvals_count %}
+          You have <strong>{{ pending_hod_approvals_count }} department result sheet{{ pending_hod_approvals_count|pluralize }}</strong> awaiting your head approval.
+          {% else %}
+          You have <strong>{{ teacher_pending_submissions|default:"0" }} submission{{ teacher_pending_submissions|default:0|pluralize }}</strong> awaiting grading
+          and <strong>{{ teacher_open_results|default:"0" }} result sheet{{ teacher_open_results|default:0|pluralize }}</strong> pending entry.
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'teachers:my_courses' %}" class="wb-btn">📚 My Courses</a>
+    </div>
+
+    <div class="stat-grid stat-grid-4">
+      <a href="{% url 'teachers:my_courses' %}" class="stat-card">
+        <div class="stat-icon ic-amber">📚</div>
+        <div class="stat-body">
+          <div class="stat-label">My Courses</div>
+          <div class="stat-value">{{ teacher_course_count|default:"0" }}</div>
+          <div class="stat-delta">This semester</div>
+        </div>
+      </a>
+      <a href="{% url 'teachers:my_courses' %}" class="stat-card">
+        <div class="stat-icon ic-blue">🎓</div>
+        <div class="stat-body">
+          <div class="stat-label">Students</div>
+          <div class="stat-value">{{ teacher_student_count|default:"0" }}</div>
+          <div class="stat-delta">Across all courses</div>
+        </div>
+      </a>
+      {% if request.user|has_role:"HOD" or request.user|has_role:"ADMIN" %}
+      <a href="{% url 'teachers:result_sheet_list' %}" class="stat-card">
+        <div class="stat-icon ic-rose">⚖️</div>
+        <div class="stat-body">
+          <div class="stat-label">HOD Review</div>
+          <div class="stat-value">{{ pending_hod_approvals_count|default:"0" }}</div>
+          <div class="stat-delta {% if pending_hod_approvals_count %}down{% endif %}">Awaiting sign-off</div>
+        </div>
+      </a>
+      {% else %}
+      <a href="{% url 'teachers:my_courses' %}" class="stat-card">
+        <div class="stat-icon ic-rose">📝</div>
+        <div class="stat-body">
+          <div class="stat-label">Pending Subs</div>
+          <div class="stat-value">{{ teacher_pending_submissions|default:"0" }}</div>
+          <div class="stat-delta {% if teacher_pending_submissions %}down{% endif %}">Awaiting grading</div>
+        </div>
+      </a>
+      {% endif %}
+      <a href="{% url 'teachers:result_sheet_list' %}" class="stat-card">
+        <div class="stat-icon ic-purple">📊</div>
+        <div class="stat-body">
+          <div class="stat-label">Open Results</div>
+          <div class="stat-value">{{ teacher_open_results|default:"0" }}</div>
+          <div class="stat-delta">Need entry</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="dash-grid">
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        {% if request.user|has_role:"HOD" or request.user|has_role:"ADMIN" %}
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">🏛️ Department Result Endorsements</span>
+            <a href="{% url 'teachers:result_sheet_list' %}" class="panel-action">Manage all →</a>
+          </div>
+          <table class="sub-table">
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Instructor</th>
+                <th>Students</th>
+                <th>Verification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sheet in hod_pending_sheets %}
+              <tr>
+                <td>
+                  <div class="cell-user">
+                    <div class="s-avatar">📘</div>
+                    <div>
+                      <div class="cell-name">{{ sheet.offering.course.code }}</div>
+                      <div class="cell-sub">{{ sheet.offering.course.title|truncatechars:35 }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="font-weight:600;font-size:.85rem;">{{ sheet.offering.teachers.first.user.get_full_name|default:"Assigned Faculty" }}</td>
+                <td style="font-size:.78rem;color:#64748b;">{{ sheet.offering.enrolments.count }} registered</td>
+                <td>
+                  <form method="post" action="{% url 'teachers:result_approve' sheet.pk %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-grade" style="background:none;border:none;cursor:pointer;font-family:inherit;">Confirm &amp; Lock 🔒</button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4"><div class="empty-hint">No department sheets currently submitted for review.</div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">📚 My Current Courses</span>
+            <a href="{% url 'teachers:my_courses' %}" class="panel-action">View all →</a>
+          </div>
+          <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+            {% for alloc in teacher_allocations %}
+            <a href="{% url 'teachers:course_detail' alloc.offering.pk %}" class="course-card">
+              <div class="cc-header">
+                <div class="cc-icon">📘</div>
+                <div style="flex:1;min-width:0">
+                  <div class="cc-title">{{ alloc.offering.course.title }}</div>
+                  <div class="cc-meta">{{ alloc.offering.course.code }} · {{ alloc.offering.level.program.name }} · {{ alloc.offering.semester }}</div>
+                </div>
+              </div>
+              <div class="cc-stats">
+                <span class="cc-stat">👥 <strong>{{ alloc.offering.enrolments.count }}</strong> students</span>
+                <span class="cc-stat">🏆 <strong>{{ alloc.offering.course.credit_units }}</strong> credits</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+            </a>
+            {% empty %}
+            <div class="empty-hint">No courses allocated yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">📥 Recent Submissions</span>
+            <a href="{% url 'teachers:my_courses' %}" class="panel-action">Grade all →</a>
+          </div>
+          <table class="sub-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Assignment</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sub in recent_submissions %}
+              <tr>
+                <td>
+                  <div class="cell-user">
+                    <div class="s-avatar">{{ sub.student.first_name|slice:":1"|upper }}{{ sub.student.last_name|slice:":1"|upper }}</div>
+                    <div>
+                      <div class="cell-name">{{ sub.student.get_full_name }}</div>
+                      <div class="cell-sub">{{ sub.assignment.offering.course.code }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="font-weight:600;font-size:.85rem;">{{ sub.assignment.title|truncatechars:30 }}</td>
+                <td style="font-size:.78rem;color:#64748b;">{{ sub.submitted_at|date:"M d, Y" }}</td>
+                <td>
+                  {% if sub.score is not None %}
+                    <span class="badge-grade bg-graded">Graded</span>
+                  {% elif sub.is_late %}
+                    <span class="badge-grade bg-late">Late</span>
+                  {% else %}
+                    <span class="badge-grade bg-pending">Pending</span>
+                  {% endif %}
+                </td>
+                <td><a href="{% url 'teachers:course_detail' sub.assignment.offering.pk %}" class="btn-grade">Grade →</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5"><div class="empty-hint">No submissions yet.</div></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">📈 Performance Overview</span>
+          </div>
+          <div class="panel-body">
+            <div class="perf-row">
+              <span class="perf-label">Submissions</span>
+              <div class="perf-bar-wrap"><div class="perf-bar-fill" id="perfSub" style="width:0%"></div></div>
+              <span class="perf-pct" id="perfSubPct">—</span>
+            </div>
+            <div class="perf-row">
+              <span class="perf-label">Attendance</span>
+              <div class="perf-bar-wrap"><div class="perf-bar-fill" id="perfAtt" style="width:0%;background:linear-gradient(90deg,#3b82f6,#1d4ed8)"></div></div>
+              <span class="perf-pct" id="perfAttPct">—</span>
+            </div>
+            <div class="perf-row">
+              <span class="perf-label">Quiz Rate</span>
+              <div class="perf-bar-wrap"><div class="perf-bar-fill" id="perfQz" style="width:0%;background:linear-gradient(90deg,#8b5cf6,#6d28d9)"></div></div>
+              <span class="perf-pct" id="perfQzPct">—</span>
+            </div>
+            <div class="perf-row">
+              <span class="perf-label">Graded</span>
+              <div class="perf-bar-wrap"><div class="perf-bar-fill" id="perfGr" style="width:0%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div>
+              <span class="perf-pct" id="perfGrPct">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        <div class="panel">
+          <div class="panel-head"><span class="panel-title">⚡ Quick Actions</span></div>
+          <div class="panel-body">
+            <div class="qa-grid">
+              <a href="{% url 'teachers:my_courses' %}" class="qa-btn"><span class="qa-icon">📚</span>My Courses</a>
+              <a href="{% url 'teachers:result_sheet_list' %}" class="qa-btn"><span class="qa-icon">📊</span>Results</a>
+              <a href="{% url 'teachers:my_courses' %}" class="qa-btn"><span class="qa-icon">📝</span>Assignments</a>
+              <a href="{% url 'teachers:my_courses' %}" class="qa-btn"><span class="qa-icon">🧠</span>Quizzes</a>
+              <a href="{% url 'teachers:my_courses' %}" class="qa-btn"><span class="qa-icon">📅</span>Attendance</a>
+              <a href="{% url 'teachers:my_courses' %}" class="qa-btn"><span class="qa-icon">📁</span>Materials</a>
+              <a href="{% url 'teachers:profile_edit' %}" class="qa-btn"><span class="qa-icon">🔧</span>Profile</a>
+              <a href="{% url 'academics:course_list' %}" class="qa-btn"><span class="qa-icon">🔍</span>Catalogue</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">🏫 My Departments</span>
+          </div>
+          <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+            {% for td in teacher_departments %}
+            <div class="dept-row">
+              <span class="dept-name">{{ td.department.name }}</span>
+              <span class="dept-tag">{% if td.is_primary %}Primary{% else %}Member{% endif %}</span>
+            </div>
+            {% empty %}
+            <div class="empty-hint">No departments assigned.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">🗓 Schedule — Today</span>
+          </div>
+          <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+            {% for alloc in teacher_allocations|slice:":4" %}
+            <div class="sched-row">
+              <span class="sched-time">{{ forloop.counter }}.</span>
+              <div class="sched-bar {% cycle 'sb-amber' 'sb-blue' 'sb-green' 'sb-purple' %}"></div>
+              <div class="sched-info">
+                <div class="sched-title">{{ alloc.offering.course.code }}</div>
+                <div class="sched-meta">{{ alloc.offering.course.title|truncatechars:30 }}</div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="empty-hint">No courses this semester.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div></div><script>
+const sidebar=document.getElementById('sidebar'),overlay=document.getElementById('overlay'),hamburger=document.getElementById('hamburger'),closeBtn=document.getElementById('sidebar-close');
+function openSidebar(){sidebar.classList.add('open');overlay.classList.add('open')}
+function closeSidebar(){sidebar.classList.remove('open');overlay.classList.remove('open')}
+hamburger?.addEventListener('click',openSidebar);closeBtn?.addEventListener('click',closeSidebar);overlay?.addEventListener('click',closeSidebar);
+
+// Animate performance bars on load
+window.addEventListener('DOMContentLoaded',()=>{
+  const bars=[
+    {bar:'perfSub',pct:'perfSubPct',val:{{ teacher_pending_submissions|default:0 }},max:50},
+    {bar:'perfAtt',pct:'perfAttPct',val:78,max:100},
+    {bar:'perfQz',pct:'perfQzPct',val:65,max:100},
+    {bar:'perfGr',pct:'perfGrPct',val:{{ teacher_course_count|default:0 }},max:10},
+  ];
+  bars.forEach(b=>{
+    const pct=Math.min(100,Math.round((b.val/b.max)*100));
+    setTimeout(()=>{
+      const el=document.getElementById(b.bar);
+      const lbl=document.getElementById(b.pct);
+      if(el){el.style.transition='width .8s ease';el.style.width=pct+'%'}
+      if(lbl)lbl.textContent=pct+'%';
+    },200);
+  });
+});
+</script>
+</body>
+</html>

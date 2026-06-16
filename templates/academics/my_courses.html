@@ -1,0 +1,51 @@
+{% extends "academics/base.html" %}
+
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Active Courses</div>
+    <div class="stat-value">{{ allocations|length }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">My Allocated Courses</span>
+  </div>
+  <div class="table-wrap">
+    {% if allocations %}
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Course Title</th>
+          <th>Program / Level</th>
+          <th>Semester</th>
+          <th>Session</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alloc in allocations %}
+        <tr>
+          <td><strong>{{ alloc.offering.course.code }}</strong></td>
+          <td>{{ alloc.offering.course.title }}</td>
+          <td>{{ alloc.offering.level.program.name }} — {{ alloc.offering.level.name }}</td>
+          <td>{{ alloc.offering.semester.name }}</td>
+          <td>{{ alloc.offering.semester.session.name }}</td>
+          <td><span class="badge badge-blue">{{ alloc.role }}</span></td>
+          <td><a href="{% url 'academics:offering_detail' alloc.offering.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📭</span>
+      You have no courses allocated to you yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

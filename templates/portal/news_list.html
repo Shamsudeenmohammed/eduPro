@@ -1,0 +1,14 @@
+{% extends "base_public.html" %}
+{% block content %}
+<div class="container" style="padding:3rem 0">
+  <h1>News & Announcements</h1>
+  <div class="grid grid-2" style="margin-top:1.5rem">
+    {% for item in page_obj %}
+    <div class="card">
+      <h3><a href="{% url 'portal:news_detail' item.pk %}">{{ item.title }}</a></h3>
+      <p style="color:var(--text-muted)">{{ item.summary }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

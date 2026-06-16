@@ -1,0 +1,57 @@
+{% extends "base_dashboard.html" %}
+{% block nav_links %}
+<a href="{% url 'analytics:dashboard' %}" class="active">Analytics</a>
+<a href="{% url 'finance:dashboard' %}">Finance</a>
+<a href="{% url 'feedback:dashboard' %}">Feedback</a>
+<a href="{% url 'core:audit_logs' %}">Audit Logs</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-4" style="margin-bottom:1.5rem">
+  <div class="stat-card"><div class="value">{{ stats.users }}</div><div class="label">Total Users</div></div>
+  <div class="stat-card"><div class="value">{{ stats.students }}</div><div class="label">Students</div></div>
+  <div class="stat-card"><div class="value">{{ stats.teachers }}</div><div class="label">Teachers</div></div>
+  <div class="stat-card"><div class="value">{{ stats.enrolments }}</div><div class="label">Enrolments</div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3 style="margin-bottom:1rem">Grade Distribution</h3>
+    <canvas id="gradeChart" height="200"></canvas>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:1rem">Sentiment Breakdown</h3>
+    <ul>
+      {% for s in sentiment_breakdown %}
+      <li style="padding:.4rem 0">{{ s.sentiment|capfirst }}: {{ s.count }}</li>
+      {% empty %}<li>No feedback data yet</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+  <h3 style="margin-bottom:1rem">At-Risk Students (Predictive Analytics)</h3>
+  <table class="data-table">
+    <thead><tr><th>Student</th><th>Risk</th><th>Score</th><th>Factors</th></tr></thead>
+    <tbody>
+      {% for item in at_risk %}
+      <tr>
+        <td>{{ item.student.get_full_name }}</td>
+        <td><span class="badge badge-{% if item.risk_level == 'high' %}danger{% else %}warning{% endif %}">{{ item.risk_level }}</span></td>
+        <td>{{ item.risk_score }}%</td>
+        <td>{{ item.factors|join:", " }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="4">No at-risk students identified.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  eduPro.renderBarChart('gradeChart',
+    [{% for g in grade_dist %}'{{ g.grade }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    [{% for g in grade_dist %}{{ g.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    'Results');
+});
+</script>
+{% endblock %}

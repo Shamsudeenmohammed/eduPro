@@ -1,0 +1,3 @@
+{% extends "base_dashboard.html" %}
+{% block content %}<a href="{% url 'operations:ticket_create' %}" class="btn btn-primary" style="margin-bottom:1rem">New Ticket</a>
+{% for t in tickets %}<div class="card" style="margin-bottom:.5rem"><strong>{{ t.subject }}</strong> <span class="badge">{{ t.status }}</span></div>{% endfor %}{% endblock %}

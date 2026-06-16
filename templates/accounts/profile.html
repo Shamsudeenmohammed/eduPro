@@ -1,0 +1,830 @@
+{% load static role_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile · eduPro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #4f46e5; --brand-dark: #3730a3; --brand-light: #eef2ff;
+      --surface: #ffffff; --bg: #f1f5f9; --text: #0f172a; --muted: #64748b;
+      --border: #e2e8f0; --danger: #ef4444; --danger-bg: #fef2f2;
+      --success: #10b981; --radius: 12px; --radius-sm: 8px;
+      --sidebar-w: 260px;
+      --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+      --t: 150ms ease;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; min-height: 100vh; overflow-x: hidden;
+    }
+
+    /* ══ SIDEBAR (mirrors dashboard) ══ */
+    .sidebar {
+      width: var(--sidebar-w); background: #1e1b4b;
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 200;
+      transition: transform .28s cubic-bezier(.4,0,.2,1);
+    }
+    @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+    .sidebar-header { padding: 1.5rem 1.25rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -.5px; color: #fff; text-decoration: none; }
+    .sidebar-logo span { color: #a5b4fc; }
+    .sidebar-close { display: none; background: none; border: none; color: #a5b4fc; cursor: pointer; padding: 4px; transition: color var(--t); line-height: 1; }
+    .sidebar-close:hover { color: #fff; }
+    @media (max-width: 1024px) { .sidebar-close { display: block; } }
+    .sidebar-role { margin: 1rem 1.25rem; padding: .5rem .75rem; border-radius: 20px; font-size: .75rem; font-weight: 700; text-align: center; letter-spacing: .04em; text-transform: uppercase; }
+    .role-admin   { background: rgba(124,58,237,.3); color: #c4b5fd; }
+    .role-teacher { background: rgba(217,119,6,.3);  color: #fcd34d; }
+    .role-student { background: rgba(5,150,105,.3);  color: #6ee7b7; }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: .5rem 0; }
+    .nav-section { padding: .75rem 1.25rem .25rem; font-size: .7rem; font-weight: 700; color: rgba(165,180,252,.5); text-transform: uppercase; letter-spacing: .1em; }
+    .nav-link { display: flex; align-items: center; gap: .75rem; padding: .65rem 1.25rem; color: rgba(255,255,255,.65); text-decoration: none; font-size: .9rem; font-weight: 500; transition: background var(--t), color var(--t); }
+    .nav-link:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .nav-link.active { background: rgba(99,102,241,.25); color: #fff; border-right: 3px solid #818cf8; }
+    .nav-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,.08); }
+    .user-info { display: flex; align-items: center; gap: .75rem; padding: .5rem; border-radius: var(--radius-sm); }
+    .avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 800; flex-shrink: 0; }
+    .user-name  { font-size: .875rem; font-weight: 600; color: #fff; }
+    .user-email { font-size: .75rem; color: rgba(165,180,252,.65); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+    .logout-btn { width: 100%; margin-top: .5rem; background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.25); color: #fca5a5; font-size: .82rem; font-weight: 600; padding: .55rem 1rem; border-radius: var(--radius-sm); cursor: pointer; transition: background var(--t), color var(--t); }
+    .logout-btn:hover { background: rgba(239,68,68,.28); color: #fff; }
+
+    /* ══ MAIN LAYOUT ══ */
+    .main-wrap { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; min-height: 100vh; }
+    @media (max-width: 1024px) { .main-wrap { margin-left: 0; } }
+
+    /* Topbar */
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+    .topbar-left { display: flex; align-items: center; gap: 1rem; }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--muted); padding: 6px; transition: color var(--t); }
+    .hamburger:hover { color: var(--text); }
+    @media (max-width: 1024px) { .hamburger { display: flex; } }
+    .breadcrumb { font-size: .9rem; color: var(--muted); }
+    .breadcrumb a { color: var(--brand); text-decoration: none; font-weight: 500; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span { margin: 0 .4rem; }
+    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+    .tb-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 800; text-decoration: none; }
+
+    /* ══ PAGE CONTENT ══ */
+    .content { flex: 1; padding: 2rem; }
+    @media (max-width: 640px) { .content { padding: 1rem; } }
+
+    .page-header { margin-bottom: 2rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .page-title { font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
+    .page-subtitle { color: var(--muted); font-size: .9rem; margin-top: .25rem; }
+
+    /* ══ PROFILE LAYOUT ══ */
+    .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem; align-items: start; }
+    @media (max-width: 960px) { .profile-grid { grid-template-columns: 1fr; } }
+
+    /* ══ PANEL CARD ══ */
+    .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .panel-head { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .panel-title { font-size: .95rem; font-weight: 700; color: var(--text); }
+    .panel-body { padding: 1.5rem; }
+    .panel-body-sm { padding: 1.25rem 1.5rem; }
+
+    /* ══ AVATAR SECTION ══ */
+    .avatar-wrap { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 2rem 1.5rem 1.5rem; }
+    .avatar-large {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: var(--brand); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; font-weight: 800; margin-bottom: 1rem;
+      position: relative; overflow: hidden; cursor: pointer;
+      transition: opacity var(--t);
+      flex-shrink: 0;
+    }
+    .avatar-large img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .avatar-large:hover .avatar-overlay { opacity: 1; }
+    .avatar-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity var(--t);
+      font-size: .72rem; font-weight: 700; color: #fff;
+      flex-direction: column; gap: .25rem;
+    }
+    .avatar-overlay svg { width: 22px; height: 22px; }
+    .avatar-input { display: none; }
+
+    .profile-name { font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: .25rem; }
+    .profile-email { font-size: .85rem; color: var(--muted); margin-bottom: .75rem; word-break: break-all; }
+    .role-pill {
+      font-size: .75rem; font-weight: 700; padding: .3rem .85rem;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: .06em;
+    }
+    .pill-admin   { background: #ede9fe; color: #5b21b6; }
+    .pill-teacher { background: #fef3c7; color: #92400e; }
+    .pill-student { background: #dcfce7; color: #14532d; }
+
+    .profile-joined { font-size: .78rem; color: var(--muted); margin-top: .65rem; }
+
+    /* Sidebar quick links */
+    .profile-links { border-top: 1px solid var(--border); }
+    .profile-link {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .8rem 1.5rem; text-decoration: none;
+      font-size: .875rem; font-weight: 500; color: var(--muted);
+      transition: background var(--t), color var(--t);
+      border-bottom: 1px solid var(--border);
+    }
+    .profile-link:last-child { border-bottom: none; }
+    .profile-link:hover { background: var(--brand-light); color: var(--brand); }
+    .profile-link.active-tab { background: var(--brand-light); color: var(--brand); font-weight: 700; }
+    .profile-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ══ FORM SECTIONS ══ */
+    .form-section { margin-bottom: 0; }
+    .form-section + .form-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    .section-title { font-size: .9rem; font-weight: 700; color: var(--text); margin-bottom: 1.1rem; }
+    .section-sub   { font-size: .8rem; color: var(--muted); margin-top: -.7rem; margin-bottom: 1rem; }
+
+    /* ── Field ── */
+    .field { margin-bottom: 1.15rem; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: .84rem; font-weight: 600; color: #374151; margin-bottom: .45rem; }
+    .field-hint  { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+    .field-error { font-size: .8rem; color: var(--danger); margin-top: .35rem; }
+    .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 640px) { .field-grid-2 { grid-template-columns: 1fr; } }
+
+    .input-wrap { position: relative; }
+    .input-wrap input,
+    .input-wrap select,
+    .input-wrap textarea {
+      width: 100%; padding: .8rem 1rem .8rem 2.8rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: .95rem; color: var(--text); background: #fafafa;
+      transition: border-color var(--t), box-shadow var(--t), background var(--t);
+      outline: none; -webkit-appearance: none; appearance: none;
+      font-family: inherit;
+    }
+    .input-wrap.no-icon input,
+    .input-wrap.no-icon select,
+    .input-wrap.no-icon textarea { padding-left: 1rem; }
+    .input-wrap textarea { padding-top: .8rem; resize: vertical; min-height: 100px; line-height: 1.6; }
+    .input-wrap input:focus,
+    .input-wrap select:focus,
+    .input-wrap textarea:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+    .input-wrap input.is-error,
+    .input-wrap select.is-error,
+    .input-wrap textarea.is-error { border-color: var(--danger); background: #fff5f5; }
+    .input-wrap input.is-valid,
+    .input-wrap select.is-valid { border-color: var(--success); }
+    .input-wrap input[type="date"] { padding-left: 1rem; }
+    .input-wrap input::placeholder,
+    .input-wrap textarea::placeholder { color: #9ca3af; }
+    .input-icon { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: #9ca3af; width: 18px; height: 18px; pointer-events: none; transition: color var(--t); }
+    .input-wrap:focus-within .input-icon { color: var(--brand); }
+    .select-arrow { position: absolute; right: .85rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; }
+
+    /* ── Password toggle ── */
+    .pw-toggle { position: absolute; right: .8rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #9ca3af; padding: 4px; transition: color var(--t); line-height: 1; }
+    .pw-toggle:hover { color: var(--brand); }
+
+    /* ── File upload ── */
+    .file-upload-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 1.5rem; text-align: center; cursor: pointer;
+      transition: border-color var(--t), background var(--t);
+      background: #fafafa;
+    }
+    .file-upload-zone:hover, .file-upload-zone.drag-over { border-color: var(--brand); background: var(--brand-light); }
+    .file-upload-zone svg { width: 28px; height: 28px; color: var(--muted); margin: 0 auto .5rem; }
+    .file-upload-zone .upload-label { font-size: .875rem; font-weight: 600; color: var(--brand); }
+    .file-upload-zone .upload-sub   { font-size: .78rem; color: var(--muted); margin-top: .25rem; }
+
+    /* ── Strength bar ── */
+    .strength-bar  { height: 4px; border-radius: 2px; background: #e2e8f0; margin-top: .5rem; overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 2px; width: 0; transition: width .3s ease, background .3s ease; }
+    .strength-lbl  { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    .btn-primary {
+      padding: .8rem 1.75rem; background: var(--brand); color: #fff;
+      font-size: .9rem; font-weight: 700; border: none; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background var(--t), transform var(--t), box-shadow var(--t);
+      display: inline-flex; align-items: center; gap: .5rem;
+    }
+    .btn-primary:hover { background: var(--brand-dark); box-shadow: 0 4px 14px rgba(79,70,229,.35); }
+    .btn-primary:active { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      padding: .8rem 1.5rem; background: var(--surface); color: var(--text);
+      font-size: .9rem; font-weight: 600; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      cursor: pointer; transition: border-color var(--t), background var(--t);
+      text-decoration: none; display: inline-flex; align-items: center;
+    }
+    .btn-secondary:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+    .btn-danger {
+      padding: .8rem 1.5rem; background: #fef2f2; color: #b91c1c;
+      font-size: .9rem; font-weight: 600; border: 1.5px solid #fecaca; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background var(--t), border-color var(--t);
+      display: inline-flex; align-items: center; gap: .5rem;
+    }
+    .btn-danger:hover { background: #fee2e2; border-color: #fca5a5; }
+    .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+    .is-loading .spinner { display: inline-block; }
+    .is-loading .btn-label { display: none; }
+
+    /* ══ TAB SYSTEM ══ */
+    .tab-bar { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; gap: 0; overflow-x: auto; }
+    .tab-btn {
+      padding: .75rem 1.25rem; font-size: .875rem; font-weight: 600;
+      color: var(--muted); background: none; border: none; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -2px;
+      transition: color var(--t), border-color var(--t); white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ══ SUCCESS BANNER ══ */
+    .success-banner { background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: var(--radius-sm); padding: .85rem 1rem; color: #166534; font-size: .875rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: .5rem; animation: fadeIn .25s ease; }
+    .error-banner   { background: var(--danger-bg); border: 1.5px solid #fecaca; border-radius: var(--radius-sm); padding: .85rem 1rem; color: #b91c1c; font-size: .875rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: .5rem; animation: fadeIn .25s ease; }
+
+    /* ══ OVERLAY ══ */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 150; }
+    .overlay.open { display: block; }
+
+    /* ══ TOAST ══ */
+    .toast-container { position: fixed; top: 1.25rem; right: 1.25rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem; }
+    .toast { padding: .85rem 1rem; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 500; display: flex; align-items: flex-start; gap: .6rem; box-shadow: var(--shadow); max-width: 340px; animation: slideIn .25s ease; }
+    .toast-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .toast-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .toast-info    { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .toast-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .toast-close { margin-left: auto; background: none; border: none; cursor: pointer; opacity: .55; font-size: 1rem; line-height: 1; padding: 0; }
+    .toast-close:hover { opacity: 1; }
+
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(1rem); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ══ SIDEBAR ══ -->
+  <nav class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar-header">
+      <a href="{% url 'accounts:dashboard' %}" class="sidebar-logo">edu<span>Pro</span></a>
+      <button class="sidebar-close" id="sidebar-close" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-role role-{% if request.user|is_admin %}admin{% elif request.user|is_teacher %}teacher{% else %}student{% endif %}">
+      {{ request.user.role|title }}
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section">General</div>
+      <a href="{% url 'accounts:dashboard' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'accounts:profile' %}" class="nav-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        My Profile
+      </a>
+      {% if request.user|is_admin %}
+      <div class="nav-section">Administration</div>
+      <a href="{% url 'accounts:user_list' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Manage Users
+      </a>
+      <a href="{% url 'admin:index' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 0 4.93 19.07 10 10 0 0 0 19.07 4.93z"/></svg>
+        Django Admin
+      </a>
+      {% endif %}
+      <div class="nav-section">Account</div>
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Change Password
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar-sm">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</div>
+        <div style="min-width:0">
+          <div class="user-name">{{ request.user.get_full_name }}</div>
+          <div class="user-email">{{ request.user.email }}</div>
+        </div>
+      </div>
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin-top:.5rem">
+        {% csrf_token %}
+        <button type="submit" class="logout-btn">Sign Out</button>
+      </form>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN WRAP ══ -->
+  <div class="main-wrap">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="breadcrumb">
+          <a href="{% url 'accounts:dashboard' %}">Dashboard</a>
+          <span>/</span>
+          <strong style="color:var(--text)">My Profile</strong>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <a href="{% url 'accounts:profile' %}" class="tb-avatar" title="Profile">
+          {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+        </a>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <div class="content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">{% if target_user %}Edit: {{ target_user.get_full_name }}{% else %}My Profile{% endif %}</h1>
+          <p class="page-subtitle">Manage your personal information, avatar, and security settings.</p>
+        </div>
+      </div>
+
+      <!-- Django messages -->
+      {% if messages %}
+        {% for message in messages %}
+          {% if message.tags == 'success' %}
+          <div class="success-banner" role="status">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            {{ message }}
+          </div>
+          {% else %}
+          <div class="error-banner" role="alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ message }}
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+      <div class="profile-grid">
+
+        <!-- Left: Identity card -->
+        <div>
+          <div class="panel" style="margin-bottom:1.25rem">
+            <div class="avatar-wrap">
+              <label for="avatar-file-input" style="cursor:pointer">
+                <div class="avatar-large" id="avatar-display">
+                  {% if profile.avatar %}
+                    <img src="{{ profile.get_avatar_url }}" alt="Your avatar" id="avatar-preview" />
+                  {% else %}
+                    <span id="avatar-initials">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</span>
+                    <img id="avatar-preview" style="display:none" alt="Avatar preview" />
+                  {% endif %}
+                  <div class="avatar-overlay">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Change
+                  </div>
+                </div>
+              </label>
+
+              <div class="profile-name">
+                {% if target_user %}{{ target_user.get_full_name }}{% else %}{{ request.user.get_full_name }}{% endif %}
+              </div>
+              <div class="profile-email">
+                {% if target_user %}{{ target_user.email }}{% else %}{{ request.user.email }}{% endif %}
+              </div>
+              <span class="role-pill pill-{% if target_user %}{{ target_user.role }}{% else %}{{ request.user.role }}{% endif %}">
+                {% if target_user %}{{ target_user.role|title }}{% else %}{{ request.user.role|title }}{% endif %}
+              </span>
+              <div class="profile-joined">
+                Joined {% if target_user %}{{ target_user.date_joined|date:"F j, Y" }}{% else %}{{ request.user.date_joined|date:"F j, Y" }}{% endif %}
+              </div>
+            </div>
+
+            <div class="profile-links">
+              <a href="{% url 'accounts:profile' %}#info" class="profile-link active-tab" data-tab="info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Account Info
+              </a>
+              <a href="{% url 'accounts:profile' %}#profile" class="profile-link" data-tab="profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Profile Details
+              </a>
+              {% if not target_user %}
+              <a href="{% url 'accounts:change_password' %}" class="profile-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Change Password
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Forms -->
+        <div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title" id="active-tab-label">Account Information</span>
+            </div>
+            <div class="panel-body">
+
+              <!-- Tab bar -->
+              <div class="tab-bar" role="tablist">
+                <button class="tab-btn active" role="tab" data-target="tab-info" aria-selected="true">Account Info</button>
+                <button class="tab-btn" role="tab" data-target="tab-profile" aria-selected="false">Profile Details</button>
+                <button class="tab-btn" role="tab" data-target="tab-avatar" aria-selected="false">Avatar</button>
+              </div>
+
+              <form id="profile-form" method="post"
+                    action="{% if target_user %}{% url 'accounts:user_detail' target_user.pk %}{% else %}{% url 'accounts:profile' %}{% endif %}"
+                    enctype="multipart/form-data"
+                    novalidate>
+                {% csrf_token %}
+
+                <!-- ── TAB 1: Account Info ── -->
+                <div class="tab-panel active" id="tab-info" role="tabpanel">
+                  {% if user_form.non_field_errors %}
+                  <div class="error-banner" role="alert">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div>{% for e in user_form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>
+                  </div>
+                  {% endif %}
+
+                  <div class="form-section">
+                    <div class="section-title">Personal Details</div>
+                    <div class="field-grid-2">
+                      <div class="field">
+                        <label for="id_first_name">First name</label>
+                        <div class="input-wrap">
+                          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <input type="text" id="id_first_name" name="first_name"
+                                 value="{{ user_form.first_name.value|default:'' }}"
+                                 placeholder="First name" autocomplete="given-name"
+                                 {% if user_form.first_name.errors %}class="is-error"{% endif %} />
+                        </div>
+                        {% if user_form.first_name.errors %}<p class="field-error" role="alert">{{ user_form.first_name.errors|join:", " }}</p>{% endif %}
+                      </div>
+                      <div class="field">
+                        <label for="id_last_name">Last name</label>
+                        <div class="input-wrap">
+                          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          <input type="text" id="id_last_name" name="last_name"
+                                 value="{{ user_form.last_name.value|default:'' }}"
+                                 placeholder="Last name" autocomplete="family-name"
+                                 {% if user_form.last_name.errors %}class="is-error"{% endif %} />
+                        </div>
+                        {% if user_form.last_name.errors %}<p class="field-error" role="alert">{{ user_form.last_name.errors|join:", " }}</p>{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label for="id_email">Email address</label>
+                      <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        <input type="email" id="id_email" name="email"
+                               value="{{ user_form.email.value|default:'' }}"
+                               placeholder="you@example.com" autocomplete="email"
+                               {% if user_form.email.errors %}class="is-error"{% endif %} />
+                      </div>
+                      {% if user_form.email.errors %}<p class="field-error" role="alert">{{ user_form.email.errors|join:", " }}</p>{% endif %}
+                    </div>
+                  </div>
+
+                  <div class="btn-row">
+                    <button type="submit" class="btn-primary" id="save-info-btn">
+                      <span class="spinner" aria-hidden="true"></span>
+                      <span class="btn-label">Save Changes</span>
+                    </button>
+                    <a href="{% url 'accounts:dashboard' %}" class="btn-secondary">Cancel</a>
+                  </div>
+                </div>
+
+                <!-- ── TAB 2: Profile Details ── -->
+                <div class="tab-panel" id="tab-profile" role="tabpanel">
+                  <div class="form-section">
+                    <div class="section-title">Profile Information</div>
+                    <div class="section-sub">This information is visible to administrators.</div>
+
+                    <div class="field">
+                      <label for="id_bio">Bio</label>
+                      <div class="input-wrap no-icon">
+                        <textarea id="id_bio" name="bio"
+                                  placeholder="Tell us a little about yourself…"
+                                  {% if profile_form.bio.errors %}class="is-error"{% endif %}
+                                  rows="4">{{ profile_form.bio.value|default:'' }}</textarea>
+                      </div>
+                      <p class="field-hint">Max 500 characters. <span id="bio-count">0</span>/500</p>
+                      {% if profile_form.bio.errors %}<p class="field-error" role="alert">{{ profile_form.bio.errors|join:", " }}</p>{% endif %}
+                    </div>
+
+                    <div class="field-grid-2">
+                      <div class="field">
+                        <label for="id_phone">Phone number</label>
+                        <div class="input-wrap">
+                          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.03 6.03l.96-1.85a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 15.4z"/></svg>
+                          <input type="tel" id="id_phone" name="phone"
+                                 value="{{ profile_form.phone.value|default:'' }}"
+                                 placeholder="+1 555 000 0000" autocomplete="tel"
+                                 {% if profile_form.phone.errors %}class="is-error"{% endif %} />
+                        </div>
+                        {% if profile_form.phone.errors %}<p class="field-error" role="alert">{{ profile_form.phone.errors|join:", " }}</p>{% endif %}
+                      </div>
+                      <div class="field">
+                        <label for="id_date_of_birth">Date of birth</label>
+                        <div class="input-wrap no-icon">
+                          <input type="date" id="id_date_of_birth" name="date_of_birth"
+                                 value="{{ profile_form.date_of_birth.value|default:'' }}"
+                                 {% if profile_form.date_of_birth.errors %}class="is-error"{% endif %} />
+                        </div>
+                        {% if profile_form.date_of_birth.errors %}<p class="field-error" role="alert">{{ profile_form.date_of_birth.errors|join:", " }}</p>{% endif %}
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label for="id_department">Department / Class</label>
+                      <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                        <input type="text" id="id_department" name="department"
+                               value="{{ profile_form.department.value|default:'' }}"
+                               placeholder="e.g. Computer Science / Year 3"
+                               {% if profile_form.department.errors %}class="is-error"{% endif %} />
+                      </div>
+                      {% if profile_form.department.errors %}<p class="field-error" role="alert">{{ profile_form.department.errors|join:", " }}</p>{% endif %}
+                    </div>
+                  </div>
+
+                  <div class="btn-row">
+                    <button type="submit" class="btn-primary" id="save-profile-btn">
+                      <span class="spinner" aria-hidden="true"></span>
+                      <span class="btn-label">Save Profile</span>
+                    </button>
+                    <a href="{% url 'accounts:dashboard' %}" class="btn-secondary">Cancel</a>
+                  </div>
+                </div>
+
+                <!-- ── TAB 3: Avatar ── -->
+                <div class="tab-panel" id="tab-avatar" role="tabpanel">
+                  <div class="form-section">
+                    <div class="section-title">Profile Photo</div>
+                    <div class="section-sub">Upload a photo to personalise your account. JPG or PNG, max 5 MB.</div>
+
+                    <!-- Current avatar preview -->
+                    <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.25rem; padding:1rem; background:#f8fafc; border-radius:var(--radius-sm); border:1px solid var(--border)">
+                      <div class="avatar-large" style="width:72px; height:72px; font-size:1.5rem; cursor:default; flex-shrink:0">
+                        {% if profile.avatar %}
+                          <img src="{{ profile.get_avatar_url }}" alt="Current avatar" id="tab-avatar-preview" />
+                        {% else %}
+                          <span>{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</span>
+                          <img id="tab-avatar-preview" style="display:none" alt="Preview" />
+                        {% endif %}
+                      </div>
+                      <div>
+                        <div style="font-size:.875rem; font-weight:600; color:var(--text); margin-bottom:.25rem">Current photo</div>
+                        <div style="font-size:.78rem; color:var(--muted)">
+                          {% if profile.avatar %}Photo uploaded{% else %}No photo — initials shown{% endif %}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Drop zone -->
+                    <div class="file-upload-zone" id="drop-zone">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      <div class="upload-label">Click to upload or drag and drop</div>
+                      <div class="upload-sub">PNG, JPG, GIF up to 5 MB</div>
+                      <input type="file" id="avatar-file-input" name="avatar" accept="image/*" class="avatar-input" />
+                    </div>
+                    <p id="file-name-display" style="font-size:.8rem; color:var(--muted); margin-top:.5rem; display:none"></p>
+                    {% if profile_form.avatar.errors %}<p class="field-error" role="alert">{{ profile_form.avatar.errors|join:", " }}</p>{% endif %}
+                  </div>
+
+                  <div class="btn-row">
+                    <button type="submit" class="btn-primary" id="save-avatar-btn">
+                      <span class="spinner" aria-hidden="true"></span>
+                      <span class="btn-label">Upload Photo</span>
+                    </button>
+                  </div>
+                </div>
+
+              </form><!-- /profile-form -->
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /profile-grid -->
+    </div><!-- /content -->
+  </div><!-- /main-wrap -->
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container" aria-live="polite">
+    {% for message in messages %}
+    <div class="toast toast-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}" role="alert">
+      <span>{{ message }}</span>
+      <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ── Sidebar toggle ── */
+    var sidebar   = document.getElementById('sidebar');
+    var overlay   = document.getElementById('overlay');
+    var hamburger = document.getElementById('hamburger');
+    var closeBtn  = document.getElementById('sidebar-close');
+    function openSidebar()  { sidebar.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; }
+    hamburger.addEventListener('click', openSidebar);
+    closeBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
+
+    /* ── Tab system ── */
+    var tabBtns   = document.querySelectorAll('.tab-btn');
+    var tabPanels = document.querySelectorAll('.tab-panel');
+    var tabLabel  = document.getElementById('active-tab-label');
+    var tabNames  = { 'tab-info': 'Account Information', 'tab-profile': 'Profile Details', 'tab-avatar': 'Avatar / Photo' };
+
+    function switchTab(targetId) {
+      tabBtns.forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      tabPanels.forEach(function (p) { p.classList.remove('active'); });
+      var activeBtn = document.querySelector('[data-target="' + targetId + '"]');
+      var activePanel = document.getElementById(targetId);
+      if (activeBtn)  { activeBtn.classList.add('active'); activeBtn.setAttribute('aria-selected', 'true'); }
+      if (activePanel){ activePanel.classList.add('active'); }
+      if (tabLabel && tabNames[targetId]) { tabLabel.textContent = tabNames[targetId]; }
+
+      /* Sync left sidebar quick links */
+      document.querySelectorAll('.profile-link[data-tab]').forEach(function (l) { l.classList.remove('active-tab'); });
+      var sideTab = { 'tab-info': 'info', 'tab-profile': 'profile' }[targetId];
+      if (sideTab) {
+        var link = document.querySelector('.profile-link[data-tab="' + sideTab + '"]');
+        if (link) link.classList.add('active-tab');
+      }
+    }
+
+    tabBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () { switchTab(this.dataset.target); });
+    });
+
+    /* Left card quick links also switch tabs */
+    document.querySelectorAll('.profile-link[data-tab]').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var map = { 'info': 'tab-info', 'profile': 'tab-profile' };
+        switchTab(map[this.dataset.tab]);
+      });
+    });
+
+    /* Deep-link via hash */
+    var hash = window.location.hash.replace('#', '');
+    if (hash === 'profile') switchTab('tab-profile');
+    else if (hash === 'avatar') switchTab('tab-avatar');
+
+    /* ── Bio character counter ── */
+    var bioField = document.getElementById('id_bio');
+    var bioCount = document.getElementById('bio-count');
+    function updateBioCount() {
+      var len = bioField.value.length;
+      bioCount.textContent = len;
+      bioCount.style.color = len > 480 ? 'var(--danger)' : 'inherit';
+    }
+    if (bioField) { bioField.addEventListener('input', updateBioCount); updateBioCount(); }
+
+    /* ── Avatar preview (main + tab) ── */
+    var avatarInput   = document.getElementById('avatar-file-input');
+    var avatarPreview = document.getElementById('avatar-preview');
+    var tabPreview    = document.getElementById('tab-avatar-preview');
+    var avatarInit    = document.getElementById('avatar-initials');
+    var fileNameDisp  = document.getElementById('file-name-display');
+    var dropZone      = document.getElementById('drop-zone');
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('File size must be under 5 MB.', 'error');
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var src = e.target.result;
+        /* Main avatar circle */
+        if (avatarPreview) { avatarPreview.src = src; avatarPreview.style.display = ''; }
+        if (avatarInit)    { avatarInit.style.display = 'none'; }
+        /* Tab preview */
+        if (tabPreview)    { tabPreview.src = src; tabPreview.style.display = ''; }
+      };
+      reader.readAsDataURL(file);
+      if (fileNameDisp) { fileNameDisp.textContent = file.name; fileNameDisp.style.display = ''; }
+    }
+
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function () { if (this.files[0]) handleFile(this.files[0]); });
+    }
+
+    /* Drop zone */
+    if (dropZone) {
+      dropZone.addEventListener('click', function () { avatarInput.click(); });
+      ['dragenter','dragover'].forEach(function (ev) {
+        dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.add('drag-over'); });
+      });
+      ['dragleave','drop'].forEach(function (ev) {
+        dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.remove('drag-over'); });
+      });
+      dropZone.addEventListener('drop', function (e) {
+        var file = e.dataTransfer.files[0];
+        if (file) { avatarInput.files = e.dataTransfer.files; handleFile(file); }
+      });
+    }
+
+    /* ── Form submit loading state ── */
+    var form    = document.getElementById('profile-form');
+    var saveBtns = document.querySelectorAll('.btn-primary[id^="save-"]');
+    form.addEventListener('submit', function () {
+      saveBtns.forEach(function (btn) { btn.disabled = true; btn.classList.add('is-loading'); });
+    });
+
+    /* ── Client validation ── */
+    function setErr(input, msg) {
+      input.classList.add('is-error'); input.classList.remove('is-valid');
+      var field = input.closest('.field');
+      var e = field ? field.querySelector('.field-error[data-c]') : null;
+      if (!e && field) {
+        e = document.createElement('p'); e.className = 'field-error'; e.dataset.c = '1';
+        e.setAttribute('role', 'alert');
+        input.insertAdjacentElement('afterend', e);
+      }
+      if (e) e.textContent = msg;
+    }
+    function clrErr(input) {
+      input.classList.remove('is-error');
+      var field = input.closest('.field');
+      var e = field ? field.querySelector('.field-error[data-c]') : null;
+      if (e) e.textContent = '';
+    }
+    function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+
+    var emailIn = document.getElementById('id_email');
+    var fnIn    = document.getElementById('id_first_name');
+    var lnIn    = document.getElementById('id_last_name');
+
+    if (emailIn) {
+      emailIn.addEventListener('blur', function () {
+        if (this.value && !validEmail(this.value)) setErr(this, 'Enter a valid email address.');
+        else clrErr(this);
+      });
+    }
+    [fnIn, lnIn, emailIn].forEach(function (el) {
+      if (el) el.addEventListener('input', function () { clrErr(this); });
+    });
+
+    form.addEventListener('submit', function (e) {
+      var ok = true;
+      if (fnIn && !fnIn.value.trim()) { setErr(fnIn, 'First name is required.'); ok = false; }
+      if (lnIn && !lnIn.value.trim()) { setErr(lnIn, 'Last name is required.'); ok = false; }
+      if (emailIn && !emailIn.value.trim()) { setErr(emailIn, 'Email is required.'); ok = false; }
+      else if (emailIn && !validEmail(emailIn.value)) { setErr(emailIn, 'Enter a valid email.'); ok = false; }
+      if (!ok) e.preventDefault();
+    });
+
+    /* ── Toast helper ── */
+    function showToast(msg, type) {
+      var container = document.getElementById('toast-container');
+      var t = document.createElement('div');
+      t.className = 'toast toast-' + (type || 'info');
+      t.setAttribute('role', 'alert');
+      t.innerHTML = '<span>' + msg + '</span><button class="toast-close" aria-label="Dismiss">✕</button>';
+      t.querySelector('.toast-close').addEventListener('click', function () { t.remove(); });
+      container.appendChild(t);
+      setTimeout(function () {
+        t.style.transition = 'opacity .4s'; t.style.opacity = '0';
+        setTimeout(function () { if (t.parentNode) t.remove(); }, 420);
+      }, 5000);
+    }
+
+    /* ── Auto-dismiss server toasts ── */
+    document.querySelectorAll('.toast').forEach(function (t) {
+      setTimeout(function () {
+        t.style.transition = 'opacity .4s'; t.style.opacity = '0';
+        setTimeout(function () { if (t.parentNode) t.remove(); }, 420);
+      }, 5000);
+    });
+  })();
+  </script>
+</body>
+</html>

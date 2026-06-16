@@ -1,0 +1,271 @@
+{% extends "academics/base.html" %}
+{% block extra_head %}
+<style>
+  .admin-hero {
+    background: linear-gradient(135deg, #1c1917 0%, #292524 60%, #44403c 100%);
+    border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem;
+    color: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .admin-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; }
+  .admin-hero p  { margin: 0; opacity: .7; font-size: .9rem; }
+
+  .filter-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
+  .ftab {
+    padding: .32rem .9rem; border-radius: 99px; font-size: .82rem; font-weight: 600;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #374151; cursor: pointer;
+    transition: all .15s;
+  }
+  .ftab.active, .ftab:hover { background: #292524; color: #fff; border-color: #292524; }
+
+  .search-wrap { margin-left: auto; }
+  .search-wrap input {
+    padding: .4rem .9rem; border-radius: 99px; border: 1.5px solid #e5e7eb;
+    font-size: .85rem; outline: none; transition: border-color .15s; width: 220px;
+  }
+  .search-wrap input:focus { border-color: #6366f1; }
+
+  .reg-table-wrap {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden;
+  }
+  table.reg-table { width: 100%; border-collapse: collapse; }
+  table.reg-table th {
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: #6b7280; background: #f9fafb;
+    padding: .7rem 1.1rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap;
+  }
+  table.reg-table td {
+    padding: .85rem 1.1rem; font-size: .88rem;
+    border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle;
+  }
+  table.reg-table tr:last-child td { border-bottom: none; }
+  table.reg-table tbody tr:hover td { background: #f9fafb; }
+
+  .student-name { font-weight: 700; color: #1e293b; }
+  .student-email { font-size: .78rem; color: #9ca3af; }
+
+  .course-code { font-weight: 800; color: #4f46e5; font-size: .88rem; }
+  .semester-label { font-size: .78rem; color: #9ca3af; }
+
+  .status-badge {
+    font-size: .72rem; font-weight: 700; padding: .22rem .75rem; border-radius: 99px;
+  }
+  .s-pending  { background: #fef9c3; color: #b45309; }
+  .s-approved { background: #dcfce7; color: #16a34a; }
+  .s-rejected { background: #fee2e2; color: #dc2626; }
+
+  .action-cell { display: flex; gap: .5rem; flex-wrap: nowrap; }
+  .btn-approve {
+    background: #22c55e; color: #fff; border: none;
+    padding: .35rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-approve:hover { background: #16a34a; }
+  .btn-reject {
+    background: #ef4444; color: #fff; border: none;
+    padding: .35rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-reject:hover { background: #dc2626; }
+
+  .pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+  .pagination a, .pagination span {
+    padding: .4rem .85rem; border-radius: 8px; font-size: .85rem; font-weight: 600;
+    border: 1.5px solid #e5e7eb; text-decoration: none; color: #374151;
+    transition: all .15s;
+  }
+  .pagination a:hover   { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+  .pagination span.current { background: #1c1917; color: #fff; border-color: #1c1917; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 9999; align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 16px; padding: 2rem; max-width: 440px; width: 90%;
+  }
+  .modal-box h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: .75rem; }
+  .modal-box p  { font-size: .88rem; color: #6b7280; margin-bottom: 1rem; }
+  .modal-box textarea {
+    width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: .65rem .9rem; font-size: .9rem; resize: vertical; margin-bottom: 1rem;
+  }
+  .modal-box textarea:focus { border-color: #ef4444; outline: none; }
+  .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; }
+  .btn-mod-cancel { background: #f3f4f6; color: #374151; border: none; padding: .55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  .btn-mod-reject { background: #ef4444; color: #fff; border: none; padding: .55rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+  .empty-state { text-align: center; padding: 3rem; color: #6b7280; }
+
+  @media (max-width: 768px) {
+    table.reg-table thead { display: none; }
+    table.reg-table td { display: block; padding: .4rem 1rem; }
+    table.reg-table td::before { content: attr(data-label)': '; font-weight: 700; color: #6b7280; }
+    table.reg-table tr { border-bottom: 2px solid #e5e7eb; display: block; padding: .5rem 0; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-hero">
+  <div>
+    <h1>{{ page_title }}</h1>
+    <p>Review and manage student course registration requests</p>
+  </div>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <button class="ftab active" data-filter="all">All</button>
+  <button class="ftab" data-filter="pending">Pending</button>
+  <button class="ftab" data-filter="approved">Approved</button>
+  <button class="ftab" data-filter="rejected">Rejected</button>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="🔍 Search student or course…">
+  </div>
+</div>
+
+<div class="reg-table-wrap">
+  {% if page_obj %}
+  <table class="reg-table" id="regTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Student</th>
+        <th>Course</th>
+        <th>Semester</th>
+        <th>Requested</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for reg in page_obj %}
+      <tr data-status="{{ reg.status }}"
+          data-name="{{ reg.student.get_full_name|lower }}"
+          data-course="{{ reg.offering.course.code|lower }}">
+        <td data-label="#">{{ forloop.counter }}</td>
+        <td data-label="Student">
+          <div class="student-name">{{ reg.student.get_full_name }}</div>
+          <div class="student-email">{{ reg.student.email }}</div>
+        </td>
+        <td data-label="Course">
+          <div class="course-code">{{ reg.offering.course.code }}</div>
+          <div style="font-size:.82rem;color:#374151;">{{ reg.offering.course.title|truncatechars:35 }}</div>
+        </td>
+        <td data-label="Semester">
+          <div style="font-weight:600;font-size:.87rem;">{{ reg.offering.semester }}</div>
+          <div class="semester-label">{{ reg.offering.semester.session }}</div>
+        </td>
+        <td data-label="Requested">
+          <div style="font-size:.85rem;">{{ reg.created_at|date:"M d, Y" }}</div>
+          <div style="font-size:.75rem;color:#9ca3af;">{{ reg.created_at|timesince }} ago</div>
+        </td>
+        <td data-label="Status">
+          <span class="status-badge s-{{ reg.status }}">{{ reg.status|capfirst }}</span>
+          {% if reg.reviewed_by %}
+            <div style="font-size:.73rem;color:#9ca3af;margin-top:.25rem;">by {{ reg.reviewed_by.get_full_name }}</div>
+          {% endif %}
+        </td>
+        <td data-label="Actions">
+          {% if reg.status == 'pending' %}
+          <div class="action-cell">
+            <form method="post" action="{% url 'accounts:approve_registration' pk=reg.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn-approve">✓ Approve</button>
+            </form>
+            <button type="button" class="btn-reject"
+                    onclick="openRejectModal('{% url 'accounts:reject_registration' pk=reg.pk %}', '{{ reg.student.get_full_name }}', '{{ reg.offering.course.code }}')">
+              ✗ Reject
+            </button>
+          </div>
+          {% else %}
+          <span style="font-size:.8rem;color:#9ca3af;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <div style="font-size:2.5rem;margin-bottom:.75rem;">📋</div>
+            <p>No registration requests found.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><p>No registration requests.</p></div>
+  {% endif %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}">← Prev</a>
+  {% endif %}
+  {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+      <span class="current">{{ num }}</span>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'4' %}
+      <a href="?page={{ num }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Reject modal -->
+<div class="modal-overlay" id="rejectModal">
+  <div class="modal-box">
+    <h3>❌ Reject Registration</h3>
+    <p id="rejectMeta">Rejecting registration request.</p>
+    <form method="post" id="rejectForm">
+      {% csrf_token %}
+      <textarea name="rejection_note" rows="3" placeholder="Reason for rejection (optional)…"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-mod-cancel" onclick="closeRejectModal()">Cancel</button>
+        <button type="submit" class="btn-mod-reject">Confirm Reject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRejectModal(url, name, code){
+  document.getElementById('rejectForm').action = url;
+  document.getElementById('rejectMeta').textContent = `Rejecting ${name}'s request for ${code}.`;
+  document.getElementById('rejectModal').classList.add('active');
+}
+function closeRejectModal(){
+  document.getElementById('rejectModal').classList.remove('active');
+}
+
+// Filter tabs
+document.getElementById('filterBar')?.addEventListener('click', e => {
+  const btn = e.target.closest('.ftab');
+  if(!btn) return;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const f = btn.dataset.filter;
+  filterTable();
+});
+
+// Search
+document.getElementById('searchInput')?.addEventListener('input', filterTable);
+
+function filterTable(){
+  const activeFilter = document.querySelector('.ftab.active')?.dataset.filter || 'all';
+  const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
+  document.querySelectorAll('#regTable tbody tr').forEach(row => {
+    const matchFilter = activeFilter === 'all' || row.dataset.status === activeFilter;
+    const matchSearch = !q || row.dataset.name?.includes(q) || row.dataset.course?.includes(q);
+    row.style.display = matchFilter && matchSearch ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

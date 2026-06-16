@@ -1,0 +1,73 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:attendance_list' sheet.offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' sheet.offering.pk %}">{{ sheet.offering.course.code }}</a><span class="sep">/</span>
+  <a href="{% url 'teachers:attendance_list' sheet.offering.pk %}">Attendance</a><span class="sep">/</span>
+  <span>{{ sheet.date|date:"d M Y" }}</span>
+</div>
+
+<div class="detail-grid" style="margin-bottom:16px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Session Info</span></div>
+    <div class="card-body">
+      <div class="detail-row"><span class="detail-label">Date</span><span class="detail-value">{{ sheet.date|date:"l, d M Y" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Week</span><span class="detail-value">{{ sheet.week_number|default:"—" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Topic</span><span class="detail-value">{{ sheet.topic_covered|default:"—" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Taken By</span><span class="detail-value">{{ sheet.taken_by.get_full_name|default:"—" }}</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Summary</span></div>
+    <div class="card-body">
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr;gap:10px;margin:0;">
+        <div class="stat-card green" style="padding:14px;">
+          <div class="stat-label">Present</div>
+          <div class="stat-value">{{ sheet.present_count }}</div>
+        </div>
+        <div class="stat-card red" style="padding:14px;">
+          <div class="stat-label">Absent</div>
+          <div class="stat-value">{{ sheet.total_count|add:"-"|add:sheet.present_count }}</div>
+        </div>
+        <div class="stat-card amber" style="padding:14px;grid-column:span 2;">
+          <div class="stat-label">Total</div>
+          <div class="stat-value">{{ sheet.total_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Attendance Records</span></div>
+  <div class="table-wrap">
+    {% if sheet.records.all %}
+    <table>
+      <thead>
+        <tr><th>Student</th><th>Status</th><th>Remark</th></tr>
+      </thead>
+      <tbody>
+        {% for record in sheet.records.all %}
+        <tr>
+          <td>{{ record.student.get_full_name }}<br><span style="font-size:12px;color:var(--muted);">{{ record.student.email }}</span></td>
+          <td>
+            {% if record.status == "present" %}<span class="badge badge-active">Present</span>
+            {% elif record.status == "absent" %}<span class="badge badge-inactive">Absent</span>
+            {% elif record.status == "late" %}<span class="badge badge-amber">Late</span>
+            {% else %}<span class="badge badge-blue">{{ record.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>{{ record.remark|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📋</span>No records found.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

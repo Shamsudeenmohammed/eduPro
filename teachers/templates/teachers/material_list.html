@@ -1,0 +1,52 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:material_create' offering.pk %}" class="btn btn-primary btn-sm">+ Upload Material</a>
+<a href="{% url 'teachers:course_detail' offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' offering.pk %}">{{ offering.course.code }}</a><span class="sep">/</span>
+  <span>Materials</span>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Materials — {{ offering.course.code }}</span>
+    <span style="font-size:13px;color:var(--muted);">{{ materials|length }} item{{ materials|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if materials %}
+    <table>
+      <thead>
+        <tr><th>Title</th><th>Type</th><th>Week</th><th>Published</th><th>Downloads</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for mat in materials %}
+        <tr>
+          <td>
+            <strong>{{ mat.title }}</strong>
+            {% if mat.description %}<br><span style="font-size:12px;color:var(--muted);">{{ mat.description|truncatechars:60 }}</span>{% endif %}
+          </td>
+          <td><span class="badge badge-blue">{{ mat.get_material_type_display }}</span></td>
+          <td>{{ mat.week_number|default:"—" }}</td>
+          <td>{% if mat.is_published %}<span class="badge badge-active">Yes</span>{% else %}<span class="badge badge-inactive">No</span>{% endif %}</td>
+          <td>{{ mat.download_count }}</td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap;">
+            {% if mat.file %}<a href="{{ mat.file.url }}" class="btn btn-secondary btn-sm" target="_blank">Download</a>{% endif %}
+            {% if mat.external_url %}<a href="{{ mat.external_url }}" class="btn btn-secondary btn-sm" target="_blank">Link</a>{% endif %}
+            <a href="{% url 'teachers:material_edit' mat.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'teachers:material_delete' mat.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this material?')">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📄</span>No materials uploaded yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

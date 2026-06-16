@@ -1,0 +1,113 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:department_edit' dept.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+<a href="{% url 'academics:department_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'academics:department_list' %}">Departments</a>
+  <span class="sep">/</span>
+  <span>{{ dept.name }}</span>
+</div>
+
+<div class="detail-grid" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Department Info</span></div>
+    <div class="card-body">
+      <div class="detail-row">
+        <span class="detail-label">Name</span>
+        <span class="detail-value">{{ dept.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Faculty</span>
+        <span class="detail-value">
+          {% if dept.faculty %}<a href="{% url 'academics:faculty_detail' dept.faculty.pk %}">{{ dept.faculty.name }}</a>{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">HOD</span>
+        <span class="detail-value">{{ dept.hod.get_full_name|default:"—" }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Programs -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <span class="card-title">Programs</span>
+    <a href="{% url 'academics:program_create' %}" class="btn btn-secondary btn-sm">+ Add Program</a>
+  </div>
+  <div class="table-wrap">
+    {% if dept.programs.all %}
+    <table>
+      <thead><tr><th>Program</th><th>Duration</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for prog in dept.programs.all %}
+        <tr>
+          <td><a href="{% url 'academics:program_detail' prog.pk %}">{{ prog.name }}</a></td>
+          <td>{{ prog.duration_years }} yr{{ prog.duration_years|pluralize }}</td>
+          <td><a href="{% url 'academics:program_edit' prog.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📋</span>No programs.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Courses -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <span class="card-title">Courses</span>
+  </div>
+  <div class="table-wrap">
+    {% if dept.courses.all %}
+    <table>
+      <thead><tr><th>Code</th><th>Title</th><th>Credits</th></tr></thead>
+      <tbody>
+        {% for course in dept.courses.all %}
+        <tr>
+          <td><a href="{% url 'academics:course_detail' course.pk %}">{{ course.code }}</a></td>
+          <td>{{ course.title }}</td>
+          <td>{{ course.credit_hours|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📚</span>No courses in this department.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Teachers -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Teachers</span>
+    <a href="{% url 'academics:teacher_dept_create' %}" class="btn btn-secondary btn-sm">+ Assign Teacher</a>
+  </div>
+  <div class="table-wrap">
+    {% if dept.teacher_memberships.all %}
+    <table>
+      <thead><tr><th>Teacher</th><th>Email</th><th>Role</th></tr></thead>
+      <tbody>
+        {% for membership in dept.teacher_memberships.all %}
+        <tr>
+          <td>{{ membership.teacher.get_full_name }}</td>
+          <td>{{ membership.teacher.email }}</td>
+          <td><span class="badge badge-blue">{{ membership.role|default:"Member" }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">👩‍🏫</span>No teachers assigned.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

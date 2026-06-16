@@ -1,0 +1,18 @@
+{% extends "base_public.html" %}
+{% block content %}
+<div class="container" style="max-width:600px;padding:3rem 0">
+  <h1>Contact Us</h1>
+  <p style="color:var(--text-muted);margin-bottom:1.5rem">We'd love to hear from you.</p>
+  <form method="post" class="card">
+    {% csrf_token %}
+    {% for field in form %}
+    <div style="margin-bottom:1rem">
+      <label style="display:block;font-weight:600;margin-bottom:.35rem">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<div style="color:var(--danger);font-size:.85rem">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Send Message</button>
+  </form>
+</div>
+{% endblock %}

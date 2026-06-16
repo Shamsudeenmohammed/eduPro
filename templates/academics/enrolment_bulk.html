@@ -1,0 +1,111 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:enrolment_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:720px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Bulk Enrol Students</span>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="message message-error" style="margin-bottom:16px;">
+          {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Offering field -->
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:12px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">
+            Course Offering <span style="color:var(--danger)">*</span>
+          </label>
+          <select name="offering" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:9px 13px;font-family:var(--font-body);font-size:14px;">
+            <option value="">— Select offering —</option>
+            {% for obj in form.offering.field.queryset %}
+            <option value="{{ obj.pk }}" {% if form.offering.value|stringformat:"s" == obj.pk|stringformat:"s" %}selected{% endif %}>
+              {{ obj.course.code }} — {{ obj.course.title }} ({{ obj.semester }})
+            </option>
+            {% endfor %}
+          </select>
+          {% for e in form.offering.errors %}<p style="margin-top:4px;font-size:12px;color:var(--danger);">⚠ {{ e }}</p>{% endfor %}
+        </div>
+
+        <!-- Student search + checkboxes -->
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:12px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">
+            Students <span style="color:var(--danger)">*</span>
+          </label>
+
+          <input type="text" id="student-search" placeholder="Search students…"
+            style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:8px 13px;font-family:var(--font-body);font-size:14px;margin-bottom:10px;">
+
+          <div style="display:flex;gap:10px;margin-bottom:8px;">
+            <button type="button" onclick="selectAll()" class="btn btn-secondary btn-sm">Select All</button>
+            <button type="button" onclick="deselectAll()" class="btn btn-secondary btn-sm">Deselect All</button>
+            <span id="selected-count" style="font-size:13px;color:var(--muted);align-self:center;">0 selected</span>
+          </div>
+
+          <div id="student-list" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);">
+            {% for student in form.students.field.queryset %}
+            <label id="row-{{ student.pk }}"
+              style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;"
+              onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">
+              <input type="checkbox" name="students" value="{{ student.pk }}"
+                class="student-cb"
+                {% if student.pk|stringformat:"s" in form.students.value %}checked{% endif %}
+                style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;"
+                onchange="updateCount()">
+              <span style="font-size:14px;font-weight:500;color:var(--text);">{{ student.get_full_name }}</span>
+              <span style="font-size:12px;color:var(--muted);margin-left:auto;">{{ student.email }}</span>
+            </label>
+            {% empty %}
+            <div style="padding:20px;text-align:center;color:var(--muted);">No active students found.</div>
+            {% endfor %}
+          </div>
+          {% for e in form.students.errors %}<p style="margin-top:4px;font-size:12px;color:var(--danger);">⚠ {{ e }}</p>{% endfor %}
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:24px;">
+          <button type="submit" class="btn btn-primary">Enrol Selected Students</button>
+          <a href="{% url 'academics:enrolment_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Live search
+  document.getElementById('student-search').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#student-list label').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  // Select / deselect all visible
+  function selectAll() {
+    document.querySelectorAll('#student-list label').forEach(row => {
+      if (row.style.display !== 'none') {
+        row.querySelector('input').checked = true;
+      }
+    });
+    updateCount();
+  }
+  function deselectAll() {
+    document.querySelectorAll('.student-cb').forEach(cb => cb.checked = false);
+    updateCount();
+  }
+  function updateCount() {
+    const n = document.querySelectorAll('.student-cb:checked').length;
+    document.getElementById('selected-count').textContent = n + ' selected';
+  }
+  updateCount();
+</script>
+{% endblock %}

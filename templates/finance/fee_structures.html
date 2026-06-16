@@ -1,0 +1,73 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<!-- Uneven split-grid system for optimized data layout -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+  
+  <!-- Form Column: Add Structure (2/5 Width) -->
+  <section aria-labelledby="form-title" class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+    <h2 id="form-title" class="text-base font-semibold text-slate-900 mb-5">Add New Fee Structure</h2>
+    
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      
+      {# Iterate over fields to replace restrictive form.as_p formatting #}
+      {% for field in form %}
+        <div class="flex flex-col gap-1.5">
+          <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">
+            {{ field.label }}
+          </label>
+          <div class="relative mt-0.5">
+            {{ field }}
+          </div>
+          {% if field.errors %}
+            <p class="text-xs text-rose-600 mt-1">{{ field.errors.0 }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="pt-2">
+        <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-lg shadow-sm transition-colors">
+          Save Structure
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Table Column: Existing Structures (3/5 Width) -->
+  <section aria-labelledby="table-title" class="lg:col-span-3 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100">
+      <h2 id="table-title" class="text-base font-semibold text-slate-900">Existing Fee Structures</h2>
+    </div>
+
+    {# Explicit scrolling safety wrapper #}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+            <th scope="col" class="px-6 py-3">Structure Name</th>
+            <th scope="col" class="px-6 py-3">Amount</th>
+            <th scope="col" class="px-6 py-3 text-right">Academic Session</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+          {% for i in items %}
+            <tr class="hover:bg-slate-50/75 transition-colors">
+              <td class="px-6 py-4 font-medium text-slate-900">{{ i.name }}</td>
+              <td class="px-6 py-4 tabular-nums font-medium text-slate-900">{{ i.amount }}</td>
+              <td class="px-6 py-4 text-right whitespace-nowrap text-slate-500">{{ i.session }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="3" class="px-6 py-12 text-center text-sm text-slate-400">
+                No fee structures defined yet. Use the form to add one.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

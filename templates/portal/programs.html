@@ -1,0 +1,16 @@
+{% extends "base_public.html" %}
+{% block content %}
+<div class="container" style="padding:3rem 0">
+  <h1>Academic Programs</h1>
+  <div class="table-wrap card" style="margin-top:1.5rem;padding:0">
+    <table class="data-table">
+      <thead><tr><th>Code</th><th>Program</th><th>Department</th><th>Duration</th></tr></thead>
+      <tbody>
+        {% for p in programs %}
+        <tr><td>{{ p.code }}</td><td>{{ p.name }}</td><td>{{ p.department.name }}</td><td>{{ p.duration_years }} years</td></tr>
+        {% empty %}<tr><td colspan="4">No programs listed.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

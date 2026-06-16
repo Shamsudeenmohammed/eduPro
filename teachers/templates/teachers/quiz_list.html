@@ -1,0 +1,69 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:quiz_create' offering.pk %}" class="btn btn-primary btn-sm">+ Create Quiz</a>
+<a href="{% url 'teachers:course_detail' offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' offering.pk %}">{{ offering.course.code }}</a><span class="sep">/</span>
+  <span>Quizzes</span>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Quizzes — {{ offering.course.code }}</span>
+    <span style="font-size:13px;color:var(--muted);">{{ quizzes|length }} quiz{{ quizzes|length|pluralize:"zes" }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if quizzes %}
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th><th>Type</th><th>Opens</th><th>Duration</th>
+          <th>Questions</th><th>Published</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for quiz in quizzes %}
+        <tr>
+          <td><strong>{{ quiz.title }}</strong></td>
+          <td><span class="badge badge-blue">{{ quiz.get_quiz_type_display }}</span></td>
+          <td>{{ quiz.start_datetime|date:"d M Y H:i"|default:"—" }}</td>
+          <td>{{ quiz.duration_minutes }} min</td>
+          <td>{{ quiz.question_count }}</td>
+          <td>
+            {% if quiz.is_published %}
+              <span class="badge badge-active">Published</span>
+            {% else %}
+              <span class="badge badge-inactive">Draft</span>
+            {% endif %}
+          </td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap;">
+            <a href="{% url 'teachers:quiz_questions' quiz.pk %}" class="btn btn-secondary btn-sm">Questions</a>
+            <a href="{% url 'teachers:quiz_results' quiz.pk %}" class="btn btn-secondary btn-sm">Results</a>
+            <!-- Publish / Unpublish toggle -->
+            <form method="post" action="{% url 'teachers:quiz_publish_toggle' quiz.pk %}" style="display:inline;">
+              {% csrf_token %}
+              {% if quiz.is_published %}
+                <button type="submit" class="btn btn-warning btn-sm"
+                  onclick="return confirm('Unpublish this quiz? Students will no longer see it.')">
+                  Unpublish
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-success btn-sm"
+                  onclick="return confirm('Publish this quiz? Students will be able to see and take it.')">
+                  Publish
+                </button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">❓</span>No quizzes yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

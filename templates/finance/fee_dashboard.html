@@ -1,0 +1,11 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="grid grid-3" style="margin-bottom:1.5rem">
+  <div class="stat-card"><div class="value">{{ stats.total_due }}</div><div class="label">Total Due</div></div>
+  <div class="stat-card"><div class="value">{{ stats.total_paid }}</div><div class="label">Collected</div></div>
+  <div class="stat-card"><div class="value">{{ stats.pending_count }}</div><div class="label">Pending</div></div>
+</div>
+<p><a href="{% url 'finance:fee_structures' %}" class="btn btn-secondary">Fee Structures</a>
+<a href="{% url 'finance:student_fees' %}" class="btn btn-secondary">Student Fees</a>
+<a href="{% url 'finance:payroll' %}" class="btn btn-secondary">Payroll</a></p>
+{% endblock %}

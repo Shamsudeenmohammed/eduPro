@@ -1,0 +1,96 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+{% if user.is_admin or user.is_superuser %}
+<a href="{% url 'academics:course_create' %}" class="btn btn-primary btn-sm">+ Add Course</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Filter bar -->
+<div class="filter-bar">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <select name="dept" onchange="this.form.submit()">
+      <option value="">All Departments</option>
+      {% for dept in departments %}
+      <option value="{{ dept.pk }}" {% if selected_dept == dept.pk|stringformat:"s" %}selected{% endif %}>
+        {{ dept.faculty.name }} — {{ dept.name }}
+      </option>
+      {% endfor %}
+    </select>
+    {% if selected_dept %}
+    <a href="{% url 'academics:course_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Course Catalogue</span>
+    <span style="font-size:13px;color:var(--muted);">{{ page_obj.paginator.count }} course{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if page_obj.object_list %}
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Title</th>
+          <th>Department</th>
+          <th>Credits</th>
+          <th>Status</th>
+          {% if user.is_admin or user.is_superuser %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in page_obj %}
+        <tr>
+          <td><a href="{% url 'academics:course_detail' course.pk %}"><strong>{{ course.code }}</strong></a></td>
+          <td>{{ course.title }}</td>
+          <td>{{ course.department.name|default:"—" }}</td>
+          <td>{{ course.credit_units|default:"—" }}</td>
+          <td>
+            {% if course.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+          {% if user.is_admin or user.is_superuser %}
+          <td><a href="{% url 'academics:course_edit' course.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="padding:16px 20px;">
+      <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if selected_dept %}&dept={{ selected_dept }}{% endif %}" class="page-link">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="page-link current">{{ num }}</span>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?page={{ num }}{% if selected_dept %}&dept={{ selected_dept }}{% endif %}" class="page-link">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if selected_dept %}&dept={{ selected_dept }}{% endif %}" class="page-link">›</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📚</span>
+      No courses found.
+      {% if user.is_admin or user.is_superuser %}
+      <a href="{% url 'academics:course_create' %}" style="color:var(--accent);">Add one</a>.
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

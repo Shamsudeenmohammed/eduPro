@@ -1,0 +1,161 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .profile-layout {
+    display: grid; grid-template-columns: 300px 1fr;
+    gap: 1.5rem; align-items: start;
+  }
+  @media (max-width: 820px) { .profile-layout { grid-template-columns: 1fr; } }
+
+  .profile-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
+    overflow: hidden; position: sticky; top: 80px;
+  }
+  .profile-banner {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1a5276 100%);
+    height: 90px;
+  }
+  .avatar-wrap {
+    display: flex; justify-content: center; margin-top: -36px; margin-bottom: .75rem;
+  }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    border: 3px solid #fff; background: #6366f1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; font-weight: 900; color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  }
+  .profile-info { padding: 0 1.5rem 1.5rem; text-align: center; }
+  .profile-name { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin-bottom: .15rem; }
+  .profile-role { font-size: .82rem; color: #9ca3af; background: #f3f4f6; display: inline-block; padding: .18rem .7rem; border-radius: 99px; margin-bottom: 1rem; }
+
+  .profile-detail-row {
+    display: flex; align-items: flex-start; gap: .75rem;
+    padding: .65rem 0; border-bottom: 1px solid #f3f4f6; font-size: .87rem;
+  }
+  .profile-detail-row:last-child { border-bottom: none; }
+  .pdr-icon { font-size: 1rem; flex-shrink: 0; margin-top: .05rem; }
+  .pdr-label { font-size: .73rem; color: #9ca3af; }
+  .pdr-value { font-weight: 600; color: #1e293b; }
+
+  .section-card {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; margin-bottom: 1.25rem; overflow: hidden;
+  }
+  .section-header {
+    background: #f8fafc; padding: .9rem 1.4rem;
+    font-weight: 700; font-size: .92rem;
+    border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: .5rem;
+  }
+
+  .enrol-item {
+    padding: .9rem 1.4rem; display: flex; flex-wrap: wrap;
+    align-items: center; gap: .75rem;
+    border-bottom: 1px solid #f3f4f6; transition: background .12s;
+    text-decoration: none; color: inherit;
+  }
+  .enrol-item:hover { background: #f9fafb; }
+  .enrol-item:last-child { border-bottom: none; }
+  .enrol-code { font-weight: 800; font-size: .88rem; color: #4f46e5; background: #ede9fe; padding: .2rem .65rem; border-radius: 6px; flex-shrink: 0; }
+  .enrol-name { flex: 1; font-size: .9rem; font-weight: 600; min-width: 120px; }
+  .enrol-sem  { font-size: .78rem; color: #9ca3af; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+
+  <!-- Left: profile card -->
+  <div class="profile-card">
+    <div class="profile-banner"></div>
+    <div class="avatar-wrap">
+      <div class="avatar">
+        {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+      </div>
+    </div>
+    <div class="profile-info">
+      <div class="profile-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+      <div class="profile-role">Student</div>
+
+      <div>
+        <div class="profile-detail-row">
+          <span class="pdr-icon">✉️</span>
+          <div>
+            <div class="pdr-label">Email</div>
+            <div class="pdr-value">{{ request.user.email|default:"—" }}</div>
+          </div>
+        </div>
+
+        {% if profile %}
+        <div class="profile-detail-row">
+          <span class="pdr-icon">🎓</span>
+          <div>
+            <div class="pdr-label">Student ID</div>
+            <div class="pdr-value">{{ profile.student_id|default:"—" }}</div>
+          </div>
+        </div>
+        <div class="profile-detail-row">
+          <span class="pdr-icon">📚</span>
+          <div>
+            <div class="pdr-label">Programme</div>
+            <div class="pdr-value">{{ profile.program|default:"—" }}</div>
+          </div>
+        </div>
+        <div class="profile-detail-row">
+          <span class="pdr-icon">🏫</span>
+          <div>
+            <div class="pdr-label">Department</div>
+            <div class="pdr-value">{{ profile.department|default:"—" }}</div>
+          </div>
+        </div>
+        <div class="profile-detail-row">
+          <span class="pdr-icon">📊</span>
+          <div>
+            <div class="pdr-label">Level</div>
+            <div class="pdr-value">{{ profile.level|default:"—" }}</div>
+          </div>
+        </div>
+        <div class="profile-detail-row">
+          <span class="pdr-icon">📅</span>
+          <div>
+            <div class="pdr-label">Enrolled Since</div>
+            <div class="pdr-value">{{ profile.date_enrolled|date:"M Y"|default:"—" }}</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: details -->
+  <div>
+    <div class="section-card">
+      <div class="section-header">📚 Currently Enrolled Courses</div>
+      {% if enrolments %}
+        {% for e in enrolments %}
+        <a href="{% url 'students:course_home' offering_pk=e.offering.pk %}" class="enrol-item">
+          <span class="enrol-code">{{ e.offering.course.code }}</span>
+          <span class="enrol-name">{{ e.offering.course.title }}</span>
+          <span class="enrol-sem">{{ e.offering.semester }}</span>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="padding:2rem;text-align:center;color:#9ca3af;font-size:.9rem;">
+          No active enrolments
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="section-card">
+      <div class="section-header">⚡ Quick Links</div>
+      <div style="padding:.75rem 1.4rem;display:flex;flex-wrap:wrap;gap:.75rem;">
+        <a href="{% url 'students:results_list' %}" class="btn btn-outline-primary btn-sm">📊 My Results</a>
+        <a href="{% url 'students:academic_progress' %}" class="btn btn-outline-success btn-sm">📈 Academic Progress</a>
+        <a href="{% url 'students:notifications' %}" class="btn btn-outline-secondary btn-sm">🔔 Notifications</a>
+        <a href="{% url 'students:registration_list' %}" class="btn btn-outline-info btn-sm">📋 Registrations</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

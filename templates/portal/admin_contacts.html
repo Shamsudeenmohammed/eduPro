@@ -1,0 +1,39 @@
+{% extends "base_dashboard.html" %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="data-table" style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">From</th>
+        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Subject</th>
+        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Date</th>
+        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Read</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for msg in page_obj %}
+      <tr>
+        <td style="padding:.75rem;border-bottom:1px solid var(--border)">
+          <strong>{{ msg.name }}</strong><br>
+          <span style="font-size:.85rem;color:var(--text-muted)">{{ msg.email }}</span>
+        </td>
+        <td style="padding:.75rem;border-bottom:1px solid var(--border)">{{ msg.subject }}</td>
+        <td style="padding:.75rem;border-bottom:1px solid var(--border)">{{ msg.created_at|date:"M j, Y" }}</td>
+        <td style="padding:.75rem;border-bottom:1px solid var(--border)">
+          {% if msg.is_read %}Yes{% else %}<strong>New</strong>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--text-muted)">No contact messages.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.has_other_pages %}
+  <div style="padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

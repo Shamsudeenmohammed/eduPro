@@ -1,0 +1,53 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:faculty_create' %}" class="btn btn-primary btn-sm">+ Add Faculty</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Faculties</span>
+    <span style="font-size:13px;color:var(--muted);">{{ faculties|length }} record{{ faculties|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if faculties %}
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Institution</th>
+          <th>Dean</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for faculty in faculties %}
+        <tr>
+          <td><a href="{% url 'academics:faculty_detail' faculty.pk %}">{{ faculty.name }}</a></td>
+          <td>{{ faculty.institution.name|default:"—" }}</td>
+          <td>{{ faculty.dean.get_full_name|default:"—" }}</td>
+          <td>
+            {% if faculty.is_active %}
+            <span class="badge badge-active">Active</span>
+            {% else %}
+            <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'academics:faculty_edit' faculty.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">🎓</span>
+      No faculties yet. <a href="{% url 'academics:faculty_create' %}" style="color:var(--accent);">Add one</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

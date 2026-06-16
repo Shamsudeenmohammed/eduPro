@@ -1,0 +1,503 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account · eduPro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #4f46e5; --brand-dark: #3730a3; --brand-light: #eef2ff;
+      --surface: #ffffff; --bg: #f1f5f9; --text: #0f172a; --muted: #64748b;
+      --border: #e2e8f0; --danger: #ef4444; --danger-bg: #fef2f2;
+      --success: #10b981; --warning: #f59e0b;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      --t: 150ms ease;
+    }
+    html, body { min-height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1rem; min-height: 100vh;
+    }
+
+    .auth-wrapper { width: 100%; max-width: 560px; }
+
+    /* ── Header ── */
+    .auth-header { text-align: center; margin-bottom: 2rem; }
+    .auth-logo { font-size: 1.85rem; font-weight: 800; letter-spacing: -.5px; color: #1e1b4b; text-decoration: none; display: inline-block; margin-bottom: 1.25rem; }
+    .auth-logo span { color: var(--brand); }
+    .auth-heading { font-size: 1.75rem; font-weight: 800; color: var(--text); letter-spacing: -.4px; margin-bottom: .35rem; }
+    .auth-sub { color: var(--muted); font-size: .95rem; }
+
+    /* ── Card ── */
+    .auth-card {
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 2.25rem;
+    }
+
+    /* ── Step indicator ── */
+    .steps { display: flex; align-items: center; gap: 0; margin-bottom: 2rem; }
+    .step {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .8rem; font-weight: 600; color: var(--muted); flex: 1;
+    }
+    .step.active .step-num { background: var(--brand); color: #fff; }
+    .step.active .step-text { color: var(--brand); }
+    .step.done .step-num { background: var(--success); color: #fff; }
+    .step.done .step-text { color: var(--success); }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #e2e8f0; color: var(--muted); font-size: .8rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: background var(--t), color var(--t);
+    }
+    .step-divider { flex: 1; height: 2px; background: #e2e8f0; margin: 0 .5rem; }
+    .step-divider.done { background: var(--success); }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: var(--danger-bg); border: 1.5px solid #fecaca;
+      border-radius: var(--radius-sm); padding: .85rem 1rem;
+      color: #b91c1c; font-size: .875rem; margin-bottom: 1.25rem;
+      display: flex; align-items: flex-start; gap: .5rem;
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 1.15rem; }
+    .field label { display: block; font-size: .84rem; font-weight: 600; color: #374151; margin-bottom: .45rem; }
+    .field-hint { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+    .field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 480px) { .field-row-2 { grid-template-columns: 1fr; } }
+
+    .input-wrap { position: relative; }
+    .input-wrap input,
+    .input-wrap select {
+      width: 100%; padding: .8rem 1rem .8rem 2.8rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: .95rem; color: var(--text); background: #fafafa;
+      transition: border-color var(--t), box-shadow var(--t), background var(--t);
+      outline: none; -webkit-appearance: none; appearance: none;
+    }
+    .input-wrap.no-icon input,
+    .input-wrap.no-icon select { padding-left: 1rem; }
+    .input-wrap input:focus,
+    .input-wrap select:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+    .input-wrap input.is-error,
+    .input-wrap select.is-error { border-color: var(--danger); background: #fff5f5; }
+    .input-wrap input.is-valid,
+    .input-wrap select.is-valid { border-color: var(--success); }
+    .input-wrap input::placeholder { color: #9ca3af; }
+
+    .input-icon { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: #9ca3af; width: 18px; height: 18px; pointer-events: none; transition: color var(--t); }
+    .input-wrap:focus-within .input-icon { color: var(--brand); }
+    .select-arrow { position: absolute; right: .85rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; width: 18px; height: 18px; }
+
+    .pw-toggle { position: absolute; right: .8rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #9ca3af; padding: 4px; transition: color var(--t); line-height: 1; }
+    .pw-toggle:hover { color: var(--brand); }
+
+    .field-error { margin-top: .4rem; font-size: .8rem; color: var(--danger); }
+
+    /* ── Role cards ── */
+    .role-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-bottom: 1.15rem; }
+    .role-card {
+      border: 2px solid var(--border); border-radius: var(--radius-sm);
+      padding: 1rem; cursor: pointer; transition: border-color var(--t), background var(--t);
+      text-align: center; user-select: none;
+    }
+    .role-card:hover { border-color: #c7d2fe; background: #f8f9ff; }
+    .role-card.selected { border-color: var(--brand); background: var(--brand-light); }
+    .role-card input[type="radio"] { display: none; }
+    .role-icon { font-size: 1.75rem; margin-bottom: .4rem; }
+    .role-name { font-size: .875rem; font-weight: 700; color: var(--text); }
+    .role-desc { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+    .role-card.selected .role-name { color: var(--brand); }
+
+    /* ── Password strength ── */
+    .strength-bar { height: 4px; border-radius: 2px; background: #e2e8f0; margin-top: .5rem; overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 2px; width: 0; transition: width .3s ease, background .3s ease; }
+    .strength-label { font-size: .75rem; margin-top: .3rem; color: var(--muted); }
+
+    /* ── Terms ── */
+    .terms-row { display: flex; align-items: flex-start; gap: .5rem; margin-bottom: 1.5rem; }
+    .terms-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+    .terms-row label { font-size: .85rem; color: var(--muted); cursor: pointer; line-height: 1.5; }
+    .terms-row a { color: var(--brand); font-weight: 600; text-decoration: none; }
+    .terms-row a:hover { text-decoration: underline; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%; padding: .9rem 1.5rem;
+      background: var(--brand); color: #fff; font-size: .95rem; font-weight: 700;
+      border: none; border-radius: var(--radius-sm); cursor: pointer;
+      transition: background var(--t), transform var(--t), box-shadow var(--t);
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+    .btn-primary:hover { background: var(--brand-dark); box-shadow: 0 4px 16px rgba(79,70,229,.4); }
+    .btn-primary:active { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+    .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+    .is-loading .spinner { display: block; }
+    .is-loading .btn-label { display: none; }
+
+    .signin-prompt { margin-top: 1.5rem; text-align: center; font-size: .9rem; color: var(--muted); }
+    .signin-prompt a { color: var(--brand); font-weight: 700; text-decoration: none; }
+    .signin-prompt a:hover { text-decoration: underline; }
+
+    /* ── Toast ── */
+    .toast-container { position: fixed; top: 1.25rem; right: 1.25rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem; }
+    .toast { padding: .85rem 1rem; border-radius: var(--radius-sm); font-size: .875rem; font-weight: 500; display: flex; align-items: flex-start; gap: .6rem; box-shadow: var(--shadow); max-width: 340px; animation: slideIn .25s ease; }
+    .toast-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .toast-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .toast-info    { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .toast-close { margin-left: auto; background: none; border: none; cursor: pointer; opacity: .55; font-size: 1rem; line-height: 1; padding: 0; }
+    .toast-close:hover { opacity: 1; }
+
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(1rem); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="auth-header">
+      <a href="{% url 'accounts:login' %}" class="auth-logo">edu<span>Pro</span></a>
+      <h1 class="auth-heading">Create your account</h1>
+      <p class="auth-sub">Free to join. Start learning or teaching today.</p>
+    </div>
+
+    <div class="auth-card">
+      <!-- Step indicator -->
+      <div class="steps" aria-label="Registration steps">
+        <div class="step active" id="step-ind-1">
+          <div class="step-num" id="sn1">1</div>
+          <span class="step-text">Account</span>
+        </div>
+        <div class="step-divider" id="div-1-2"></div>
+        <div class="step" id="step-ind-2">
+          <div class="step-num" id="sn2">2</div>
+          <span class="step-text">Role</span>
+        </div>
+        <div class="step-divider" id="div-2-3"></div>
+        <div class="step" id="step-ind-3">
+          <div class="step-num" id="sn3">3</div>
+          <span class="step-text">Security</span>
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="error-banner" role="alert">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>
+      </div>
+      {% endif %}
+
+      <form id="reg-form" method="post" action="{% url 'accounts:register' %}" novalidate>
+        {% csrf_token %}
+
+        <!-- STEP 1: Name + Email -->
+        <div id="step-1">
+          <div class="field-row-2">
+            <div class="field">
+              <label for="id_first_name">First name</label>
+              <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input type="text" id="id_first_name" name="first_name"
+                       value="{{ form.first_name.value|default:'' }}"
+                       placeholder="First name" autocomplete="given-name"
+                       {% if form.first_name.errors %}class="is-error"{% endif %} />
+              </div>
+              {% if form.first_name.errors %}<p class="field-error" role="alert">{{ form.first_name.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div class="field">
+              <label for="id_last_name">Last name</label>
+              <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input type="text" id="id_last_name" name="last_name"
+                       value="{{ form.last_name.value|default:'' }}"
+                       placeholder="Last name" autocomplete="family-name"
+                       {% if form.last_name.errors %}class="is-error"{% endif %} />
+              </div>
+              {% if form.last_name.errors %}<p class="field-error" role="alert">{{ form.last_name.errors|join:", " }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="id_email">Email address</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <input type="email" id="id_email" name="email"
+                     value="{{ form.email.value|default:'' }}"
+                     placeholder="you@example.com" autocomplete="email"
+                     {% if form.email.errors %}class="is-error"{% endif %} />
+            </div>
+            {% if form.email.errors %}<p class="field-error" role="alert">{{ form.email.errors|join:", " }}</p>{% endif %}
+          </div>
+
+          <button type="button" class="btn-primary" id="next-1-btn" style="margin-top:.5rem">
+            <span class="btn-label">Continue →</span>
+          </button>
+        </div>
+
+        <!-- STEP 2: Role -->
+        <div id="step-2" style="display:none">
+          <div class="field">
+            <label>I am joining as a…</label>
+            <div class="role-cards" id="role-cards">
+              <label class="role-card" id="rc-student">
+                <input type="radio" name="role" value="student" {% if form.role.value == 'student' or not form.role.value %}checked{% endif %} />
+                <div class="role-icon">🎓</div>
+                <div class="role-name">Student</div>
+                <div class="role-desc">Enrol in courses and track progress</div>
+              </label>
+              <label class="role-card" id="rc-teacher">
+                <input type="radio" name="role" value="teacher" {% if form.role.value == 'teacher' %}checked{% endif %} />
+                <div class="role-icon">📚</div>
+                <div class="role-name">Teacher</div>
+                <div class="role-desc">Create and manage courses</div>
+              </label>
+            </div>
+            {% if form.role.errors %}<p class="field-error" role="alert">{{ form.role.errors|join:", " }}</p>{% endif %}
+          </div>
+
+          <div style="display:flex; gap:.75rem">
+            <button type="button" class="btn-primary" id="back-1-btn" style="background:#f1f5f9; color:var(--text); box-shadow:none; flex:0 0 auto; width:auto; padding:.9rem 1.5rem;">
+              ← Back
+            </button>
+            <button type="button" class="btn-primary" id="next-2-btn" style="flex:1">
+              <span class="btn-label">Continue →</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Password -->
+        <div id="step-3" style="display:none">
+          <div class="field">
+            <label for="id_password1">Password</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="id_password1" name="password1"
+                     placeholder="Create a password" autocomplete="new-password"
+                     {% if form.password1.errors %}class="is-error"{% endif %} />
+              <button type="button" class="pw-toggle" id="toggle-pw1" aria-label="Show password">
+                <svg id="eye1-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg id="eye1-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+            <p class="strength-label" id="strength-label">Enter a password</p>
+            {% if form.password1.errors %}<p class="field-error" role="alert">{{ form.password1.errors|join:", " }}</p>{% endif %}
+          </div>
+
+          <div class="field">
+            <label for="id_password2">Confirm password</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="id_password2" name="password2"
+                     placeholder="Repeat your password" autocomplete="new-password"
+                     {% if form.password2.errors %}class="is-error"{% endif %} />
+            </div>
+            {% if form.password2.errors %}<p class="field-error" role="alert">{{ form.password2.errors|join:", " }}</p>{% endif %}
+          </div>
+
+          <div class="terms-row">
+            <input type="checkbox" id="terms" name="terms" />
+            <label for="terms">
+              I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+            </label>
+          </div>
+          {% if form.password2.errors or form.password1.errors %}<p class="field-error" id="terms-error" style="display:none"></p>{% endif %}
+          <p class="field-error" id="terms-error" style="display:none"></p>
+
+          <div style="display:flex; gap:.75rem">
+            <button type="button" class="btn-primary" id="back-2-btn" style="background:#f1f5f9; color:var(--text); box-shadow:none; flex:0 0 auto; width:auto; padding:.9rem 1.5rem;">
+              ← Back
+            </button>
+            <button type="submit" class="btn-primary" id="submit-btn" style="flex:1">
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="btn-label">Create Account</span>
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <p class="signin-prompt">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+  </div>
+
+  <div class="toast-container" id="toast-container" aria-live="polite">
+    {% for message in messages %}
+    <div class="toast toast-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}" role="alert">
+      <span>{{ message }}</span>
+      <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ── Step navigation ── */
+    var currentStep = 1;
+    var hasServerErrors = {{ form.errors|yesno:"true,false" }};
+
+    function showStep(n) {
+      [1, 2, 3].forEach(function (i) {
+        document.getElementById('step-' + i).style.display = (i === n) ? '' : 'none';
+        var ind = document.getElementById('step-ind-' + i);
+        ind.classList.remove('active', 'done');
+        if (i === n) ind.classList.add('active');
+        else if (i < n) { ind.classList.add('done'); document.getElementById('sn' + i).textContent = '✓'; }
+        if (i < 3) document.getElementById('div-' + i + '-' + (i+1)).classList.toggle('done', i < n);
+      });
+      currentStep = n;
+    }
+
+    /* If Django returned errors, show step containing first error */
+    if (hasServerErrors) {
+      var emailErr = '{{ form.email.errors|length }}' !== '0';
+      var nameErr  = '{{ form.first_name.errors|length }}' !== '0' || '{{ form.last_name.errors|length }}' !== '0';
+      var roleErr  = '{{ form.role.errors|length }}' !== '0';
+      var pwErr    = '{{ form.password1.errors|length }}' !== '0' || '{{ form.password2.errors|length }}' !== '0';
+      if (emailErr || nameErr) showStep(1);
+      else if (roleErr)        showStep(2);
+      else if (pwErr)          showStep(3);
+    }
+
+    /* ── Validation helpers ── */
+    function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+
+    function setErr(input, msg) {
+      input.classList.add('is-error'); input.classList.remove('is-valid');
+      var f = input.closest('.field');
+      var e = f.querySelector('.field-error[data-c]');
+      if (!e) { e = document.createElement('p'); e.className = 'field-error'; e.dataset.c = '1'; e.setAttribute('role','alert'); input.closest('.input-wrap').insertAdjacentElement('afterend', e); }
+      e.textContent = msg;
+    }
+    function clrErr(input) {
+      input.classList.remove('is-error');
+      var e = input.closest('.field').querySelector('.field-error[data-c]');
+      if (e) e.textContent = '';
+    }
+    function setOk(input) { clrErr(input); input.classList.add('is-valid'); }
+
+    /* ── Step 1 validation ── */
+    var fn  = document.getElementById('id_first_name');
+    var ln  = document.getElementById('id_last_name');
+    var em  = document.getElementById('id_email');
+
+    document.getElementById('next-1-btn').addEventListener('click', function () {
+      var ok = true;
+      if (!fn.value.trim()) { setErr(fn, 'First name is required.'); ok = false; } else setOk(fn);
+      if (!ln.value.trim()) { setErr(ln, 'Last name is required.'); ok = false;  } else setOk(ln);
+      if (!em.value.trim()) { setErr(em, 'Email is required.'); ok = false; }
+      else if (!validEmail(em.value)) { setErr(em, 'Enter a valid email address.'); ok = false; }
+      else setOk(em);
+      if (ok) showStep(2);
+    });
+    document.getElementById('back-1-btn').addEventListener('click', function () { showStep(1); });
+
+    /* ── Step 2 navigation ── */
+    document.getElementById('next-2-btn').addEventListener('click', function () { showStep(3); });
+    document.getElementById('back-2-btn').addEventListener('click', function () { showStep(2); });
+
+    /* ── Role card selection ── */
+    document.querySelectorAll('.role-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        document.querySelectorAll('.role-card').forEach(function (c) { c.classList.remove('selected'); });
+        this.classList.add('selected');
+        this.querySelector('input').checked = true;
+      });
+    });
+    /* Pre-select based on checked */
+    document.querySelectorAll('.role-card input').forEach(function (radio) {
+      if (radio.checked) radio.closest('.role-card').classList.add('selected');
+    });
+
+    /* ── Password strength ── */
+    var pw1   = document.getElementById('id_password1');
+    var pw2   = document.getElementById('id_password2');
+    var fill  = document.getElementById('strength-fill');
+    var label = document.getElementById('strength-label');
+
+    function strength(v) {
+      var s = 0;
+      if (v.length >= 8)  s++;
+      if (v.length >= 12) s++;
+      if (/[A-Z]/.test(v)) s++;
+      if (/[0-9]/.test(v)) s++;
+      if (/[^A-Za-z0-9]/.test(v)) s++;
+      return s;
+    }
+    var labels = ['', 'Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'];
+    var colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981'];
+
+    pw1.addEventListener('input', function () {
+      var s = strength(this.value);
+      fill.style.width   = (s * 20) + '%';
+      fill.style.background = colors[s] || '#e2e8f0';
+      label.textContent  = this.value ? labels[s] || 'Very strong' : 'Enter a password';
+      label.style.color  = colors[s] || 'var(--muted)';
+      if (pw2.value) checkMatch();
+    });
+
+    function checkMatch() {
+      if (pw1.value && pw2.value && pw1.value !== pw2.value) { setErr(pw2, 'Passwords do not match.'); }
+      else if (pw2.value) { setOk(pw2); }
+    }
+    pw2.addEventListener('input', checkMatch);
+
+    /* ── Password toggles ── */
+    function makeToggle(btnId, inputEl, showId, hideId) {
+      var btn  = document.getElementById(btnId);
+      var show = document.getElementById(showId);
+      var hide = document.getElementById(hideId);
+      btn.addEventListener('click', function () {
+        var vis = inputEl.type === 'password';
+        inputEl.type = vis ? 'text' : 'password';
+        show.style.display = vis ? 'none' : '';
+        hide.style.display = vis ? ''     : 'none';
+      });
+    }
+    makeToggle('toggle-pw1', pw1, 'eye1-show', 'eye1-hide');
+
+    /* ── Step 3 submit validation ── */
+    var form      = document.getElementById('reg-form');
+    var submitBtn = document.getElementById('submit-btn');
+    var termsChk  = document.getElementById('terms');
+    var termsErr  = document.getElementById('terms-error');
+
+    form.addEventListener('submit', function (e) {
+      var ok = true;
+      if (pw1.value.length < 8) { setErr(pw1, 'Password must be at least 8 characters.'); ok = false; }
+      if (!pw2.value)            { setErr(pw2, 'Please confirm your password.'); ok = false; }
+      else if (pw1.value !== pw2.value) { setErr(pw2, 'Passwords do not match.'); ok = false; }
+      if (!termsChk.checked) {
+        termsErr.textContent = 'You must agree to the Terms of Service.';
+        termsErr.style.display = '';
+        ok = false;
+      } else { termsErr.style.display = 'none'; }
+      if (!ok) { e.preventDefault(); return; }
+      submitBtn.disabled = true;
+      submitBtn.classList.add('is-loading');
+    });
+
+    /* ── Live clear errors ── */
+    [fn, ln, em].forEach(function (i) { i.addEventListener('input', function () { clrErr(this); }); });
+
+    /* ── Toast auto-dismiss ── */
+    document.querySelectorAll('.toast').forEach(function (t) {
+      setTimeout(function () {
+        t.style.transition = 'opacity .4s'; t.style.opacity = '0';
+        setTimeout(function () { if (t.parentNode) t.remove(); }, 420);
+      }, 5000);
+    });
+  })();
+  </script>
+</body>
+</html>

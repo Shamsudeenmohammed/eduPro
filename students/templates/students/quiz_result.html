@@ -1,0 +1,171 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .result-hero {
+    border-radius: 16px; padding: 2.5rem; margin-bottom: 2rem;
+    text-align: center; color: #fff;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  }
+  .score-ring {
+    width: 130px; height: 130px; border-radius: 50%;
+    border: 6px solid rgba(255,255,255,.3);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 1.25rem;
+    background: rgba(255,255,255,.1);
+    backdrop-filter: blur(6px);
+  }
+  .score-ring .score-val { font-size: 2rem; font-weight: 900; }
+  .score-ring .score-total { font-size: .8rem; opacity: .8; }
+  .result-hero h1 { font-size: 1.45rem; font-weight: 800; margin: 0 0 .5rem; }
+  .result-hero .pct {
+    font-size: 1.1rem; font-weight: 700; padding: .3rem .9rem;
+    border-radius: 99px; display: inline-block; margin-top: .5rem;
+  }
+  .pct.pass { background: #dcfce7; color: #16a34a; }
+  .pct.fail { background: #fee2e2; color: #dc2626; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 1.25rem; text-align: center;
+  }
+  .stat-card .val { font-size: 1.5rem; font-weight: 800; color: #1e293b; }
+  .stat-card .lbl { font-size: .78rem; color: #9ca3af; margin-top: .2rem; }
+
+  .answers-section h2 {
+    font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: #374151;
+  }
+  .ans-card {
+    background: #0c0101; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 1.25rem; margin-bottom: .9rem;
+    border-left: 4px solid transparent;
+  }
+  .ans-card.correct   { border-left-color: #22c55e; }
+  .ans-card.incorrect { border-left-color: #ef4444; }
+  .ans-card.manual    { border-left-color: #f59e0b; }
+
+  .ans-header { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: .75rem; }
+  .ans-qnum { background: #f3f4f6; color: #374151; font-weight: 700; font-size: .78rem; padding: .2rem .6rem; border-radius: 6px; flex-shrink: 0; }
+  .ans-qtext { font-weight: 600; font-size: .93rem; flex: 1; }
+  .ans-marks { font-size: .8rem; flex-shrink: 0; }
+  .ans-marks.got-marks { color: #16a34a; font-weight: 700; }
+  .ans-marks.zero      { color: #dc2626; }
+
+  .ans-choices { display: flex; flex-direction: column; gap: .4rem; }
+  .choice-item {
+    font-size: .87rem; padding: .5rem .85rem; border-radius: 8px;
+    display: flex; align-items: center; gap: .6rem;
+    background: #0e69c4; border: 1px solid #e5e7eb;
+  }
+  .choice-item.selected { background: #dbeafe; border-color: #93c5fd; }
+  .choice-item.correct-choice { background: #1beb14; border-color: #86efac; font-weight: 600; }
+  .choice-item.wrong-selected  { background: #d81919; border-color: #fca5a5; }
+
+  .text-ans-box {
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 8px; padding: .75rem 1rem;
+    font-size: .88rem; color: #374151;
+    white-space: pre-wrap;
+  }
+  .pending-badge { font-size: .78rem; color: #b45309; background: #fef9c3; padding: .2rem .65rem; border-radius: 99px; }
+
+  .result-actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
+  .result-actions a { flex: 1; text-align: center; padding: .7rem; border-radius: 10px; font-weight: 700; font-size: .9rem; text-decoration: none; }
+  .btn-back { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+  .btn-retry { background: #4f46e5; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% with pct=attempt.score|floatformat:0 %}
+<div class="result-hero">
+  <div class="score-ring">
+    <span class="score-val">{{ attempt.score|floatformat:0 }}</span>
+    <span class="score-total">/ {{ attempt.quiz.total_marks }}</span>
+  </div>
+  <h1>{{ page_title }}</h1>
+  <div>
+    Submitted {{ attempt.submitted_at|date:"M d, Y g:i A" }}
+  </div>
+</div>
+{% endwith %}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="val">{{ attempt.score }}</div>
+    <div class="lbl">Score</div>
+  </div>
+  <div class="stat-card">
+    <div class="val">{{ attempt.quiz.total_marks }}</div>
+    <div class="lbl">Total Marks</div>
+  </div>
+  <div class="stat-card">
+    <div class="val">{{ answers|length }}</div>
+    <div class="lbl">Questions</div>
+  </div>
+  <div class="stat-card">
+    <div class="val">{{ attempt.attempt_number }}</div>
+    <div class="lbl">Attempt #</div>
+  </div>
+</div>
+
+<div class="result-actions">
+  <a href="{% url 'students:quiz_list' offering_pk=attempt.quiz.offering.pk %}" class="btn-back">← Back to Quizzes</a>
+</div>
+
+{% if show_answers %}
+<div class="answers-section">
+  <h2>📋 Question Review</h2>
+  {% for ans in answers %}
+  <div class="ans-card {% if ans.is_correct is None %}manual{% elif ans.is_correct %}correct{% else %}incorrect{% endif %}">
+    <div class="ans-header">
+      <span class="ans-qnum">Q{{ forloop.counter }}</span>
+      <span class="ans-qtext">{{ ans.question.text }}</span>
+      <span class="ans-marks {% if ans.marks_awarded %}got-marks{% else %}zero{% endif %}">
+        {{ ans.marks_awarded }}/{{ ans.question.marks }} mk
+      </span>
+    </div>
+
+    {% if ans.question.question_type in "mcq,multi,true_false" %}
+      <div class="ans-choices">
+        {% for choice in ans.question.choices.all %}
+        <div class="choice-item
+          {% if choice in ans.selected_choices.all and choice.is_correct %}correct-choice
+          {% elif choice in ans.selected_choices.all and not choice.is_correct %}wrong-selected
+          {% elif choice.is_correct %}correct-choice
+          {% endif %}">
+          <span>{% if choice in ans.selected_choices.all %}✓{% elif choice.is_correct %}○{% else %}&nbsp;{% endif %}</span>
+          <span>{{ choice.text }}</span>
+          {% if choice.is_correct %}<span style="margin-left:auto;font-size:.75rem;color:#16a34a;font-weight:700;">Correct</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% if ans.text_answer %}
+        <div class="text-ans-box">{{ ans.text_answer }}</div>
+      {% else %}
+        <div style="color:#9ca3af;font-size:.85rem;font-style:italic;">No answer provided.</div>
+      {% endif %}
+      {% if ans.is_correct is None %}
+        <div style="margin-top:.5rem;">
+          <span class="pending-badge">⏳ Pending manual grading</span>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:2rem;text-align:center;color:#6b7280;">
+  <div style="font-size:2rem;margin-bottom:.75rem;">🔒</div>
+  <div style="font-weight:600;">Detailed answers are not shown for this quiz.</div>
+  <div style="font-size:.88rem;margin-top:.3rem;">Contact your lecturer for feedback.</div>
+</div>
+{% endif %}
+
+{% endblock %}

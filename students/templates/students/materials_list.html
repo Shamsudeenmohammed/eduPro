@@ -1,0 +1,128 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .materials-hero {
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .materials-hero .course-icon {
+    width: 60px; height: 60px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+  .materials-hero h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 .25rem; }
+  .materials-hero p  { margin: 0; opacity: .75; font-size: .92rem; }
+
+  .week-group { margin-bottom: 2rem; }
+  .week-label {
+    font-size: .75rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: #6b7280;
+    padding: .25rem 0 .75rem;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 1rem;
+  }
+  .material-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: .75rem;
+    transition: box-shadow .18s, transform .18s;
+    text-decoration: none; color: inherit;
+  }
+  .material-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,.09);
+    transform: translateY(-2px);
+    border-color: #c7d2fe;
+  }
+  .mat-icon {
+    width: 46px; height: 46px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .mat-icon.pdf  { background: #fee2e2; }
+  .mat-icon.doc  { background: #dbeafe; }
+  .mat-icon.vid  { background: #dcfce7; }
+  .mat-icon.link { background: #fef9c3; }
+  .mat-icon.other{ background: #f3f4f6; }
+  .mat-body { flex: 1; min-width: 0; }
+  .mat-title { font-weight: 600; font-size: .97rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mat-meta  { font-size: .8rem; color: #9ca3af; margin-top: .15rem; }
+  .mat-badge {
+    font-size: .7rem; font-weight: 600; padding: .2rem .65rem;
+    border-radius: 99px; background: #e0e7ff; color: #4f46e5; flex-shrink: 0;
+  }
+  .empty-state {
+    text-align: center; padding: 4rem 1rem;
+    background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db;
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-state p { color: #6b7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="materials-hero">
+  <div class="course-icon">📚</div>
+  <div>
+    <h1>{{ page_title }}</h1>
+    <p>{{ offering.course.title }} &mdash; {{ offering.semester }}</p>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a href="{% url 'students:course_home' offering_pk=offering.pk %}" class="btn btn-sm btn-outline-secondary">
+    ← Back to Course
+  </a>
+  <span class="text-muted" style="font-size:.85rem;">{{ materials|length }} material{{ materials|length|pluralize }}</span>
+</div>
+
+{% if materials %}
+  {% regroup materials by week_number as week_list %}
+  {% for week in week_list %}
+    <div class="week-group">
+      <div class="week-label">
+        {% if week.grouper %}Week {{ week.grouper }}{% else %}General Resources{% endif %}
+      </div>
+      {% for material in week.list %}
+        <a href="{% url 'students:material_access' pk=material.pk %}"
+           class="material-card"
+           target="{{ material.external_url|yesno:'_blank,_self' }}">
+          <div class="mat-icon {% if material.file_type == 'pdf' %}pdf{% elif material.file_type == 'video' %}vid{% elif material.external_url %}link{% else %}other{% endif %}">
+            {% if material.external_url %}🔗
+            {% elif material.file_type == 'pdf' %}📄
+            {% elif material.file_type == 'video' %}🎬
+            {% else %}📁{% endif %}
+          </div>
+          <div class="mat-body">
+            <div class="mat-title">{{ material.title }}</div>
+            <div class="mat-meta">
+              {{ material.created_at|date:"M d, Y" }}
+              {% if material.description %} &middot; {{ material.description|truncatechars:60 }}{% endif %}
+            </div>
+          </div>
+          {% if material.download_count %}
+            <span class="mat-badge">{{ material.download_count }} ↓</span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="empty-state">
+    <div class="icon">📂</div>
+    <h5>No materials yet</h5>
+    <p>Your lecturer hasn't uploaded any materials for this course yet. Check back later.</p>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:course_detail' offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' offering.pk %}">{{ offering.course.code }}</a><span class="sep">/</span>
+  <span>{{ student.get_full_name }}</span>
+</div>
+
+<!-- Student info + stats -->
+<div class="stats-grid" style="margin-bottom:16px;">
+  <div class="stat-card amber">
+    <div class="stat-label">Attendance</div>
+    <div class="stat-value">{{ attendance_pct }}%</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">Sessions Attended</div>
+    <div class="stat-value">{{ attended }} / {{ total_sessions }}</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label">Assignments Graded</div>
+    <div class="stat-value">{{ assignment_scores|length }}</div>
+  </div>
+  {% if result %}
+  <div class="stat-card purple">
+    <div class="stat-label">Current Grade</div>
+    <div class="stat-value">{{ result.grade|default:"—" }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="detail-grid" style="margin-bottom:16px;">
+  <!-- Student profile -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Student Info</span></div>
+    <div class="card-body">
+      <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">{{ student.get_full_name }}</span></div>
+      <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">{{ student.email }}</span></div>
+      <div class="detail-row"><span class="detail-label">Enrolment Status</span>
+        <span class="detail-value">
+          {% if enrolment.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+        </span>
+      </div>
+      <div class="detail-row"><span class="detail-label">Enrolled At</span><span class="detail-value">{{ enrolment.enrolled_at|date:"d M Y" }}</span></div>
+    </div>
+  </div>
+
+  <!-- Result summary -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Result Summary</span></div>
+    <div class="card-body">
+      {% if result %}
+      <div class="detail-row"><span class="detail-label">CA Score</span><span class="detail-value">{{ result.ca_score|default:"—" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Exam Score</span><span class="detail-value">{{ result.exam_score|default:"—" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Total Score</span><span class="detail-value"><strong>{{ result.total_score|default:"—" }}</strong></span></div>
+      <div class="detail-row"><span class="detail-label">Grade</span>
+        <span class="detail-value">
+          {% if result.grade %}
+          <span class="badge {% if result.grade == 'F' %}badge-inactive{% elif result.grade|slice:':1' == 'A' %}badge-active{% else %}badge-blue{% endif %}">{{ result.grade }}</span>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="detail-row"><span class="detail-label">Grade Point</span><span class="detail-value">{{ result.grade_point|default:"—" }}</span></div>
+      {% else %}
+      <div class="empty-state" style="padding:30px;"><span class="icon">📊</span>No result entered yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Assignment scores -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Assignment Scores</span></div>
+  <div class="table-wrap">
+    {% if assignment_scores %}
+    <table>
+      <thead>
+        <tr><th>Assignment</th><th>Due Date</th><th>Score</th><th>Total Marks</th><th>Late</th></tr>
+      </thead>
+      <tbody>
+        {% for sub in assignment_scores %}
+        <tr>
+          <td>{{ sub.assignment.title }}</td>
+          <td>{{ sub.assignment.due_date|date:"d M Y" }}</td>
+          <td><strong>{{ sub.score }}</strong></td>
+          <td>{{ sub.assignment.total_marks }}</td>
+          <td>{% if sub.is_late %}<span class="badge badge-inactive">Late</span>{% else %}<span class="badge badge-active">On time</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding:30px;"><span class="icon">📝</span>No graded assignments yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

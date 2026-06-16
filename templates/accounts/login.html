@@ -1,0 +1,304 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In · eduPro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #4f46e5; --brand-dark: #3730a3; --brand-light: #eef2ff;
+      --surface: #ffffff; --bg: #f8fafc; --text: #0f172a; --muted: #64748b;
+      --border: #e2e8f0; --danger: #ef4444; --danger-bg: #fef2f2;
+      --success: #10b981; --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      --t: 150ms ease;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; min-height: 100vh;
+    }
+
+    /* ── Left branding panel ── */
+    .panel-left {
+      display: none; width: 52%;
+      background: #1e1b4b;
+      position: relative; overflow: hidden;
+      flex-direction: column; justify-content: space-between; padding: 3rem;
+    }
+    @media (min-width: 960px) { .panel-left { display: flex; } }
+    .pl-circle { position: absolute; border-radius: 50%; }
+    .pl-c1 { top:-120px; left:-120px; width:480px; height:480px; background:rgba(99,102,241,.2); }
+    .pl-c2 { bottom:-80px; right:-80px; width:360px; height:360px; background:rgba(6,182,212,.15); }
+    .pl-c3 { top:40%; left:55%; width:200px; height:200px; background:rgba(167,139,250,.1); }
+
+    .brand-logo { position:relative; z-index:1; font-size:1.85rem; font-weight:800; letter-spacing:-.5px; color:#fff; }
+    .brand-logo span { color:#a5b4fc; }
+    .panel-copy { position:relative; z-index:1; }
+    .panel-copy h1 { font-size:2.2rem; font-weight:800; color:#fff; line-height:1.2; margin-bottom:1rem; }
+    .panel-copy p { color:#c7d2fe; font-size:1rem; line-height:1.65; }
+    .features { margin-top:1.75rem; position:relative; z-index:1; }
+    .feat { display:flex; align-items:center; gap:.75rem; padding:.5rem 0; color:#e0e7ff; font-size:.9rem; }
+    .feat-dot { width:8px; height:8px; border-radius:50%; background:#818cf8; flex-shrink:0; }
+    .stats { display:flex; gap:2.5rem; position:relative; z-index:1; }
+    .stat-num { font-size:2rem; font-weight:800; color:#fff; }
+    .stat-label { font-size:.78rem; color:#a5b4fc; margin-top:.2rem; text-transform:uppercase; letter-spacing:.05em; }
+
+    /* ── Right form panel ── */
+    .panel-right { flex:1; display:flex; align-items:center; justify-content:center; padding:2rem 1.5rem; background:var(--surface); }
+    .auth-card { width:100%; max-width:440px; }
+
+    .mobile-logo { display:block; font-size:1.5rem; font-weight:800; letter-spacing:-.5px; color:#1e1b4b; margin-bottom:2rem; }
+    .mobile-logo span { color:var(--brand); }
+    @media (min-width: 960px) { .mobile-logo { display:none; } }
+
+    .auth-heading { font-size:1.85rem; font-weight:800; color:var(--text); letter-spacing:-.4px; margin-bottom:.35rem; }
+    .auth-sub { color:var(--muted); font-size:.95rem; margin-bottom:2rem; }
+
+    .error-banner {
+      background:var(--danger-bg); border:1.5px solid #fecaca;
+      border-radius:var(--radius-sm); padding:.85rem 1rem;
+      color:#b91c1c; font-size:.875rem; margin-bottom:1.25rem;
+      display:flex; align-items:flex-start; gap:.5rem;
+      animation:fadeIn .2s ease;
+    }
+
+    /* ── Form fields ── */
+    .field { margin-bottom:1.2rem; }
+    .field label { display:block; font-size:.84rem; font-weight:600; color:#374151; margin-bottom:.45rem; }
+    .input-wrap { position:relative; }
+    .input-wrap input {
+      width:100%; padding:.8rem 1rem .8rem 2.8rem;
+      border:1.5px solid var(--border); border-radius:var(--radius-sm);
+      font-size:.95rem; color:var(--text); background:#fafafa;
+      transition:border-color var(--t), box-shadow var(--t), background var(--t);
+      outline:none; -webkit-appearance:none;
+    }
+    .input-wrap input:focus { border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+    .input-wrap input.is-error { border-color:var(--danger); background:#fff5f5; }
+    .input-wrap input.is-valid { border-color:var(--success); }
+    .input-wrap input::placeholder { color:#9ca3af; }
+    .input-icon {
+      position:absolute; left:.85rem; top:50%; transform:translateY(-50%);
+      color:#9ca3af; width:18px; height:18px; pointer-events:none; transition:color var(--t);
+    }
+    .input-wrap:focus-within .input-icon { color:var(--brand); }
+    .pw-toggle {
+      position:absolute; right:.8rem; top:50%; transform:translateY(-50%);
+      background:none; border:none; cursor:pointer; color:#9ca3af; padding:4px;
+      transition:color var(--t); line-height:1;
+    }
+    .pw-toggle:hover { color:var(--brand); }
+
+    .field-error { margin-top:.4rem; font-size:.8rem; color:var(--danger); }
+
+    .field-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; gap:.5rem; }
+    .checkbox-label { display:flex; align-items:center; gap:.5rem; font-size:.875rem; color:var(--muted); cursor:pointer; user-select:none; }
+    .checkbox-label input[type="checkbox"] { width:16px; height:16px; accent-color:var(--brand); cursor:pointer; }
+    .forgot-link { font-size:.875rem; font-weight:600; color:var(--brand); text-decoration:none; transition:color var(--t); white-space:nowrap; }
+    .forgot-link:hover { color:var(--brand-dark); text-decoration:underline; }
+
+    /* ── Submit button ── */
+    .btn-primary {
+      width:100%; padding:.9rem 1.5rem;
+      background:var(--brand); color:#fff; font-size:.95rem; font-weight:700;
+      border:none; border-radius:var(--radius-sm); cursor:pointer; letter-spacing:.01em;
+      transition:background var(--t), transform var(--t), box-shadow var(--t);
+      display:flex; align-items:center; justify-content:center; gap:.5rem;
+    }
+    .btn-primary:hover { background:var(--brand-dark); box-shadow:0 4px 16px rgba(79,70,229,.4); }
+    .btn-primary:active { transform:scale(.98); }
+    .btn-primary:disabled { opacity:.65; cursor:not-allowed; transform:none; }
+    .spinner { display:none; width:18px; height:18px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+    .is-loading .spinner { display:block; }
+    .is-loading .btn-label { display:none; }
+
+    .signup-prompt { margin-top:1.75rem; text-align:center; font-size:.9rem; color:var(--muted); }
+    .signup-prompt a { color:var(--brand); font-weight:700; text-decoration:none; }
+    .signup-prompt a:hover { text-decoration:underline; }
+
+    /* ── Toast notifications ── */
+    .toast-container { position:fixed; top:1.25rem; right:1.25rem; z-index:9999; display:flex; flex-direction:column; gap:.5rem; }
+    .toast {
+      padding:.85rem 1rem; border-radius:var(--radius-sm); font-size:.875rem; font-weight:500;
+      display:flex; align-items:flex-start; gap:.6rem; box-shadow:var(--shadow); max-width:340px;
+      animation:slideIn .25s ease;
+    }
+    .toast-success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+    .toast-error   { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+    .toast-info    { background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; }
+    .toast-warning { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+    .toast-close { margin-left:auto; background:none; border:none; cursor:pointer; opacity:.55; font-size:1rem; line-height:1; padding:0; }
+    .toast-close:hover { opacity:1; }
+
+    @keyframes spin     { to { transform:rotate(360deg); } }
+    @keyframes slideIn  { from { opacity:0; transform:translateX(1rem); } to { opacity:1; transform:none; } }
+    @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+  </style>
+</head>
+<body>
+
+  <aside class="panel-left" aria-hidden="true">
+    <div class="pl-circle pl-c1"></div>
+    <div class="pl-circle pl-c2"></div>
+    <div class="pl-circle pl-c3"></div>
+    <div class="brand-logo">edu<span>Pro</span></div>
+    <div class="panel-copy">
+      <h1>The enterprise platform for modern education.</h1>
+      <p>Manage courses, track progress, and empower every learner — all in one secure place.</p>
+      <div class="features">
+        <div class="feat"><span class="feat-dot"></span>Role-based access: Admins, Teachers & Students</div>
+        <div class="feat"><span class="feat-dot"></span>Real-time progress tracking and analytics</div>
+        <div class="feat"><span class="feat-dot"></span>Secure, GDPR-compliant infrastructure</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div><div class="stat-num">12k+</div><div class="stat-label">Students</div></div>
+      <div><div class="stat-num">840+</div><div class="stat-label">Courses</div></div>
+      <div><div class="stat-num">98%</div><div class="stat-label">Satisfaction</div></div>
+    </div>
+  </aside>
+
+  <main class="panel-right">
+    <div class="auth-card">
+      <span class="mobile-logo">edu<span>Pro</span></span>
+      <h1 class="auth-heading">Welcome back</h1>
+      <p class="auth-sub">Sign in to your account to continue.</p>
+
+      {% if form.non_field_errors %}
+      <div class="error-banner" role="alert">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>{% for e in form.non_field_errors %}{{ e }}{% endfor %}</span>
+      </div>
+      {% endif %}
+
+      <form id="login-form" method="post" action="{% url 'accounts:login' %}{% if next %}?next={{ next }}{% endif %}" novalidate>
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
+
+        <div class="field">
+          <label for="id_email">Email address</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" id="id_email" name="email"
+                   value="{{ form.email.value|default:'' }}"
+                   placeholder="you@example.com"
+                   autocomplete="email"
+                   {% if form.email.errors %}class="is-error"{% endif %}
+                   autofocus />
+          </div>
+          {% if form.email.errors %}<p class="field-error" role="alert">{{ form.email.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="id_password">Password</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="id_password" name="password"
+                   placeholder="••••••••" autocomplete="current-password"
+                   {% if form.password.errors %}class="is-error"{% endif %} />
+            <button type="button" class="pw-toggle" id="toggle-pw" aria-label="Show password">
+              <svg id="eye-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg id="eye-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+          {% if form.password.errors %}<p class="field-error" role="alert">{{ form.password.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="field-row">
+          <label class="checkbox-label">
+            <input type="checkbox" name="remember_me" {% if form.remember_me.value %}checked{% endif %} />
+            Keep me signed in
+          </label>
+          <a href="{% url 'accounts:password_reset' %}" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Sign In</span>
+        </button>
+      </form>
+
+      <p class="signup-prompt">Don't have an account? <a href="{% url 'accounts:register' %}">Create one free</a></p>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="polite">
+    {% for message in messages %}
+    <div class="toast toast-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}" role="alert">
+      <span>{{ message }}</span>
+      <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    var pwInput   = document.getElementById('id_password');
+    var toggleBtn = document.getElementById('toggle-pw');
+    var eyeShow   = document.getElementById('eye-show');
+    var eyeHide   = document.getElementById('eye-hide');
+    toggleBtn.addEventListener('click', function () {
+      var show = pwInput.type === 'password';
+      pwInput.type = show ? 'text' : 'password';
+      eyeShow.style.display = show ? 'none' : '';
+      eyeHide.style.display = show ? ''     : 'none';
+      toggleBtn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+
+    var form      = document.getElementById('login-form');
+    var emailIn   = document.getElementById('id_email');
+    var submitBtn = document.getElementById('submit-btn');
+
+    function setError(input, msg) {
+      input.classList.add('is-error');
+      input.classList.remove('is-valid');
+      var field = input.closest('.field');
+      var err = field.querySelector('.field-error[data-c]');
+      if (!err) {
+        err = document.createElement('p');
+        err.className = 'field-error'; err.dataset.c = '1';
+        err.setAttribute('role', 'alert');
+        input.closest('.input-wrap').insertAdjacentElement('afterend', err);
+      }
+      err.textContent = msg;
+    }
+    function clearError(input) {
+      input.classList.remove('is-error');
+      var err = input.closest('.field').querySelector('.field-error[data-c]');
+      if (err) err.textContent = '';
+    }
+    function setValid(input) { clearError(input); input.classList.add('is-valid'); }
+    function validEmail(v)   { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+
+    emailIn.addEventListener('blur', function () {
+      if (!this.value.trim()) return;
+      validEmail(this.value) ? setValid(this) : setError(this, 'Enter a valid email address.');
+    });
+    emailIn.addEventListener('input', function () { if (this.classList.contains('is-error')) clearError(this); });
+    pwInput.addEventListener('input',  function () { if (this.classList.contains('is-error')) clearError(this); });
+
+    form.addEventListener('submit', function (e) {
+      var ok = true;
+      if (!emailIn.value.trim())       { setError(emailIn, 'Email is required.');    ok = false; }
+      else if (!validEmail(emailIn.value)) { setError(emailIn, 'Enter a valid email.'); ok = false; }
+      if (!pwInput.value)              { setError(pwInput, 'Password is required.'); ok = false; }
+      if (!ok) { e.preventDefault(); return; }
+      submitBtn.disabled = true;
+      submitBtn.classList.add('is-loading');
+    });
+
+    document.querySelectorAll('.toast').forEach(function (t) {
+      setTimeout(function () {
+        t.style.transition = 'opacity .4s'; t.style.opacity = '0';
+        setTimeout(function () { if (t.parentNode) t.remove(); }, 420);
+      }, 5000);
+    });
+  })();
+  </script>
+</body>
+</html>

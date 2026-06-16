@@ -1,0 +1,309 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  /* ── Stat grid ── */
+  .stat-grid{display:grid;gap:1rem;margin-bottom:1.75rem}
+  .stat-grid-4{grid-template-columns:repeat(4,1fr)}
+  .stat-grid-5{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1100px){.stat-grid-4,.stat-grid-5{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:540px){.stat-grid-4,.stat-grid-5{grid-template-columns:1fr}}
+  .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:1.2rem 1.4rem;display:flex;align-items:flex-start;gap:1rem;transition:box-shadow .16s,transform .16s;cursor:default;text-decoration:none;color:inherit}
+  .stat-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.08);transform:translateY(-2px)}
+  .stat-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.3rem}
+  .ic-purple{background:#ede9fe;color:#7c3aed}
+  .ic-blue{background:#dbeafe;color:#1d4ed8}
+  .ic-green{background:#dcfce7;color:#15803d}
+  .ic-amber{background:#fef3c7;color:#b45309}
+  .ic-rose{background:#ffe4e6;color:#be123c}
+  .ic-teal{background:#ccfbf1;color:#0f766e}
+  .stat-body{flex:1;min-width:0}
+  .stat-label{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+  .stat-value{font-size:1.85rem;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin-top:.1rem;line-height:1}
+  .stat-delta{font-size:.74rem;font-weight:600;margin-top:.3rem;color:#64748b}
+  .stat-delta.up{color:#15803d}
+  .stat-delta.down{color:#be123c}
+
+  /* ── Layout grid ── */
+  .dash-grid{display:grid;grid-template-columns:1fr 320px;gap:1.25rem;margin-bottom:1.5rem}
+  @media(max-width:1100px){.dash-grid{grid-template-columns:1fr}}
+
+  /* ── Panels ── */
+  .panel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+  .panel-head{padding:.95rem 1.4rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+  .panel-title{font-size:.92rem;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:.5rem}
+  .panel-action{font-size:.8rem;color:#4f46e5;font-weight:600;text-decoration:none}
+  .panel-action:hover{color:#3730a3}
+  .panel-body{padding:1.1rem 1.4rem}
+
+  /* ── Course list ── */
+  .course-row{display:flex;align-items:center;gap:1rem;padding:.9rem 0;border-bottom:1px solid #f8fafc;text-decoration:none;color:inherit}
+  .course-row:last-child{border-bottom:none}
+  .course-row:hover .course-title{color:#4f46e5}
+  .c-thumb{width:44px;height:44px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+  .course-info{flex:1;min-width:0}
+  .course-title{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .14s}
+  .course-meta{font-size:.76rem;color:#64748b;margin-top:.1rem}
+  .progress-bar{height:4px;border-radius:2px;background:#e2e8f0;margin-top:.45rem;overflow:hidden}
+  .progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+  .c-badge{font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;flex-shrink:0}
+  .cb-active{background:#dcfce7;color:#14532d}
+  .cb-pending{background:#fef3c7;color:#92400e}
+
+  /* ── Assignment list ── */
+  .asgn-row{display:flex;align-items:center;gap:.9rem;padding:.8rem 0;border-bottom:1px solid #f8fafc}
+  .asgn-row:last-child{border-bottom:none}
+  .asgn-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .dot-open{background:#3b82f6}
+  .dot-due{background:#ef4444}
+  .dot-done{background:#22c55e}
+  .asgn-body{flex:1;min-width:0}
+  .asgn-title{font-weight:600;font-size:.87rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .asgn-meta{font-size:.75rem;color:#64748b;margin-top:.1rem}
+  .asgn-badge{font-size:.7rem;font-weight:700;padding:.18rem .6rem;border-radius:99px;flex-shrink:0;white-space:nowrap}
+  .ab-open{background:#dbeafe;color:#1d4ed8}
+  .ab-due{background:#fee2e2;color:#dc2626}
+  .ab-done{background:#dcfce7;color:#16a34a}
+
+  /* ── Quiz list ── */
+  .quiz-row{display:flex;align-items:center;gap:.9rem;padding:.8rem 0;border-bottom:1px solid #f8fafc}
+  .quiz-row:last-child{border-bottom:none}
+  .qr-icon{width:38px;height:38px;border-radius:9px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+  .qr-body{flex:1;min-width:0}
+  .qr-title{font-weight:600;font-size:.87rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qr-meta{font-size:.74rem;color:#64748b;margin-top:.1rem}
+  .qr-badge{font-size:.7rem;font-weight:700;padding:.18rem .6rem;border-radius:99px;flex-shrink:0}
+  .qb-open{background:#dcfce7;color:#16a34a}
+  .qb-upcoming{background:#fef9c3;color:#b45309}
+  .qb-closed{background:#f3f4f6;color:#6b7280}
+
+  /* ── Notification list ── */
+  .notif-row{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 0;border-bottom:1px solid #f8fafc}
+  .notif-row:last-child{border-bottom:none}
+  .notif-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:#f3f4f6}
+  .notif-icon.unread{background:#eef2ff}
+  .notif-body{flex:1;min-width:0}
+  .notif-title{font-weight:600;font-size:.86rem}
+  .notif-msg{font-size:.78rem;color:#64748b;margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .notif-time{font-size:.72rem;color:#9ca3af;margin-top:.2rem}
+  .unread-pip{width:8px;height:8px;border-radius:50%;background:#6366f1;flex-shrink:0;margin-top:.35rem}
+
+  /* ── Result rows ── */
+  .result-row{display:flex;align-items:center;gap:.9rem;padding:.8rem 0;border-bottom:1px solid #f8fafc;text-decoration:none;color:inherit}
+  .result-row:last-child{border-bottom:none}
+  .result-row:hover .rr-course{color:#4f46e5}
+  .grade-circle{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:900;flex-shrink:0}
+  .gc-A{background:#dcfce7;color:#16a34a}
+  .gc-B{background:#dbeafe;color:#1d4ed8}
+  .gc-C{background:#fef9c3;color:#b45309}
+  .gc-D{background:#ffedd5;color:#c2410c}
+  .gc-F{background:#fee2e2;color:#dc2626}
+  .gc-default{background:#f3f4f6;color:#374151}
+  .rr-body{flex:1;min-width:0}
+  .rr-course{font-weight:600;font-size:.88rem;transition:color .14s}
+  .rr-meta{font-size:.75rem;color:#64748b;margin-top:.1rem}
+  .rr-score{font-weight:800;font-size:.95rem;color:#1e293b;flex-shrink:0}
+
+  /* ── Quick actions ── */
+  .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+  .qa-btn{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.85rem .5rem;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;text-decoration:none;color:#0f172a;font-size:.77rem;font-weight:600;text-align:center;transition:all .15s}
+  .qa-btn:hover{border-color:#4f46e5;background:#eef2ff;transform:translateY(-1px)}
+  .qa-icon{font-size:1.35rem}
+
+  /* ── Attendance widget ── */
+  .att-donut-wrap{display:flex;align-items:center;gap:1.25rem;padding:.5rem 0}
+  .donut-svg{flex-shrink:0}
+  .att-stats{flex:1}
+  .att-stat-row{display:flex;justify-content:space-between;font-size:.82rem;padding:.3rem 0;border-bottom:1px solid #f3f4f6}
+  .att-stat-row:last-child{border-bottom:none}
+  .att-stat-label{color:#64748b}
+  .att-stat-val{font-weight:700;color:#0f172a}
+
+  /* ── CGPA badge ── */
+  .cgpa-badge{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:14px;padding:1.25rem;text-align:center;margin-bottom:1rem}
+  .cgpa-val{font-size:2.5rem;font-weight:900;letter-spacing:-.5px}
+  .cgpa-lbl{font-size:.75rem;opacity:.8;text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace}
+
+  /* ── Welcome banner ── */
+  .welcome-banner{border-radius:14px;padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;color:#fff;position:relative;overflow:hidden;background:linear-gradient(135deg,#312e81 0%,#4f46e5 45%,#7c3aed 100%)}
+  .welcome-banner::before{content:'';position:absolute;inset:0;opacity:.4;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23fff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+  .wb-text{position:relative}
+  .wb-title{font-size:1.1rem;font-weight:700;margin-bottom:.2rem}
+  .wb-sub{font-size:.855rem;opacity:.8;line-height:1.5}
+  .wb-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:.55rem 1.1rem;border-radius:9px;font-size:.83rem;font-weight:700;text-decoration:none;transition:background .15s;flex-shrink:0;position:relative}
+  .wb-btn:hover{background:rgba(255,255,255,.25)}
+
+  .empty-hint{color:#9ca3af;font-size:.85rem;text-align:center;padding:1.5rem 0}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome banner -->
+<div class="welcome-banner">
+  <div class="wb-text">
+    <div class="wb-title">Hello, {{ request.user.get_short_name }} 👋 — Welcome back!</div>
+    <div class="wb-sub">
+      You have
+      {% if pending_assignments %}<strong>{{ pending_assignments }} assignment{{ pending_assignments|pluralize }}</strong> pending{% endif %}
+      {% if open_quizzes %} and <strong>{{ open_quizzes }} quiz{{ open_quizzes|pluralize:"zes" }}</strong> open{% endif %}.
+      Stay on track!
+    </div>
+  </div>
+  <a href="{% url 'students:academic_progress' %}" class="wb-btn">📈 Progress</a>
+</div>
+
+<!-- Stats row -->
+<div class="stat-grid stat-grid-5">
+  <a href="{% url 'students:my_courses' %}" class="stat-card">
+    <div class="stat-icon ic-blue">📚</div>
+    <div class="stat-body">
+      <div class="stat-label">Courses</div>
+      <div class="stat-value">{{ current_count|default:"0" }}</div>
+      <div class="stat-delta">This semester</div>
+    </div>
+  </a>
+  <a href="{% url 'students:my_courses' %}" class="stat-card">
+    <div class="stat-icon ic-purple">📝</div>
+    <div class="stat-body">
+      <div class="stat-label">Pending</div>
+      <div class="stat-value">{{ pending_assignments|default:"0" }}</div>
+      <div class="stat-delta {% if pending_assignments %}down{% endif %}">Assignments due</div>
+    </div>
+  </a>
+  <a href="{% url 'students:my_courses' %}" class="stat-card">
+    <div class="stat-icon ic-amber">🧠</div>
+    <div class="stat-body">
+      <div class="stat-label">Quizzes</div>
+      <div class="stat-value">{{ open_quizzes|default:"0" }}</div>
+      <div class="stat-delta {% if open_quizzes %}up{% endif %}">Open now</div>
+    </div>
+  </a>
+  <a href="{% url 'students:results_list' %}" class="stat-card">
+    <div class="stat-icon ic-green">🏆</div>
+    <div class="stat-body">
+      <div class="stat-label">Results</div>
+      <div class="stat-value">{{ recent_results|length|default:"0" }}</div>
+      <div class="stat-delta">Recent approvals</div>
+    </div>
+  </a>
+  <a href="{% url 'students:notifications' %}" class="stat-card">
+    <div class="stat-icon ic-rose">🔔</div>
+    <div class="stat-body">
+      <div class="stat-label">Alerts</div>
+      <div class="stat-value">{{ unread_count|default:"0" }}</div>
+      <div class="stat-delta {% if unread_count %}down{% endif %}">Unread</div>
+    </div>
+  </a>
+</div>
+
+<!-- Main dash grid -->
+<div class="dash-grid">
+
+  <!-- Left column -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <!-- My Enrolled Courses -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">📖 My Enrolled Courses</span>
+        <a href="{% url 'students:my_courses' %}" class="panel-action">View all →</a>
+      </div>
+      <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+        {% for e in enrolments %}
+        <a href="{% url 'students:course_home' offering_pk=e.offering.pk %}" class="course-row">
+          <div class="c-thumb">📘</div>
+          <div class="course-info">
+            <div class="course-title">{{ e.offering.course.title }}</div>
+            <div class="course-meta">{{ e.offering.course.code }} · {{ e.offering.semester }}</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:55%"></div></div>
+          </div>
+          <span class="c-badge cb-active">Active</span>
+        </a>
+        {% empty %}
+        <div class="empty-hint">No enrolled courses. <a href="{% url 'students:course_registration' %}" style="color:#4f46e5;font-weight:600;">Register a course →</a></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent Results -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">🏆 Recent Results</span>
+        <a href="{% url 'students:results_list' %}" class="panel-action">All results →</a>
+      </div>
+      <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+        {% for r in recent_results %}
+        <a href="{% url 'students:result_detail' offering_pk=r.result_sheet.offering.pk %}" class="result-row">
+          <div class="grade-circle gc-{{ r.letter_grade|first|default:'default' }}">{{ r.letter_grade|default:"–" }}</div>
+          <div class="rr-body">
+            <div class="rr-course">{{ r.result_sheet.offering.course.code }} — {{ r.result_sheet.offering.course.title|truncatechars:35 }}</div>
+            <div class="rr-meta">{{ r.result_sheet.offering.semester }} · {{ r.result_sheet.approved_at|date:"M d, Y" }}</div>
+          </div>
+          <span class="rr-score">{{ r.total_score|default:"—" }}</span>
+        </a>
+        {% empty %}
+        <div class="empty-hint">No approved results yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <!-- CGPA + Quick Actions -->
+    {% if profile %}
+    <div class="cgpa-badge">
+      <div class="cgpa-lbl">Cumulative GPA</div>
+      <div class="cgpa-val">—</div>
+      <div style="font-size:.78rem;opacity:.75;margin-top:.25rem">{{ profile.program|default:"" }}</div>
+    </div>
+    {% endif %}
+
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">⚡ Quick Actions</span></div>
+      <div class="panel-body">
+        <div class="qa-grid">
+          <a href="{% url 'students:my_courses' %}" class="qa-btn"><span class="qa-icon">📚</span>My Courses</a>
+          <a href="{% url 'students:course_registration' %}" class="qa-btn"><span class="qa-icon">➕</span>Register</a>
+          <a href="{% url 'students:results_list' %}" class="qa-btn"><span class="qa-icon">📊</span>Results</a>
+          <a href="{% url 'students:academic_progress' %}" class="qa-btn"><span class="qa-icon">📈</span>Progress</a>
+          <a href="{% url 'students:registration_list' %}" class="qa-btn"><span class="qa-icon">📋</span>Requests</a>
+          <a href="{% url 'students:notifications' %}" class="qa-btn">
+            <span class="qa-icon">🔔</span>Notifications
+            {% if unread_count %}<span style="background:#ef4444;color:#fff;font-size:.6rem;padding:.1rem .4rem;border-radius:99px;">{{ unread_count }}</span>{% endif %}
+          </a>
+          <a href="{% url 'students:profile' %}" class="qa-btn"><span class="qa-icon">🎓</span>Profile</a>
+          <a href="{% url 'accounts:change_password' %}" class="qa-btn"><span class="qa-icon">🔑</span>Password</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">🔔 Notifications</span>
+        <a href="{% url 'students:notifications' %}" class="panel-action">View all →</a>
+      </div>
+      <div class="panel-body" style="padding-top:.4rem;padding-bottom:.4rem">
+        {% for n in recent_notifications %}
+        <div class="notif-row">
+          <div class="notif-icon {% if not n.is_read %}unread{% endif %}">
+            {% if n.is_read %}📭{% else %}📬{% endif %}
+          </div>
+          <div class="notif-body">
+            <div class="notif-title">{{ n.title|default:"Notification" }}</div>
+            <div class="notif-msg">{{ n.message|truncatechars:60 }}</div>
+            <div class="notif-time">{{ n.created_at|timesince }} ago</div>
+          </div>
+          {% if not n.is_read %}<div class="unread-pip"></div>{% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-hint">No notifications.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

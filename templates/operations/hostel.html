@@ -1,0 +1,5 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+{% if my_allocation %}<div class="card" style="margin-bottom:1rem">Your room: <strong>{{ my_allocation.room }}</strong></div>{% endif %}
+{% for h in hostels %}<div class="card" style="margin-bottom:.75rem"><h3>{{ h.name }}</h3><p>{{ h.location }} — Capacity: {{ h.capacity }}</p></div>{% endfor %}
+{% endblock %}

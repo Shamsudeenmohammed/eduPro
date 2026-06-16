@@ -1,0 +1,153 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .rd-wrapper { max-width: 760px; margin: 0 auto; }
+  .rd-hero {
+    background: linear-gradient(135deg, #0f2027 0%, #203a43 60%, #2c5364 100%);
+    border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem; color: #fff;
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .rd-grade-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; font-weight: 900; background: rgba(255,255,255,.12);
+    flex-shrink: 0;
+  }
+  .rd-hero h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 .3rem; }
+  .rd-hero p  { margin: 0; opacity: .75; font-size: .9rem; }
+
+  .score-breakdown {
+    display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  .sb-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 1.25rem; text-align: center;
+  }
+  .sb-card .val { font-size: 2rem; font-weight: 900; color: #1e293b; }
+  .sb-card .lbl { font-size: .78rem; color: #9ca3af; margin-top: .25rem; }
+
+  .detail-card {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .detail-card .header {
+    background: #f8fafc; padding: .85rem 1.25rem;
+    font-weight: 700; font-size: .9rem; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .detail-row {
+    display: flex; padding: .75rem 1.25rem;
+    border-bottom: 1px solid #f3f4f6; font-size: .9rem;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .dk { color: #6b7280; width: 180px; flex-shrink: 0; }
+  .detail-row .dv { font-weight: 600; color: #1e293b; }
+
+  .remarks-box {
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    font-size: .9rem; color: #166534;
+  }
+  .remarks-box strong { display: block; margin-bottom: .25rem; font-weight: 700; }
+
+  .back-link { margin-bottom: 1.5rem; }
+
+  .grade-pill {
+    display: inline-block; font-size: .85rem; font-weight: 800;
+    padding: .3rem 1rem; border-radius: 99px;
+  }
+  .grade-A { background: #dcfce7; color: #16a34a; }
+  .grade-B { background: #dbeafe; color: #1d4ed8; }
+  .grade-C { background: #fef9c3; color: #b45309; }
+  .grade-D { background: #ffedd5; color: #c2410c; }
+  .grade-F { background: #fee2e2; color: #dc2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rd-wrapper">
+  <div class="back-link">
+    <a href="{% url 'students:results_list' %}" class="btn btn-sm btn-outline-secondary">← Back to Results</a>
+  </div>
+
+  <div class="rd-hero">
+    <div class="rd-grade-circle">
+      {{ result.letter_grade|default:"–" }}
+    </div>
+    <div>
+      <h1>{{ offering.course.code }} — {{ offering.course.title }}</h1>
+      <p>{{ offering.semester }} &mdash; {{ offering.semester.session }}</p>
+    </div>
+  </div>
+
+  <div class="score-breakdown">
+    {% if result.ca_score is not None %}
+    <div class="sb-card">
+      <div class="val">{{ result.ca_score }}</div>
+      <div class="lbl">Continuous Assessment</div>
+    </div>
+    {% endif %}
+    {% if result.exam_score is not None %}
+    <div class="sb-card">
+      <div class="val">{{ result.exam_score }}</div>
+      <div class="lbl">Exam Score</div>
+    </div>
+    {% endif %}
+    {% if result.total_score is not None %}
+    <div class="sb-card">
+      <div class="val">{{ result.total_score }}</div>
+      <div class="lbl">Total Score</div>
+    </div>
+    {% endif %}
+    {% if result.grade_point is not None %}
+    <div class="sb-card">
+      <div class="val">{{ result.grade_point }}</div>
+      <div class="lbl">Grade Point</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="detail-card">
+    <div class="header">📋 Result Details</div>
+    <div class="detail-row">
+      <span class="dk">Course Code</span>
+      <span class="dv">{{ offering.course.code }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dk">Course Title</span>
+      <span class="dv">{{ offering.course.title }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dk">Credit Units</span>
+      <span class="dv">{{ offering.course.credit_units }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dk">Semester</span>
+      <span class="dv">{{ offering.semester }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="dk">Letter Grade</span>
+      <span class="dv">
+        {% if result.letter_grade %}
+          <span class="grade-pill grade-{{ result.letter_grade|first }}">{{ result.letter_grade }}</span>
+        {% else %}—{% endif %}
+      </span>
+    </div>
+    {% if result.result_sheet.approved_at %}
+    <div class="detail-row">
+      <span class="dk">Approved On</span>
+      <span class="dv">{{ result.result_sheet.approved_at|date:"M d, Y" }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if result.remarks %}
+  <div class="remarks-box">
+    <strong>📝 Remarks</strong>
+    {{ result.remarks }}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

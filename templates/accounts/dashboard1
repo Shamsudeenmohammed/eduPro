@@ -1,0 +1,689 @@
+{% load static role_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard · eduPro</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --brand: #4f46e5;
+      --brand-dark: #3730a3;
+      --brand-light: #eef2ff;
+      --surface: #ffffff;
+      --bg: #f1f5f9;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 14px;
+      --radius-sm: 9px;
+      --sidebar-w: 268px;
+      --shadow: 0 1px 3px rgba(0,0,0,.06), 0 6px 20px rgba(0,0,0,.06);
+      --t: 160ms ease;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: #0f0e1a;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 200;
+      transition: transform .28s cubic-bezier(.4, 0, .2, 1);
+      border-right: 1px solid rgba(255,255,255,.05);
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+    }
+
+    .sidebar-header {
+      padding: 1.5rem 1.25rem 1.1rem;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-logo {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -.5px;
+      color: #ffffff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6366f1;
+      display: inline-block;
+      margin-bottom: 2px;
+    }
+
+    .sidebar-logo span { color: #818cf8; }
+
+    .sidebar-close {
+      display: none;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,.4);
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      transition: color var(--t);
+    }
+
+    .sidebar-close:hover { color: #ffffff; }
+
+    @media (max-width: 1024px) {
+      .sidebar-close { display: block; }
+    }
+
+    .sidebar-role {
+      margin: .9rem 1.25rem;
+      padding: .4rem .85rem;
+      border-radius: 20px;
+      font-size: .7rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .role-admin { background: rgba(99,102,241,.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,.3); }
+    .role-teacher { background: rgba(245,158,11,.15); color: #fcd34d; border: 1px solid rgba(245,158,11,.25); }
+    .role-student { background: rgba(16,185,129,.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,.25); }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: .25rem 0 1rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.1) transparent;
+    }
+
+    .nav-section {
+      padding: 1rem 1.25rem .3rem;
+      font-size: .65rem;
+      font-weight: 700;
+      color: rgba(165,180,252,.35);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .6rem 1.25rem;
+      color: rgba(255,255,255,.5);
+      text-decoration: none;
+      font-size: .875rem;
+      font-weight: 500;
+      transition: background var(--t), color var(--t);
+      position: relative;
+    }
+
+    .nav-link:hover {
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.85);
+    }
+
+    .nav-link.active {
+      background: rgba(99,102,241,.15);
+      color: #ffffff;
+    }
+
+    .nav-link.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      bottom: 20%;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: #6366f1;
+    }
+
+    .nav-link svg {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      opacity: .8;
+    }
+
+    .nav-link.active svg { opacity: 1; }
+
+    .nav-divider {
+      height: 1px;
+      background: rgba(255,255,255,.05);
+      margin: .5rem 1.25rem;
+    }
+
+    .sidebar-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .6rem .75rem;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,.04);
+    }
+
+    .avatar-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .user-name {
+      font-size: .84rem;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .user-email {
+      font-size: .72rem;
+      color: rgba(165,180,252,.5);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+
+    .logout-btn {
+      width: 100%;
+      margin-top: .6rem;
+      background: transparent;
+      border: 1px solid rgba(239,68,68,.2);
+      color: rgba(252,165,165,.7);
+      font-size: .8rem;
+      font-weight: 600;
+      padding: .5rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--t);
+    }
+
+    .logout-btn:hover {
+      background: rgba(239,68,68,.15);
+      color: #fca5a5;
+      border-color: rgba(239,68,68,.35);
+    }
+
+    /* MAIN */
+    .main-wrap {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    @media (max-width: 1024px) {
+      .main-wrap { margin-left: 0; }
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 6px;
+    }
+
+    @media (max-width: 1024px) {
+      .hamburger { display: flex; }
+    }
+
+    .page-breadcrumb {
+      font-size: .85rem;
+      color: var(--muted);
+    }
+
+    .page-breadcrumb strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .tb-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: .38rem .6rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all var(--t);
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .82rem;
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .tb-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: var(--brand-light);
+    }
+
+    .tb-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .72rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .notif-btn { position: relative; }
+    .notif-dot {
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 2px solid var(--surface);
+    }
+
+    .content {
+      flex: 1;
+      padding: 1.75rem 2rem;
+      max-width: 1440px;
+    }
+
+    @media (max-width: 640px) {
+      .content { padding: 1rem; }
+    }
+
+    /* ROLE SELECTOR CARD */
+    .role-gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 2rem;
+    }
+
+    .role-gate-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .role-gate-sub {
+      color: var(--muted);
+      font-size: .92rem;
+      text-align: center;
+      margin-top: -.75rem;
+    }
+
+    .role-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 740px;
+    }
+
+    .role-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+    }
+
+    .role-card:hover {
+      border-color: var(--brand);
+      box-shadow: var(--shadow);
+      transform: translateY(-3px);
+    }
+
+    .role-card .rc-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .role-card .rc-title { font-size: 1.05rem; font-weight: 800; margin-bottom: .3rem; }
+    .role-card .rc-sub { font-size: .82rem; color: var(--muted); }
+    
+    .role-card.admin-card:hover { border-color: #6366f1; }
+    .role-card.teacher-card:hover { border-color: #f59e0b; }
+    .role-card.student-card:hover { border-color: #10b981; }
+
+    /* WELCOME BANNER */
+    .welcome-banner {
+      border-radius: var(--radius);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+      color: #ffffff;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #312e81 0%, #4f46e5 45%, #7c3aed 100%);
+    }
+
+    .welcome-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .wb-text { position: relative; }
+    .wb-title { font-size: 1.1rem; font-weight: 700; margin-bottom: .2rem; }
+    .wb-sub { font-size: .855rem; opacity: .8; line-height: 1.5; }
+    
+    .wb-btn {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #ffffff;
+      padding: .55rem 1.1rem;
+      border-radius: var(--radius-sm);
+      font-size: .83rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background var(--t);
+      flex-shrink: 0;
+      position: relative;
+    }
+    
+    .wb-btn:hover { background: rgba(255,255,255,.25); }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 150;
+      backdrop-filter: blur(2px);
+    }
+    .overlay.open { display: block; }
+  </style>
+</head>
+<body>
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+  <nav class="sidebar" id="sidebar" aria-label="Main Navigation">
+    <div class="sidebar-header">
+      <a href="{% url 'accounts:dashboard' %}" class="sidebar-logo">edu<span>Pro</span><span class="logo-dot"></span></a>
+      <button class="sidebar-close" id="sidebar-close" aria-label="Close Sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    
+    <div class="sidebar-role role-{% if request.user|is_admin %}admin{% elif request.user|is_teacher %}teacher{% else %}student{% endif %}">
+      {{ request.user.role|default:"User"|title }}
+    </div>
+    
+    <div class="sidebar-nav">
+      <div class="nav-section">General</div>
+      <a href="{% url 'accounts:dashboard' %}" class="nav-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      
+      {% if request.user|is_admin %}
+        <div class="nav-divider"></div>
+        <div class="nav-section">Administration</div>
+        <a href="{% url 'accounts:user_list' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Manage Users
+        </a>
+        <a href="{% url 'academics:course_list' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>All Courses
+        </a>
+        <a href="{% url 'academics:enrolment_list' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Enrolments
+        </a>
+        <a href="{% url 'students:admin_registrations' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>Registrations
+        </a>
+        <a href="{% url 'admin:index' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 0 4.93 19.07"/></svg>Django Admin
+        </a>
+      {% elif request.user|is_teacher %}
+        <div class="nav-divider"></div>
+        <div class="nav-section">Teaching</div>
+        <a href="{% url 'teachers:my_courses' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>My Courses
+        </a>
+        <a href="{% url 'teachers:result_sheet_list' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Results
+        </a>
+      {% else %}
+        <div class="nav-divider"></div>
+        <div class="nav-section">My Learning</div>
+        <a href="{% url 'students:dashboard' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Student Dashboard
+        </a>
+        <a href="{% url 'students:my_courses' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>My Courses
+        </a>
+        <a href="{% url 'students:results_list' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>My Results
+        </a>
+        <a href="{% url 'students:notifications' %}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications
+        </a>
+      {% endif %}
+      
+      <div class="nav-divider"></div>
+      <div class="nav-section">Account</div>
+      <a href="{% url 'accounts:profile' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile
+      </a>
+      <a href="{% url 'accounts:change_password' %}" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Change Password
+      </a>
+    </div>
+    
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar-circle">
+          {% if request.user.first_name and request.user.last_name %}
+            {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+          {% else %}
+            {{ request.user.username|slice:":2"|upper }}
+          {% endif %}
+        </div>
+        <div style="min-width:0">
+          <div class="user-name">{{ request.user.get_full_name|default:request.user.short_name }}</div>
+          <div class="user-email">{{ request.user.email }}</div>
+        </div>
+      </div>
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin-top:.5rem">
+        {% csrf_token %}
+        <button type="submit" class="logout-btn">Sign Out</button>
+      </form>
+    </div>
+  </nav>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" aria-label="Open Sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <nav class="page-breadcrumb" aria-label="Breadcrumb">eduPro / <strong>Dashboard</strong></nav>
+      </div>
+      <div class="topbar-right">
+        <a href="{% if request.user|is_student %}{% url 'students:notifications' %}{% else %}#{% endif %}" class="tb-btn notif-btn" aria-label="Notifications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="notif-dot"></div>
+        </a>
+        <a href="{% url 'accounts:profile' %}" class="tb-avatar" aria-label="View Profile">
+          {% if request.user.first_name and request.user.last_name %}
+            {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+          {% else %}
+            {{ request.user.username|slice:":2"|upper }}
+          {% endif %}
+        </a>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="welcome-banner">
+        <div class="wb-text">
+          <div class="wb-title">Welcome back, {{ request.user.get_short_name|default:request.user.username }} 👋</div>
+          <div class="wb-sub">Redirecting you to your personalised dashboard…</div>
+        </div>
+        {% if request.user|is_admin %}
+          <a href="{% url 'accounts:dashboard' %}" class="wb-btn">Go to Admin Dashboard →</a>
+        {% elif request.user|is_teacher %}
+          <a href="{% url 'teachers:dashboard' %}" class="wb-btn">Go to Teacher Dashboard →</a>
+        {% else %}
+          <a href="{% url 'students:dashboard' %}" class="wb-btn">Go to Student Dashboard →</a>
+        {% endif %}
+      </div>
+
+      <section class="role-gate">
+        <h1 class="role-gate-title">Select Your Dashboard</h1>
+        <div class="role-gate-sub">You are signed in as <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> ({{ request.user.role|default:"User"|title }})</div>
+        <div class="role-cards">
+          {% if request.user|is_admin %}
+          <a href="{% url 'accounts:dashboard' %}" class="role-card admin-card">
+            <div class="rc-icon" aria-hidden="true">🛡️</div>
+            <div class="rc-title">Admin Dashboard</div>
+            <div class="rc-sub">Users, courses, analytics &amp; platform management</div>
+          </a>
+          {% endif %}
+          {% if request.user|is_teacher %}
+          <a href="{% url 'teachers:dashboard' %}" class="role-card teacher-card">
+            <div class="rc-icon" aria-hidden="true">🎓</div>
+            <div class="rc-title">Teacher Dashboard</div>
+            <div class="rc-sub">Courses, assignments, grading &amp; student progress</div>
+          </a>
+          {% endif %}
+          {% if request.user|is_student %}
+          <a href="{% url 'students:dashboard' %}" class="role-card student-card">
+            <div class="rc-icon" aria-hidden="true">📚</div>
+            <div class="rc-title">Student Dashboard</div>
+            <div class="rc-sub">Courses, quizzes, results &amp; academic progress</div>
+          </a>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+      
+      const elements = {
+        sidebar: document.getElementById('sidebar'),
+        overlay: document.getElementById('overlay'),
+        hamburger: document.getElementById('hamburger'),
+        closeBtn: document.getElementById('sidebar-close')
+      };
+
+      const toggleSidebar = (isOpen) => {
+        const action = isOpen ? 'add' : 'remove';
+        elements.sidebar?.classList[action]('open');
+        elements.overlay?.classList[action]('open');
+      };
+
+      elements.hamburger?.addEventListener('click', () => toggleSidebar(true));
+      elements.closeBtn?.addEventListener('click', () => toggleSidebar(false));
+      elements.overlay?.addEventListener('click', () => toggleSidebar(false));
+
+      // Centralized routing configuration mapping flags to target redirect paths
+      const redirects = [
+        { condition: {% if request.user|is_admin %}true{% else %}false{% endif %}, url: "{% url 'accounts:dashboard' %}" },
+        { condition: {% if request.user|is_teacher %}true{% else %}false{% endif %}, url: "{% url 'teachers:dashboard' %}" },
+        { condition: true, url: "{% url 'students:dashboard' %}" }
+      ];
+
+  </script>
+</body>
+</html>

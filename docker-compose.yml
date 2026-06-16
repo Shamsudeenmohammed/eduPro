@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: edupro
+      POSTGRES_USER: edupro
+      POSTGRES_PASSWORD: edupro_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: gunicorn eduPro.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: change-me-in-production
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      DB_NAME: edupro
+      DB_USER: edupro
+      DB_PASSWORD: edupro_secret
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_URL: redis://redis:6379/1
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_data:/app/staticfiles:ro
+      - media_data:/app/media:ro
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:

@@ -1,0 +1,8 @@
+{% extends "base_public.html" %}
+{% block content %}
+<article class="container" style="max-width:800px;padding:3rem 0">
+  <h1>{{ item.title }}</h1>
+  <p style="color:var(--text-muted);margin-bottom:1.5rem">{{ item.published_at|date:"F j, Y" }}</p>
+  <div class="card">{{ item.content|linebreaks }}</div>
+</article>
+{% endblock %}

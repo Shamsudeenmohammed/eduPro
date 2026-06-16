@@ -1,0 +1,5 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<table class="data-table card"><thead><tr><th>Fee</th><th>Due</th><th>Paid</th><th>Status</th></tr></thead>
+<tbody>{% for f in fees %}<tr><td>{{ f.fee_structure.name }}</td><td>{{ f.amount_due }}</td><td>{{ f.amount_paid }}</td><td>{{ f.status }}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

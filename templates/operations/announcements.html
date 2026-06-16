@@ -1,0 +1,2 @@
+{% extends "base_dashboard.html" %}
+{% block content %}{% for a in announcements %}<div class="card" style="margin-bottom:.75rem"><strong>{{ a.title }}</strong> <span class="badge badge-info">{{ a.priority }}</span><p style="margin-top:.5rem;color:var(--text-muted)">{{ a.content|truncatewords:40 }}</p></div>{% empty %}<p>No announcements.</p>{% endfor %}{% endblock %}

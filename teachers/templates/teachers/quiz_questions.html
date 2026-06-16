@@ -1,0 +1,63 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:quiz_question_add' quiz.pk %}" class="btn btn-primary btn-sm">+ Add Question</a>
+<a href="{% url 'teachers:quiz_list' quiz.offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' quiz.offering.pk %}">{{ quiz.offering.course.code }}</a><span class="sep">/</span>
+  <a href="{% url 'teachers:quiz_list' quiz.offering.pk %}">Quizzes</a><span class="sep">/</span>
+  <span>{{ quiz.title }}</span>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">Quiz Info</span></div>
+  <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+    <div><div class="detail-label">Title</div><div class="detail-value">{{ quiz.title }}</div></div>
+    <div><div class="detail-label">Duration</div><div class="detail-value">{{ quiz.duration_minutes }} min</div></div>
+    <div><div class="detail-label">Total Marks</div><div class="detail-value">{{ quiz.total_marks }}</div></div>
+    <div><div class="detail-label">Questions</div><div class="detail-value">{{ questions|length }}</div></div>
+    <div><div class="detail-label">Published</div><div class="detail-value">{% if quiz.is_published %}<span class="badge badge-active">Yes</span>{% else %}<span class="badge badge-inactive">No</span>{% endif %}</div></div>
+    <div><div class="detail-label">Opens</div><div class="detail-value">{{ quiz.start_datetime|date:"d M Y H:i"|default:"Not set" }}</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Questions</span>
+    <span style="font-size:13px;color:var(--muted);">{{ questions|length }} question{{ questions|length|pluralize }}</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if questions %}
+    {% for q in questions %}
+    <div style="padding:16px 18px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px;">
+            Q{{ q.order }} · <span class="badge badge-blue">{{ q.get_question_type_display }}</span> · {{ q.marks }} mark{{ q.marks|pluralize }}
+          </div>
+          <div style="font-size:14px;color:var(--text);">{{ q.text }}</div>
+          {% if q.choices.all %}
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+            {% for choice in q.choices.all %}
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{% if choice.is_correct %}var(--success){% else %}var(--muted){% endif %};">
+              <span style="width:16px;height:16px;border-radius:50%;border:2px solid {% if choice.is_correct %}var(--success){% else %}var(--border){% endif %};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">{% if choice.is_correct %}✓{% endif %}</span>
+              {{ choice.text }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if q.explanation %}
+          <div style="margin-top:8px;font-size:12px;color:var(--muted);font-style:italic;">Explanation: {{ q.explanation }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:40px;"><span class="icon">❓</span>No questions added yet. <a href="{% url 'teachers:quiz_question_add' quiz.pk %}" style="color:var(--accent);">Add the first question</a>.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

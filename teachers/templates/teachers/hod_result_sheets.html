@@ -1,0 +1,155 @@
+{% extends "teachers/base.html" %}
+{% block content %}
+<div class="breadcrumb">
+  <span>Department Result Sheets</span>
+</div>
+
+{% if dept %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="display:flex;align-items:center;gap:12px;padding:14px 20px;">
+    <span style="font-size:22px;">🏛️</span>
+    <div>
+      <div style="font-weight:700;font-size:15px;">{{ dept.name }}</div>
+      <div style="font-size:13px;color:var(--muted);">HOD: {{ request.user.get_full_name }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Stats row -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
+  {% with total=sheets|length %}
+  <div class="stat-card">
+    <div class="stat-label">Total Sheets</div>
+    <div class="stat-value">{{ total }}</div>
+  </div>
+  {% endwith %}
+  <div class="stat-card">
+    <div class="stat-label">Awaiting Approval</div>
+    <div class="stat-value" style="color:var(--warning);">
+      {% with count=0 %}
+      {% for s in sheets %}{% if s.status == "submitted" %}{% with count=count|add:1 %}{% endwith %}{% endif %}{% endfor %}
+      {{ sheets|dictsort:"status"|length }}
+      {% endwith %}
+      <!-- simpler inline count below -->
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{% if dept %}{{ dept.name }} — {% endif %}Result Sheets</span>
+    <span style="font-size:13px;color:var(--muted);">{{ sheets|length }} sheet{{ sheets|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if sheets %}
+    <table>
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Semester</th>
+          <th>CA%</th>
+          <th>Exam%</th>
+          <th>Status</th>
+          <th>Submitted By</th>
+          <th>Submitted At</th>
+          <th>Approved By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sheet in sheets %}
+        <tr>
+          <td>
+            <strong>{{ sheet.offering.course.code }}</strong><br>
+            <span style="font-size:12px;color:var(--muted);">{{ sheet.offering.course.title }}</span>
+            {% if dept %}<br><span style="font-size:11px;color:var(--muted);">{{ sheet.offering.course.department.name }}</span>{% endif %}
+          </td>
+          <td>{{ sheet.offering.semester }}</td>
+          <td>{{ sheet.ca_weight }}%</td>
+          <td>{{ sheet.exam_weight }}%</td>
+          <td>
+            {% if sheet.status == "open" %}<span class="badge badge-open">Open</span>
+            {% elif sheet.status == "submitted" %}<span class="badge badge-submitted">Submitted</span>
+            {% elif sheet.status == "approved" %}<span class="badge badge-approved">Approved ✓</span>
+            {% elif sheet.status == "rejected" %}<span class="badge badge-rejected">Rejected</span>
+            {% endif %}
+          </td>
+          <td>{{ sheet.submitted_by.get_full_name|default:"—" }}</td>
+          <td>{{ sheet.submitted_at|date:"d M Y"|default:"—" }}</td>
+          <td>
+            {% if sheet.approved_by %}
+              {{ sheet.approved_by.get_full_name }}<br>
+              <span style="font-size:11px;color:var(--muted);">{{ sheet.approved_at|date:"d M Y H:i" }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap;">
+            <a href="{% url 'teachers:result_sheet_view' sheet.pk %}" class="btn btn-secondary btn-sm">View</a>
+            {% if sheet.status == "submitted" %}
+              <!-- Approve -->
+              <form method="post" action="{% url 'teachers:result_approve' sheet.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm"
+                  onclick="return confirm('Approve and lock this result sheet for {{ sheet.offering.course.code }}?')">
+                  ✓ Approve
+                </button>
+              </form>
+              <!-- Reject with note modal -->
+              <button class="btn btn-danger btn-sm"
+                onclick="openRejectModal('{{ sheet.pk }}', '{{ sheet.offering.course.code|escapejs }}')">
+                ✗ Reject
+              </button>
+            {% endif %}
+            {% if sheet.status == "rejected" %}
+              <span style="font-size:11px;color:var(--danger);display:block;max-width:160px;">
+                {{ sheet.rejection_note|truncatechars:60 }}
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📊</span>
+      No result sheets found{% if dept %} for {{ dept.name }}{% endif %}.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Reject modal -->
+<div id="rejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:12px;padding:28px;max-width:440px;width:94%;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+    <h3 style="margin:0 0 6px;font-size:17px;">Reject Result Sheet</h3>
+    <p id="rejectSubtitle" style="margin:0 0 16px;font-size:13px;color:var(--muted);"></p>
+    <form id="rejectForm" method="post" action="">
+      {% csrf_token %}
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Rejection Note <span style="color:var(--danger)">*</span></label>
+      <textarea name="rejection_note" rows="4"
+        style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;resize:vertical;"
+        placeholder="Explain why this sheet is being returned for correction…" required></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
+        <button type="submit" class="btn btn-danger">Reject & Return</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRejectModal(sheetPk, courseCode) {
+  document.getElementById('rejectSubtitle').textContent = 'Course: ' + courseCode;
+  document.getElementById('rejectForm').action = '/teachers/results/' + sheetPk + '/reject/';
+  const modal = document.getElementById('rejectModal');
+  modal.style.display = 'flex';
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').style.display = 'none';
+}
+document.getElementById('rejectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRejectModal();
+});
+</script>
+{% endblock %}

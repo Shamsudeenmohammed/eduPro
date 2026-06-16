@@ -1,0 +1,71 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:assignment_create' offering.pk %}" class="btn btn-primary btn-sm">+ Create Assignment</a>
+<a href="{% url 'teachers:course_detail' offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' offering.pk %}">{{ offering.course.code }}</a><span class="sep">/</span>
+  <span>Assignments</span>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Assignments — {{ offering.course.code }}</span>
+    <span style="font-size:13px;color:var(--muted);">{{ assignments|length }} assignment{{ assignments|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if assignments %}
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th><th>Due Date</th><th>Total Marks</th>
+          <th>Status</th><th>Submissions</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asgn in assignments %}
+        <tr>
+          <td><strong>{{ asgn.title }}</strong></td>
+          <td>
+            {{ asgn.due_date|date:"d M Y H:i" }}
+            {% if asgn.is_overdue %}<br><span class="badge badge-inactive">Overdue</span>{% endif %}
+          </td>
+          <td>{{ asgn.total_marks }}</td>
+          <td>
+            <span class="badge badge-{% if asgn.status == 'published' %}active{% elif asgn.status == 'graded' %}purple{% else %}amber{% endif %}">
+              {{ asgn.get_status_display }}
+            </span>
+          </td>
+          <td>{{ asgn.submission_count }}</td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap;">
+            <a href="{% url 'teachers:assignment_submissions' asgn.pk %}" class="btn btn-secondary btn-sm">
+              Submissions
+            </a>
+            {% if asgn.status == "draft" or asgn.status == "published" %}
+            <form method="post" action="{% url 'teachers:assignment_publish_toggle' asgn.pk %}" style="display:inline;">
+              {% csrf_token %}
+              {% if asgn.status == "draft" %}
+                <button type="submit" class="btn btn-success btn-sm"
+                  onclick="return confirm('Publish this assignment? Students will be able to see and submit it.')">
+                  Publish
+                </button>
+              {% else %}
+                <button type="submit" class="btn btn-warning btn-sm"
+                  onclick="return confirm('Move this assignment back to draft? Students will no longer see it.')">
+                  Unpublish
+                </button>
+              {% endif %}
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📝</span>No assignments yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

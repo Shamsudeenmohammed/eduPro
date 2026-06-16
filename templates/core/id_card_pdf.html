@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>ID Card</title>
+<style>body{font-family:Arial;margin:20px}.card{border:2px solid #333;width:350px;padding:20px;border-radius:10px}</style>
+</head><body>
+<div class="card">
+<h2>{{ site_name|default:"eduPro" }}</h2>
+<p><strong>{{ user.get_full_name }}</strong></p>
+<p>{{ user.get_role_display|default:user.role|capfirst }}</p>
+<p>{{ user.email }}</p>
+<p style="font-size:10px">ID: {{ user.pk }}</p>
+</div>
+</body></html>

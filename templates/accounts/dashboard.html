@@ -1,0 +1,870 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Admin Dashboard · eduPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0d11;
+  --surface:#13161c;
+  --surface2:#1a1e27;
+  --surface3:#222632;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.11);
+  --ochre:#e8a84c;
+  --ochre2:#f5c97a;
+  --ochre-dim:rgba(232,168,76,0.12);
+  --teal:#3ecfb2;
+  --teal-dim:rgba(62,207,178,0.1);
+  --rose:#e05f75;
+  --rose-dim:rgba(224,95,117,0.1);
+  --blue:#5b9cf6;
+  --blue-dim:rgba(91,156,246,0.1);
+  --tx1:#edf0f5;
+  --tx2:#8a91a0;
+  --tx3:#515970;
+  --font:'Instrument Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --r:8px;
+  --r2:12px;
+}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;min-height:100vh;font-size:13px;line-height:1.5;overflow-x:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto}
+@media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}}
+.logo-area{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-shrink:0}
+.logo-mark{width:28px;height:28px;border-radius:7px;background:var(--ochre);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:16px;height:16px;color:#0b0d11}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-0.3px}
+.logo-text em{font-style:normal;color:var(--ochre)}
+.logo-tag{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:1px;letter-spacing:0.5px}
+.sb-section{padding:16px 0 4px}
+.sb-label{padding:0 14px 6px;font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx3);display:block}
+.sb-link{display:flex;align-items:center;gap:9px;padding:7px 14px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500;border-left:2px solid transparent;transition:all 0.15s}
+.sb-link:hover{color:var(--tx1);background:rgba(255,255,255,0.03)}
+.sb-link.active{color:var(--ochre);border-left-color:var(--ochre);background:var(--ochre-dim);font-weight:600}
+.sb-link svg{width:15px;height:15px;flex-shrink:0;opacity:0.7}
+.sb-link.active svg{opacity:1}
+.sb-badge{margin-left:auto;background:rgba(224,95,117,0.2);color:var(--rose);font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px}
+.sb-footer{margin-top:auto;padding:14px;border-top:1px solid var(--border);flex-shrink:0}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3a3560,#5b4a87);color:#c4baff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;border:1px solid rgba(161,148,255,0.2)}
+.user-name{font-size:12px;font-weight:600;color:var(--tx1);line-height:1.2}
+.user-role{font-size:10px;color:var(--tx3);font-family:var(--mono)}
+.logout-form{margin:0}
+.logout-btn{display:flex;align-items:center;gap:6px;width:100%;padding:6px 10px;background:none;border:none;color:var(--tx3);font-family:var(--font);font-size:12px;border-radius:6px;transition:all 0.15s;cursor:pointer;text-align:left}
+.logout-btn:hover{color:var(--rose);background:var(--rose-dim)}
+.logout-btn svg{width:14px;height:14px;flex-shrink:0}
+
+/* ── MAIN ── */
+.main-wrap{flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+@media(max-width:1024px){.main-wrap{margin-left:0}}
+.topbar{background:rgba(11,13,17,0.9);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.hamburger{display:none;background:none;border:none;color:var(--tx2);cursor:pointer;padding:4px;line-height:1}
+@media(max-width:1024px){.hamburger{display:flex;align-items:center}}
+.breadcrumb{font-size:12px;color:var(--tx3);display:flex;align-items:center;gap:5px}
+.breadcrumb strong{color:var(--tx1);font-weight:600}
+.breadcrumb span{opacity:0.4}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.tb-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0}
+.tb-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--teal);font-family:var(--mono)}
+.tb-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--tx2);font-size:11.5px;cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--font)}
+.tb-pill:hover{color:var(--tx1);border-color:rgba(255,255,255,0.18)}
+.tb-pill svg{width:13px;height:13px}
+.tb-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3a3560,#5b4a87);color:#c4baff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0}
+.content{flex:1;padding:24px 28px;overflow-y:auto}
+@media(max-width:640px){.content{padding:16px}}
+
+/* ── MESSAGES ── */
+.messages-wrap{margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
+.msg-item{padding:10px 14px;border-radius:var(--r);font-size:12.5px;display:flex;align-items:center;gap:8px;border:1px solid}
+.msg-success{background:rgba(62,207,178,0.07);border-color:rgba(62,207,178,0.2);color:var(--teal)}
+.msg-error{background:rgba(224,95,117,0.07);border-color:rgba(224,95,117,0.2);color:var(--rose)}
+.msg-warning{background:rgba(232,168,76,0.07);border-color:rgba(232,168,76,0.2);color:var(--ochre)}
+.msg-info{background:rgba(91,156,246,0.07);border-color:rgba(91,156,246,0.2);color:var(--blue)}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.ph-left h1{font-size:21px;font-weight:700;letter-spacing:-0.4px;color:var(--tx1);line-height:1.2}
+.ph-left p{font-size:12.5px;color:var(--tx2);margin-top:3px}
+.ph-right{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;border:none;transition:all 0.15s;white-space:nowrap}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-primary{background:var(--ochre);color:#0b0d11}
+.btn-primary:hover{background:var(--ochre2)}
+.btn-ghost{background:var(--surface2);color:var(--tx1);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface3);border-color:rgba(255,255,255,0.18)}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;cursor:default}
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kpi-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.kpi-icon svg{width:17px;height:17px}
+.kpi-trend{font-family:var(--mono);font-size:10px;font-weight:500;display:flex;align-items:center;gap:3px;padding:3px 7px;border-radius:4px}
+.kpi-val{font-family:var(--mono);font-size:28px;font-weight:500;letter-spacing:-0.5px;line-height:1;color:var(--tx1);margin-bottom:4px;animation:countUp 0.5s ease both}
+.kpi-label{font-size:11px;color:var(--tx2);font-weight:500;text-transform:uppercase;letter-spacing:0.6px}
+.kpi-bar{margin-top:12px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);width:0%}
+@keyframes countUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BODY GRID ── */
+.body-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;align-items:start}
+@media(max-width:1100px){.body-grid{grid-template-columns:1fr}}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:700;color:var(--tx1);display:flex;align-items:center;gap:7px}
+.card-title svg{width:15px;height:15px;color:var(--tx3)}
+.card-action{font-size:11.5px;color:var(--tx3);cursor:pointer;transition:color 0.15s;text-decoration:none}
+.card-action:hover{color:var(--ochre)}
+
+/* ── MODULE GRID ── */
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+@media(max-width:700px){.module-grid{grid-template-columns:repeat(2,1fr)}}
+.module-tile{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;transition:all 0.15s;position:relative;overflow:hidden}
+.module-tile::after{content:'→';position:absolute;right:12px;bottom:12px;font-size:12px;color:var(--tx3);transition:all 0.15s}
+.module-tile:hover{border-color:var(--border2);background:var(--surface3);transform:translateY(-1px)}
+.module-tile:hover::after{color:var(--ochre);transform:translateX(2px)}
+.mt-ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:2px}
+.mt-name{font-size:12.5px;font-weight:700;color:var(--tx1)}
+.mt-desc{font-size:11px;color:var(--tx3);line-height:1.4;padding-right:16px}
+
+/* ── SPARKLINES ── */
+.sparkline-row{display:flex;align-items:center;gap:8px;padding:10px 18px 14px}
+.spark-label{font-size:11px;color:var(--tx2);min-width:90px;font-weight:500}
+.spark-wrap{flex:1;height:28px;min-width:0}
+canvas.spark{display:block;width:100%;height:28px}
+.spark-val{font-family:var(--mono);font-size:11px;color:var(--tx2);min-width:28px;text-align:right}
+
+/* ── STATUS ── */
+.status-list{list-style:none}
+.status-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:12px}
+.status-row:last-child{border-bottom:none}
+.status-row:hover{background:rgba(255,255,255,0.02)}
+.s-label{color:var(--tx2);font-weight:500}
+.s-pill{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px}
+.s-val{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--tx1)}
+.pill-green{background:rgba(62,207,178,0.12);color:var(--teal)}
+.pill-amber{background:rgba(232,168,76,0.15);color:var(--ochre)}
+.pill-muted{background:var(--surface2);color:var(--tx2);border:1px solid var(--border)}
+.pill-rose{background:var(--rose-dim);color:var(--rose)}
+
+/* ── QUICK ACTIONS ── */
+.actions-list{padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.action-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;border:1px solid var(--border);text-decoration:none;cursor:pointer;transition:all 0.15s;background:none}
+.action-row:hover{border-color:var(--border2);background:var(--surface2)}
+.ar-left{display:flex;align-items:center;gap:8px}
+.ar-ico{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.ar-ico svg{width:13px;height:13px}
+.ar-label{font-size:12px;font-weight:600;color:var(--tx1)}
+.ar-count{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
+.ar-arrow{color:var(--tx3);font-size:11px;transition:all 0.15s}
+.action-row:hover .ar-arrow{transform:translateX(2px);color:var(--ochre)}
+
+/* ── BOTTOM GRID ── */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+
+/* ── REGISTRATION TABLE ── */
+.reg-table{width:100%;border-collapse:collapse}
+.reg-table th{padding:8px 16px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--tx3);border-bottom:1px solid var(--border)}
+.reg-table td{padding:11px 16px;font-size:12.5px;border-bottom:1px solid var(--border)}
+.reg-table tr:last-child td{border-bottom:none}
+.reg-table tr:hover td{background:rgba(255,255,255,0.02)}
+.code-tag{font-family:var(--mono);font-size:11px;color:var(--ochre);background:var(--ochre-dim);padding:2px 7px;border-radius:4px;border:1px solid rgba(232,168,76,0.2)}
+.status-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;font-family:var(--mono);letter-spacing:0.3px}
+
+/* ── DEPT PROGRESS ── */
+.prog-list{list-style:none;padding:10px 18px;display:flex;flex-direction:column;gap:12px}
+.prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.prog-name{font-size:12px;font-weight:600;color:var(--tx1)}
+.prog-pct{font-family:var(--mono);font-size:11px;color:var(--tx2)}
+.prog-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width 1.4s cubic-bezier(0.4,0,0.2,1);width:0%}
+
+/* ── FEED ── */
+.feed-list{list-style:none}
+.feed-item{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background 0.12s;align-items:flex-start}
+.feed-item:last-child{border-bottom:none}
+.feed-item:hover{background:rgba(255,255,255,0.02)}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.feed-body{flex:1;min-width:0}
+.feed-msg{font-size:12.5px;color:var(--tx1);line-height:1.4}
+.feed-msg strong{color:var(--ochre);font-weight:600}
+.feed-time{font-size:10.5px;color:var(--tx3);font-family:var(--mono);margin-top:2px}
+.feed-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:2px;font-family:var(--mono);letter-spacing:0.3px}
+.feed-filter-btn{cursor:pointer;border:none;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;transition:all 0.15s}
+
+/* ── OVERLAY ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:150;backdrop-filter:blur(2px)}
+.overlay.open{display:block}
+
+/* ── UPTIME ── */
+#uptimeVal{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--tx1)}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar" id="sidebar">
+  <div class="logo-area">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">edu<em>Pro</em></div>
+      <div class="logo-tag">ADMIN CONSOLE</div>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Overview</span>
+    <a href="{% url 'accounts:dashboard' %}" class="sb-link active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Users</span>
+    <a href="{% url 'accounts:user_list' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      All Users
+    </a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Academics</span>
+    <a href="{% url 'academics:course_list' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      Courses
+    </a>
+    <a href="{% url 'academics:enrolment_list' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      Enrolments
+    </a>
+    <a href="{% url 'accounts:admin_registrations' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Registrations
+      {% if pending_registrations %}<span class="sb-badge">{{ pending_registrations }}</span>{% endif %}
+    </a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">Enterprise</span>
+    <a href="{% url 'analytics:dashboard' %}" class="sb-link">Analytics</a>
+    <a href="{% url 'finance:dashboard' %}" class="sb-link">Finance</a>
+    <a href="{% url 'operations:announcements' %}" class="sb-link">Announcements</a>
+    <a href="{% url 'operations:timetable' %}" class="sb-link">Timetable</a>
+    <a href="{% url 'feedback:dashboard' %}" class="sb-link">Feedback</a>
+    <a href="{% url 'core:audit_logs' %}" class="sb-link">Audit Logs</a>
+    <a href="{% url 'portal:admin_admissions' %}" class="sb-link">Admissions</a>
+    <a href="{% url 'api:root' %}" class="sb-link">API</a>
+  </div>
+
+  <div class="sb-section">
+    <span class="sb-label">System</span>
+    <a href="{% url 'admin:index' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M19.07 4.93A10 10 0 104.93 19.07"/></svg>
+      Django Admin
+    </a>
+    <a href="{% url 'accounts:profile' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      My Profile
+    </a>
+    <a href="{% url 'accounts:change_password' %}" class="sb-link">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path stroke-linecap="round" d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      Change Password
+    </a>
+  </div>
+
+  <div class="sb-footer">
+    <div class="user-row">
+      <div class="user-avatar">
+        {% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.email|slice:":1"|upper }}{% endif %}
+      </div>
+      <div style="min-width:0">
+        <div class="user-name">{{ request.user.get_full_name }}</div>
+        <div class="user-role">ADMINISTRATOR</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">
+      {% csrf_token %}
+      <button type="submit" class="logout-btn">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign out
+      </button>
+    </form>
+  </div>
+</nav>
+
+<!-- ── MAIN WRAP ── -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger" aria-label="Open menu">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="breadcrumb">
+        <span>eduPro</span><span>›</span><strong>Admin Dashboard</strong>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="tb-status"><div class="tb-dot"></div>SYSTEM OPERATIONAL</div>
+      <a href="{% url 'accounts:profile' %}" class="tb-pill">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        Profile
+      </a>
+      <a href="{% url 'admin:index' %}" class="tb-pill">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M19.07 4.93A10 10 0 104.93 19.07"/></svg>
+        Admin
+      </a>
+      <a href="{% url 'accounts:profile' %}" class="tb-avatar" title="{{ request.user.get_full_name }}">
+        {% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.email|slice:":1"|upper }}{% endif %}
+      </a>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    {% if messages %}
+    <div class="messages-wrap">
+      {% for msg in messages %}
+      <div class="msg-item msg-{{ msg.tags }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="ph-left">
+        <h1>Welcome back, {{ request.user.get_short_name }} 👋</h1>
+        <p>Here's what's happening on your platform today</p>
+      </div>
+      <div class="ph-right">
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Export Report
+        </a>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-primary">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+          New User
+        </a>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+
+      <a href="{% url 'accounts:user_list' %}" style="text-decoration:none">
+        <div class="kpi">
+          <div class="kpi-accent" style="background:var(--blue)"></div>
+          <div class="kpi-top">
+            <div class="kpi-icon" style="background:var(--blue-dim)">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><path stroke-linecap="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="kpi-trend" style="background:var(--blue-dim);color:var(--blue)">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="var(--blue)"><path d="M5 1l4 4H6v4H4V5H1z"/></svg>
+              +12%
+            </div>
+          </div>
+          <div class="kpi-val" id="kv-users" style="animation-delay:0.1s">{{ total_users|default:"0" }}</div>
+          <div class="kpi-label">Total Users</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kb-users" style="background:var(--blue)" data-pct="74"></div></div>
+        </div>
+      </a>
+
+      <a href="{% url 'academics:course_list' %}" style="text-decoration:none">
+        <div class="kpi">
+          <div class="kpi-accent" style="background:var(--teal)"></div>
+          <div class="kpi-top">
+            <div class="kpi-icon" style="background:var(--teal-dim)">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <div class="kpi-trend" style="background:var(--teal-dim);color:var(--teal)">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="var(--teal)"><path d="M5 1l4 4H6v4H4V5H1z"/></svg>
+              +5%
+            </div>
+          </div>
+          <div class="kpi-val" id="kv-courses" style="animation-delay:0.2s">{{ total_courses|default:"0" }}</div>
+          <div class="kpi-label">Active Courses</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kb-courses" style="background:var(--teal)" data-pct="60"></div></div>
+        </div>
+      </a>
+
+      <a href="{% url 'academics:enrolment_list' %}" style="text-decoration:none">
+        <div class="kpi">
+          <div class="kpi-accent" style="background:var(--ochre)"></div>
+          <div class="kpi-top">
+            <div class="kpi-icon" style="background:var(--ochre-dim)">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="1.8"><path stroke-linecap="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="kpi-trend" style="background:var(--ochre-dim);color:var(--ochre)">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="var(--ochre)"><path d="M5 1l4 4H6v4H4V5H1z"/></svg>
+              +8%
+            </div>
+          </div>
+          <div class="kpi-val" id="kv-enrolments" style="animation-delay:0.3s">{{ total_enrolments|default:"0" }}</div>
+          <div class="kpi-label">Enrolments</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kb-enrolments" style="background:var(--ochre)" data-pct="82"></div></div>
+        </div>
+      </a>
+
+      <a href="{% url 'accounts:admin_registrations' %}" style="text-decoration:none">
+        <div class="kpi">
+          <div class="kpi-accent" style="background:var(--rose)"></div>
+          <div class="kpi-top">
+            <div class="kpi-icon" style="background:var(--rose-dim)">
+              <svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <div class="kpi-trend" style="background:var(--rose-dim);color:var(--rose);font-size:9px">!! PENDING</div>
+          </div>
+          <div class="kpi-val" style="color:var(--rose);animation-delay:0.4s">{{ pending_request_count|default:"0" }}</div>
+          <div class="kpi-label">Pending Requests</div>
+          <div class="kpi-bar"><div class="kpi-bar-fill" id="kb-pending" style="background:var(--rose)" data-pct="25"></div></div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Body Grid -->
+    <div class="body-grid">
+
+      <!-- Left -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <!-- Module Quick Access -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              Platform modules
+            </div>
+          </div>
+          <div class="module-grid">
+            <a href="{% url 'accounts:user_list' %}" class="module-tile" style="border-top:2px solid var(--blue)">
+              <div class="mt-ico" style="background:var(--blue-dim)">👥</div>
+              <div class="mt-name">Users</div>
+              <div class="mt-desc">Manage accounts &amp; roles</div>
+            </a>
+            <a href="{% url 'academics:course_list' %}" class="module-tile" style="border-top:2px solid var(--teal)">
+              <div class="mt-ico" style="background:var(--teal-dim)">📚</div>
+              <div class="mt-name">Courses</div>
+              <div class="mt-desc">Offerings by dept.</div>
+            </a>
+            <a href="{% url 'academics:enrolment_list' %}" class="module-tile" style="border-top:2px solid var(--ochre)">
+              <div class="mt-ico" style="background:var(--ochre-dim)">🎓</div>
+              <div class="mt-name">Enrolments</div>
+              <div class="mt-desc">Track student enrolment</div>
+            </a>
+            <a href="{% url 'accounts:admin_registrations' %}" class="module-tile" style="border-top:2px solid var(--rose)">
+              <div class="mt-ico" style="background:var(--rose-dim)">📋</div>
+              <div class="mt-name">Registrations</div>
+              <div class="mt-desc">Approve / reject requests</div>
+            </a>
+            <a href="{% url 'accounts:profile' %}" class="module-tile" style="border-top:2px solid #7c68ee">
+              <div class="mt-ico" style="background:rgba(124,104,238,0.1)">🪪</div>
+              <div class="mt-name">My Profile</div>
+              <div class="mt-desc">Account &amp; preferences</div>
+            </a>
+            <a href="{% url 'admin:index' %}" class="module-tile" style="border-top:2px solid var(--tx3)">
+              <div class="mt-ico" style="background:var(--surface3)">⚙️</div>
+              <div class="mt-name">Django Admin</div>
+              <div class="mt-desc">Low-level DB &amp; perms</div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Weekly Activity Sparklines -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+              Weekly activity
+            </div>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">LAST 7 DAYS</span>
+          </div>
+          <div style="padding:4px 0 0">
+            <div class="sparkline-row">
+              <span class="spark-label">Enrolments</span>
+              <div class="spark-wrap"><canvas id="spark1" class="spark" height="28"></canvas></div>
+              <span class="spark-val" id="sv1">—</span>
+            </div>
+            <div class="sparkline-row" style="border-top:1px solid var(--border)">
+              <span class="spark-label">Registrations</span>
+              <div class="spark-wrap"><canvas id="spark2" class="spark" height="28"></canvas></div>
+              <span class="spark-val" id="sv2">—</span>
+            </div>
+            <div class="sparkline-row" style="border-top:1px solid var(--border)">
+              <span class="spark-label">New users</span>
+              <div class="spark-wrap"><canvas id="spark3" class="spark" height="28"></canvas></div>
+              <span class="spark-val" id="sv3">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <!-- System Status -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              System status
+            </div>
+            <span class="s-pill pill-green" style="font-size:9px">● OPERATIONAL</span>
+          </div>
+          <ul class="status-list">
+            <li class="status-row"><span class="s-label">Application</span><span class="s-pill pill-green">Online</span></li>
+            <li class="status-row"><span class="s-label">Database</span><span class="s-pill pill-green">Connected</span></li>
+            <li class="status-row"><span class="s-label">Django</span><span class="s-val">5.2</span></li>
+            <li class="status-row"><span class="s-label">Environment</span><span class="s-pill pill-amber">Development</span></li>
+            <li class="status-row"><span class="s-label">Debug mode</span><span class="s-pill pill-amber">On</span></li>
+            <li class="status-row"><span class="s-label">Uptime</span><span id="uptimeVal">00:00:00</span></li>
+          </ul>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Quick actions
+            </div>
+          </div>
+          <div class="actions-list">
+            <a href="{% url 'accounts:admin_registrations' %}" class="action-row">
+              <div class="ar-left">
+                <div class="ar-ico" style="background:var(--rose-dim)">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="2"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                </div>
+                <span class="ar-label">Review registrations</span>
+              </div>
+              {% if pending_registrations %}<span class="ar-count" style="background:var(--rose-dim);color:var(--rose)">{{ pending_registrations }}</span>{% endif %}
+              <span class="ar-arrow">›</span>
+            </a>
+            <a href="{% url 'accounts:user_list' %}" class="action-row">
+              <div class="ar-left">
+                <div class="ar-ico" style="background:var(--blue-dim)">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="2"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+                </div>
+                <span class="ar-label">Add new user</span>
+              </div>
+              <span class="ar-arrow">›</span>
+            </a>
+            <a href="{% url 'academics:course_list' %}" class="action-row">
+              <div class="ar-left">
+                <div class="ar-ico" style="background:var(--teal-dim)">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="2"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13"/></svg>
+                </div>
+                <span class="ar-label">Add new course</span>
+              </div>
+              <span class="ar-arrow">›</span>
+            </a>
+            <a href="{% url 'academics:enrolment_list' %}" class="action-row">
+              <div class="ar-left">
+                <div class="ar-ico" style="background:var(--ochre-dim)">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="2"><path stroke-linecap="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10"/></svg>
+                </div>
+                <span class="ar-label">View all enrolments</span>
+              </div>
+              <span class="ar-arrow">›</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom Grid -->
+    <div class="bottom-grid">
+
+      <!-- Recent Registrations Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+            Recent registrations
+          </div>
+          <a href="{% url 'accounts:admin_registrations' %}" class="card-action">View all →</a>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="reg-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Course</th>
+                <th>Status</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for reg in recent_registrations %}
+              <tr>
+                <td style="font-weight:600">{{ reg.student.get_full_name }}</td>
+                <td><span class="code-tag">{{ reg.offering.course.code }}</span></td>
+                <td>
+                  {% if reg.status == 'pending' %}
+                    <span class="status-chip" style="background:var(--ochre-dim);color:var(--ochre)">Pending</span>
+                  {% elif reg.status == 'approved' %}
+                    <span class="status-chip" style="background:var(--teal-dim);color:var(--teal)">Approved</span>
+                  {% elif reg.status == 'rejected' %}
+                    <span class="status-chip" style="background:var(--rose-dim);color:var(--rose)">Rejected</span>
+                  {% else %}
+                    <span class="status-chip" style="background:var(--surface2);color:var(--tx2)">{{ reg.status|capfirst }}</span>
+                  {% endif %}
+                </td>
+                <td style="color:var(--tx3);font-family:var(--mono);font-size:11px">{{ reg.created_at|timesince }} ago</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" style="text-align:center;color:var(--tx3);padding:24px;font-size:12px">No registration activity yet</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dept Breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+            Enrolment by dept.
+          </div>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">TOP 5</span>
+        </div>
+        <ul class="prog-list" id="deptProgList">
+          {% if dept_breakdown %}
+            {% for dept in dept_breakdown %}
+            <li>
+              <div class="prog-head">
+                <span class="prog-name">{{ dept.name }}</span>
+                <span class="prog-pct">{{ dept.count }}</span>
+              </div>
+              <div class="prog-track">
+                <div class="prog-fill dept-bar" style="background:var(--teal)" data-pct="{{ dept.pct|default:50 }}"></div>
+              </div>
+            </li>
+            {% endfor %}
+          {% else %}
+          <!-- Placeholder bars rendered by JS if no server data -->
+          <li id="dept-placeholder" style="color:var(--tx3);font-size:12px;text-align:center;padding:16px 0">No department data available</li>
+          {% endif %}
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-header">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Activity feed
+        </div>
+        <div style="display:flex;gap:6px" id="feedFilters">
+          <button class="feed-filter-btn pill-green" data-filter="all" onclick="filterFeed('all')">All</button>
+          <button class="feed-filter-btn pill-muted" data-filter="pending" onclick="filterFeed('pending')">Pending</button>
+          <button class="feed-filter-btn pill-muted" data-filter="approved" onclick="filterFeed('approved')">Approved</button>
+        </div>
+      </div>
+      <ul class="feed-list" id="feedList">
+        {% for reg in recent_registrations %}
+        <li class="feed-item" data-status="{{ reg.status }}">
+          <div class="feed-dot" style="background:{% if reg.status == 'approved' %}var(--teal){% elif reg.status == 'rejected' %}var(--rose){% else %}var(--ochre){% endif %}"></div>
+          <div class="feed-body">
+            <div class="feed-msg">
+              <strong>{{ reg.student.get_full_name }}</strong>
+              requested enrolment in
+              <span class="code-tag">{{ reg.offering.course.code }}</span>
+            </div>
+            <div class="feed-time">{{ reg.created_at|timesince }} ago</div>
+          </div>
+          <span class="feed-status" style="
+            {% if reg.status == 'approved' %}background:var(--teal-dim);color:var(--teal)
+            {% elif reg.status == 'rejected' %}background:var(--rose-dim);color:var(--rose)
+            {% else %}background:var(--ochre-dim);color:var(--ochre){% endif %}
+          ">{{ reg.status|capfirst }}</span>
+        </li>
+        {% empty %}
+        <li id="feed-empty" style="padding:24px;text-align:center;color:var(--tx3);font-size:12px">No activity to display</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main-wrap -->
+
+<script>
+(function(){
+
+  /* ── Sidebar toggle ── */
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('overlay');
+  const hamburger = document.getElementById('hamburger');
+
+  if(hamburger){
+    hamburger.addEventListener('click', function(){
+      sidebar.classList.add('open');
+      overlay.classList.add('open');
+    });
+  }
+  if(overlay){
+    overlay.addEventListener('click', function(){
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
+  }
+
+  /* ── Active nav link ── */
+  document.querySelectorAll('.sb-link').forEach(function(link){
+    if(link.getAttribute('href') === window.location.pathname){
+      document.querySelectorAll('.sb-link').forEach(function(l){ l.classList.remove('active'); });
+      link.classList.add('active');
+    }
+  });
+
+  /* ── KPI bar animations ── */
+  setTimeout(function(){
+    document.querySelectorAll('.kpi-bar-fill[data-pct]').forEach(function(el){
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+    document.querySelectorAll('.dept-bar[data-pct]').forEach(function(el){
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+  }, 200);
+
+  /* ── Uptime clock ── */
+  var secs = 0;
+  var uptimeEl = document.getElementById('uptimeVal');
+  if(uptimeEl){
+    setInterval(function(){
+      secs++;
+      var h = Math.floor(secs/3600);
+      var m = Math.floor((secs%3600)/60);
+      var s = secs % 60;
+      var f = function(n){ return String(n).padStart(2,'0'); };
+      uptimeEl.textContent = f(h)+':'+f(m)+':'+f(s);
+    }, 1000);
+  }
+
+  /* ── Sparkline renderer ── */
+  function drawSparkline(canvasId, data, color) {
+    var cv = document.getElementById(canvasId);
+    if(!cv) return;
+    var dpr = window.devicePixelRatio || 1;
+    var W = cv.parentElement.offsetWidth || 120;
+    var H = 28;
+    cv.style.width = W + 'px';
+    cv.style.height = H + 'px';
+    cv.width  = W * dpr;
+    cv.height = H * dpr;
+    var ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    var min = Math.min.apply(null, data);
+    var max = Math.max.apply(null, data);
+    var range = max - min || 1;
+    var pts = data.map(function(v,i){
+      return [
+        (i/(data.length-1))*(W-4)+2,
+        H - ((v-min)/range)*(H-6)-3
+      ];
+    });
+    /* Fill */
+    var fill = new Path2D();
+    fill.moveTo(pts[0][0], H);
+    fill.lineTo(pts[0][0], pts[0][1]);
+    for(var i=1;i<pts.length;i++){
+      var cpx=(pts[i][0]+pts[i-1][0])/2;
+      fill.bezierCurveTo(cpx,pts[i-1][1],cpx,pts[i][1],pts[i][0],pts[i][1]);
+    }
+    fill.lineTo(pts[pts.length-1][0],H);
+    var grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,color+'44');
+    grad.addColorStop(1,color+'00');
+    ctx.fillStyle=grad;
+    ctx.fill(fill);
+    /* Line */
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0],pts[0][1]);
+    for(var j=1;j<pts.length;j++){
+      var cx=(pts[j][0]+pts[j-1][0])/2;
+      ctx.bezierCurveTo(cx,pts[j-1][1],cx,pts[j][1],pts[j][0],pts[j][1]);
+    }
+    ctx.strokeStyle=color;
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    /* Dot */
+    var last=pts[pts.length-1];
+    ctx.beginPath();
+    ctx.arc(last[0],last[1],2.5,0,Math.PI*2);
+    ctx.fillStyle=color;
+    ctx.fill();
+  }
+
+  /* Sparkline data — extend these from Django context vars if you wish */
+  var sparkData = {
+    enrolments:    [14,22,18,30,25,35,28],
+    registrations: [3,5,4,8,6,10,7],
+    users:         [2,3,2,5,4,6,4]
+  };
+
+  setTimeout(function(){
+    drawSparkline('spark1', sparkData.enrolments,    '#3ecfb2');
+    drawSparkline('spark2', sparkData.registrations, '#e8a84c');
+    drawSparkline('spark3', sparkData.users,         '#5b9cf6');
+    var last = function(a){ return a[a.length-1]; };
+    var sv1=document.getElementById('sv1'); if(sv1) sv1.textContent = last(sparkData.enrolments);
+    var sv2=document.getElementById('sv2'); if(sv2) sv2.textContent = last(sparkData.registrations);
+    var sv3=document.getElementById('sv3'); if(sv3) sv3.textContent = last(sparkData.users);
+  }, 150);
+
+  /* ── Feed filter ── */
+  window.filterFeed = function(type){
+    /* Update button styles */
+    document.querySelectorAll('.feed-filter-btn').forEach(function(btn){
+      btn.className = 'feed-filter-btn ' + (btn.getAttribute('data-filter')===type ? 'pill-green' : 'pill-muted');
+    });
+    /* Show/hide items */
+    var items = document.querySelectorAll('#feedList .feed-item');
+    var visible = 0;
+    items.forEach(function(item){
+      var show = (type==='all') || (item.getAttribute('data-status')===type);
+      item.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    var emptyMsg = document.getElementById('feed-empty');
+    if(emptyMsg) emptyMsg.style.display = (visible===0) ? '' : 'none';
+  };
+
+})();
+</script>
+
+</body>
+</html>

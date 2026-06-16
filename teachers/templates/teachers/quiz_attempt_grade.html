@@ -1,0 +1,139 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:quiz_results' quiz.pk %}" class="btn btn-secondary btn-sm">← Back to Results</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' quiz.offering.pk %}">{{ quiz.offering.course.code }}</a><span class="sep">/</span>
+  <a href="{% url 'teachers:quiz_list' quiz.offering.pk %}">Quizzes</a><span class="sep">/</span>
+  <a href="{% url 'teachers:quiz_results' quiz.pk %}">{{ quiz.title }}</a><span class="sep">/</span>
+  <span>Grade Attempt</span>
+</div>
+
+<!-- Attempt info -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">Attempt Info</span></div>
+  <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;">
+    <div><div class="detail-label">Student</div><div class="detail-value">{{ attempt.student.get_full_name }}</div></div>
+    <div><div class="detail-label">Email</div><div class="detail-value" style="font-size:13px;">{{ attempt.student.email }}</div></div>
+    <div><div class="detail-label">Attempt #</div><div class="detail-value">{{ attempt.attempt_number }}</div></div>
+    <div><div class="detail-label">Started</div><div class="detail-value">{{ attempt.started_at|date:"d M Y H:i" }}</div></div>
+    <div><div class="detail-label">Submitted</div><div class="detail-value">{{ attempt.submitted_at|date:"d M Y H:i"|default:"—" }}</div></div>
+    <div>
+      <div class="detail-label">Current Score</div>
+      <div class="detail-value" style="color:var(--primary);">
+        {% if attempt.score is not None %}{{ attempt.score }} / {{ quiz.total_marks }}
+        {% else %}<span style="color:var(--muted)">Not graded</span>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Answer grading form -->
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Questions & Answers</span>
+      <span style="font-size:13px;color:var(--muted);">{{ answers|length }} question{{ answers|length|pluralize }}</span>
+    </div>
+
+    {% for answer in answers %}
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+
+        <!-- Question block -->
+        <div style="flex:1;min-width:260px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="background:var(--primary);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">
+              {{ forloop.counter }}
+            </span>
+            <span class="badge badge-blue">{{ answer.question.get_question_type_display }}</span>
+            <span style="font-size:12px;color:var(--muted);">{{ answer.question.marks }} mark{{ answer.question.marks|pluralize }}</span>
+          </div>
+          <p style="margin:0 0 10px;font-weight:600;font-size:14px;line-height:1.5;">{{ answer.question.text }}</p>
+
+          {% if answer.question.question_type in "mcq,multi,true_false" %}
+            <!-- MCQ / True-False — show choices -->
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              {% for choice in answer.question.choices.all %}
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;
+                background:{% if choice.is_correct %}rgba(34,197,94,.12){% elif choice in answer.selected_choices.all and not choice.is_correct %}rgba(239,68,68,.10){% else %}var(--surface){% endif %};
+                border:1px solid {% if choice.is_correct %}rgba(34,197,94,.4){% elif choice in answer.selected_choices.all and not choice.is_correct %}rgba(239,68,68,.3){% else %}var(--border){% endif %};">
+                {% if choice in answer.selected_choices.all %}
+                  <span style="font-size:14px;">{% if choice.is_correct %}✅{% else %}❌{% endif %}</span>
+                {% else %}
+                  <span style="font-size:14px;opacity:.35;">○</span>
+                {% endif %}
+                <span style="font-size:13px;">{{ choice.text }}</span>
+                {% if choice.is_correct %}<span style="font-size:11px;color:var(--success);margin-left:auto;">correct</span>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <!-- Short answer -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;white-space:pre-wrap;min-height:48px;">
+              {% if answer.text_answer %}{{ answer.text_answer }}{% else %}<span style="color:var(--muted);font-style:italic;">No answer provided</span>{% endif %}
+            </div>
+            {% if answer.question.explanation %}
+            <div style="margin-top:8px;font-size:12px;color:var(--muted);">
+              <strong>Model answer:</strong> {{ answer.question.explanation }}
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- Marking panel -->
+        <div style="min-width:200px;background:var(--surface-alt,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">
+            Award Marks
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:10px;">
+            <input type="number"
+              name="marks_{{ answer.pk }}"
+              value="{{ answer.marks_awarded|default:'0' }}"
+              min="0"
+              max="{{ answer.question.marks }}"
+              step="0.5"
+              style="width:70px;padding:8px;text-align:center;border:2px solid var(--border);border-radius:8px;font-size:16px;font-weight:700;
+                     {% if answer.question.question_type != 'short' %}background:var(--surface);color:var(--muted);{% endif %}"
+              {% if answer.question.question_type != 'short' %}readonly title="Auto-graded"{% endif %}>
+            <span style="font-size:14px;color:var(--muted);">/ {{ answer.question.marks }}</span>
+          </div>
+          {% if answer.question.question_type == 'short' %}
+          <p style="font-size:11px;color:var(--muted);margin:0;">Enter marks manually</p>
+          {% else %}
+          <p style="font-size:11px;color:var(--muted);margin:0;">Auto-graded</p>
+          {% endif %}
+
+          {% if answer.is_correct is not None %}
+          <div style="margin-top:8px;">
+            {% if answer.is_correct %}
+              <span class="badge badge-active">Correct</span>
+            {% else %}
+              <span class="badge badge-inactive">Incorrect</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state"><span class="icon">📭</span>No answers recorded for this attempt.</div>
+    {% endfor %}
+
+    <div style="padding:20px 24px;display:flex;align-items:center;gap:14px;border-top:2px solid var(--border);background:var(--surface);">
+      <button type="submit" class="btn btn-primary"
+        onclick="return confirm('Save grades for {{ attempt.student.get_full_name }}?')">
+        💾 Save Grades
+      </button>
+      <a href="{% url 'teachers:quiz_results' quiz.pk %}" class="btn btn-secondary">Cancel</a>
+      <span style="margin-left:auto;font-size:13px;color:var(--muted);">
+        Short-answer fields are editable; MCQ/True-False are auto-graded and locked.
+      </span>
+    </div>
+  </div>
+</form>
+{% endblock %}

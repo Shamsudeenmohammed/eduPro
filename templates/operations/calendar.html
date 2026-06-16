@@ -1,0 +1,2 @@
+{% extends "base_dashboard.html" %}
+{% block content %}{% for e in events %}<div class="card" style="margin-bottom:.5rem"><strong>{{ e.title }}</strong> — {{ e.start_date }}{% if e.location %} @ {{ e.location }}{% endif %}</div>{% empty %}<p>No events scheduled.</p>{% endfor %}{% endblock %}

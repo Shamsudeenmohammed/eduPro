@@ -1,0 +1,9 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<h2>{{ offering.course.code }} — {{ offering.course.title }}</h2>
+<div class="grid grid-2" style="margin-top:1rem">
+  <div class="card"><h3>Modules</h3>{% for m in modules %}<div style="padding:.5rem 0"><strong>{{ m.title }}</strong></div>{% empty %}<p>No modules yet.</p>{% endfor %}</div>
+  <div class="card"><h3>Live Classes</h3>{% for s in live_sessions %}<div style="padding:.5rem 0">{{ s.title }} — {{ s.scheduled_at }}{% if s.meeting_url %} <a href="{{ s.meeting_url }}" target="_blank">Join</a>{% endif %}</div>{% empty %}<p>No sessions scheduled.</p>{% endfor %}
+  <p style="margin-top:1rem"><a href="{% url 'elearning:forum' offering.pk %}">Discussion Forum →</a></p></div>
+</div>
+{% endblock %}

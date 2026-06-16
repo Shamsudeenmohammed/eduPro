@@ -1,0 +1,5 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="card" style="margin-bottom:1rem"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Post</button></form></div>
+{% for p in posts %}<div class="card" style="margin-bottom:.75rem"><strong>{{ p.author.get_full_name }}</strong><p>{{ p.content }}</p></div>{% endfor %}
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+{% if user.is_admin or user.is_superuser %}
+<a href="{% url 'academics:program_edit' program.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+{% endif %}
+<a href="{% url 'academics:program_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'academics:program_list' %}">Programs</a>
+  <span class="sep">/</span>
+  <span>{{ program.name }}</span>
+</div>
+
+<div class="detail-grid" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Program Info</span></div>
+    <div class="card-body">
+      <div class="detail-row">
+        <span class="detail-label">Name</span>
+        <span class="detail-value">{{ program.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Department</span>
+        <span class="detail-value">
+          {% if program.department %}
+          <a href="{% url 'academics:department_detail' program.department.pk %}">{{ program.department.name }}</a>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Faculty</span>
+        <span class="detail-value">{{ program.department.faculty.name|default:"—" }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Duration</span>
+        <span class="detail-value">{{ program.duration_years }} Year{{ program.duration_years|pluralize }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Levels -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><span class="card-title">Levels</span></div>
+  <div class="table-wrap">
+    {% if program.levels.all %}
+    <table>
+      <thead><tr><th>Level</th><th>Order</th></tr></thead>
+      <tbody>
+        {% for level in program.levels.all %}
+        <tr>
+          <td>{{ level.name }}</td>
+          <td>{{ level.order }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">🗂</span>No levels defined.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Students -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Enrolled Students</span></div>
+  <div class="table-wrap">
+    {% if program.students.all %}
+    <table>
+      <thead><tr><th>Student</th><th>Email</th><th>Level</th></tr></thead>
+      <tbody>
+        {% for sp in program.students.all %}
+        <tr>
+          <td>{{ sp.student.get_full_name }}</td>
+          <td>{{ sp.student.email }}</td>
+          <td>{{ sp.level.name|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">👤</span>No students enrolled in this program.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

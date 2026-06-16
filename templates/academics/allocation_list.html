@@ -1,0 +1,89 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:allocation_create' %}" class="btn btn-primary btn-sm">+ Allocate Teacher</a>
+<a href="{% url 'academics:allocation_bulk' %}" class="btn btn-secondary btn-sm">Bulk Allocate</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Course Allocations</span>
+    <span style="font-size:13px;color:var(--muted);">{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if page_obj.object_list %}
+    <table>
+      <thead>
+        <tr>
+          <th>Teacher</th>
+          <th>Course</th>
+          <th>Semester</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alloc in page_obj %}
+        <tr>
+          <td>{{ alloc.teacher.get_full_name }}</td>
+          <td>
+            <a href="{% url 'academics:offering_detail' alloc.offering.pk %}">
+              {{ alloc.offering.course.code }}
+            </a>
+          </td>
+          <td>{{ alloc.offering.semester }}</td>
+          <td><span class="badge badge-blue">{{ alloc.role }}</span></td>
+          <td>
+            {% if alloc.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+          <td>
+            {% if alloc.is_active %}
+            <form method="post" action="{% url 'academics:allocation_deactivate' alloc.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm"
+                onclick="return confirm('Deactivate this allocation?')">Deactivate</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'academics:allocation_activate' alloc.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-sm"
+                onclick="return confirm('Activate this allocation?')">Activate</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <div style="padding:16px 20px;">
+      <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="page-link current">{{ num }}</span>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">👩‍🏫</span>No allocations yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

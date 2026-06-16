@@ -1,0 +1,50 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:semester_create' %}" class="btn btn-primary btn-sm">+ Add Semester</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Semesters</span>
+  </div>
+  <div class="table-wrap">
+    {% if semesters %}
+    <table>
+      <thead>
+        <tr>
+          <th>Semester</th>
+          <th>Session</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Current</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for semester in semesters %}
+        <tr>
+          <td><strong>{{ semester.name }}</strong></td>
+          <td>{{ semester.session.name }}</td>
+          <td>{{ semester.start_date|default:"—" }}</td>
+          <td>{{ semester.end_date|default:"—" }}</td>
+          <td>
+            {% if semester.is_current %}
+            <span class="badge badge-active">Current</span>
+            {% endif %}
+          </td>
+          <td><a href="{% url 'academics:semester_edit' semester.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">🗓</span>
+      No semesters yet. <a href="{% url 'academics:semester_create' %}" style="color:var(--accent);">Add one</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

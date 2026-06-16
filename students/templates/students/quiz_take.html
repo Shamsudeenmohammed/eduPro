@@ -1,0 +1,290 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  body { background: #f0f4f8; }
+  .qt-layout {
+    display: grid; grid-template-columns: 1fr 280px;
+    gap: 1.5rem; align-items: start;
+  }
+  @media (max-width: 820px) {
+    .qt-layout { grid-template-columns: 1fr; }
+    .qt-sidebar { order: -1; }
+  }
+
+  /* Timer bar */
+  .timer-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: #1e293b; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .75rem 1.5rem; border-radius: 0 0 12px 12px;
+    margin-bottom: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  }
+  .timer-bar .quiz-name { font-weight: 700; font-size: .95rem; }
+  .timer-display {
+    font-family: 'Courier New', monospace; font-size: 1.5rem;
+    font-weight: 900; letter-spacing: .05em;
+    color: #34d399; transition: color .3s;
+  }
+  .timer-display.warning { color: #fbbf24; }
+  .timer-display.urgent  { color: #f87171; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .timer-bar .progress-wrap {
+    flex: 1; margin: 0 1.5rem;
+    background: rgba(255,255,255,.15); border-radius: 99px; height: 6px;
+    overflow: hidden;
+  }
+  .timer-bar .progress-fill { height: 100%; background: #34d399; border-radius: 99px; transition: width 1s linear; }
+
+  /* Question cards */
+  .q-card {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    scroll-margin-top: 80px;
+  }
+  .q-header {
+    display: flex; align-items: flex-start; gap: .75rem; margin-bottom: 1rem;
+  }
+  .q-num {
+    background: #e0e7ff; color: #4f46e5; font-weight: 800;
+    font-size: .8rem; padding: .25rem .65rem; border-radius: 6px; flex-shrink: 0;
+  }
+  .q-text { font-weight: 600; font-size: .97rem; line-height: 1.5; flex: 1; }
+  .q-marks { font-size: .78rem; color: #9ca3af; flex-shrink: 0; }
+
+  .choices { display: flex; flex-direction: column; gap: .6rem; }
+  .choice-label {
+    display: flex; align-items: center; gap: .85rem;
+    background: #f9fafb; border: 1.5px solid #e5e7eb;
+    border-radius: 10px; padding: .75rem 1rem;
+    cursor: pointer; transition: border-color .15s, background .15s;
+    font-size: .92rem;
+  }
+  .choice-label:hover { border-color: #6366f1; background: #eef2ff; }
+  .choice-label input:checked + span { color: #4f46e5; font-weight: 600; }
+  .choice-label:has(input:checked) { border-color: #6366f1; background: #eef2ff; }
+  .choice-label input { flex-shrink: 0; width: 18px; height: 18px; accent-color: #4f46e5; cursor: pointer; }
+
+  textarea.text-answer {
+    width: 100%; border: 1.5px solid #d1d5db; border-radius: 10px;
+    padding: .75rem 1rem; font-size: .92rem; resize: vertical; min-height: 100px;
+    transition: border-color .15s;
+  }
+  textarea.text-answer:focus { border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+
+  /* Sidebar */
+  .qt-sidebar { position: sticky; top: 90px; }
+  .sidebar-card {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 14px; padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .sidebar-card h4 { font-size: .88rem; font-weight: 700; margin-bottom: .75rem; color: #374151; }
+  .q-nav-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: .4rem;
+  }
+  .q-nav-btn {
+    aspect-ratio: 1; border-radius: 8px; border: 1.5px solid #e5e7eb;
+    background: #f9fafb; font-size: .8rem; font-weight: 600;
+    cursor: pointer; transition: all .15s; display: flex;
+    align-items: center; justify-content: center;
+    color: #374151;
+  }
+  .q-nav-btn:hover { border-color: #6366f1; background: #eef2ff; color: #4f46e5; }
+  .q-nav-btn.answered { background: #dcfce7; border-color: #86efac; color: #16a34a; }
+
+  .btn-submit-quiz {
+    display: block; width: 100%; background: #ef4444; color: #fff; border: none;
+    padding: .9rem; border-radius: 10px; font-size: .97rem; font-weight: 800;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-submit-quiz:hover { background: #dc2626; }
+
+  .submit-confirm-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 9999; align-items: center; justify-content: center;
+  }
+  .submit-confirm-overlay.active { display: flex; }
+  .confirm-box {
+    background: #fff; border-radius: 16px; padding: 2.5rem;
+    max-width: 420px; width: 90%; text-align: center;
+  }
+  .confirm-box h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: .75rem; }
+  .confirm-box p  { color: #6b7280; font-size: .9rem; margin-bottom: 1.5rem; }
+  .confirm-btns { display: flex; gap: .75rem; justify-content: center; }
+  .btn-conf-yes { background: #ef4444; color: #fff; border: none; padding: .65rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer; }
+  .btn-conf-no  { background: #f3f4f6; color: #374151; border: none; padding: .65rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="timer-bar" id="timerBar">
+  <span class="quiz-name">{{ quiz.title }}</span>
+  <div class="progress-wrap">
+    <div class="progress-fill" id="timerProgress" style="width:100%;"></div>
+  </div>
+  <span class="timer-display" id="timerDisplay">--:--</span>
+</div>
+
+<form method="post" id="quizForm">
+  {% csrf_token %}
+  <div class="qt-layout">
+
+    <div class="qt-main">
+      {% for question in questions %}
+      <div class="q-card" id="q{{ forloop.counter }}">
+        <div class="q-header">
+          <span class="q-num">Q{{ forloop.counter }}</span>
+          <span class="q-text">{{ question.text }}</span>
+          <span class="q-marks">({{ question.marks }} mk)</span>
+        </div>
+
+        {% if question.question_type in "mcq,true_false" %}
+          <div class="choices">
+            {% for choice in question.choices.all %}
+            <label class="choice-label">
+              <input type="radio" name="q_{{ question.pk }}" value="{{ choice.pk }}"
+                     data-qnum="{{ forloop.parentloop.counter }}"
+                     class="choice-input">
+              <span>{{ choice.text }}</span>
+            </label>
+            {% endfor %}
+          </div>
+
+        {% elif question.question_type == "multi" %}
+          <div class="choices">
+            {% for choice in question.choices.all %}
+            <label class="choice-label">
+              <input type="checkbox" name="q_{{ question.pk }}" value="{{ choice.pk }}"
+                     data-qnum="{{ forloop.parentloop.counter }}"
+                     class="choice-input">
+              <span>{{ choice.text }}</span>
+            </label>
+            {% endfor %}
+          </div>
+
+        {% else %}
+          <textarea class="text-answer" name="q_{{ question.pk }}"
+                    data-qnum="{{ forloop.counter }}"
+                    placeholder="Type your answer here…"
+                    rows="4"></textarea>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="qt-sidebar">
+      <div class="sidebar-card">
+        <h4>📍 Question Navigator</h4>
+        <div class="q-nav-grid" id="qNavGrid">
+          {% for question in questions %}
+            <button type="button" class="q-nav-btn" data-target="q{{ forloop.counter }}" id="nav{{ forloop.counter }}">
+              {{ forloop.counter }}
+            </button>
+          {% endfor %}
+        </div>
+        <div style="margin-top:.75rem;font-size:.75rem;color:#9ca3af;display:flex;gap:.5rem;align-items:center;">
+          <span style="width:12px;height:12px;background:#dcfce7;border:1.5px solid #86efac;border-radius:3px;display:inline-block;"></span> Answered
+          <span style="width:12px;height:12px;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:3px;display:inline-block;margin-left:.5rem;"></span> Unanswered
+        </div>
+      </div>
+
+      <div class="sidebar-card">
+        <h4>📊 Progress</h4>
+        <div style="font-size:1.4rem;font-weight:800;color:#1e293b;" id="progressCount">0/{{ questions|length }}</div>
+        <div style="font-size:.78rem;color:#9ca3af;margin-top:.25rem;">questions answered</div>
+        <div style="background:#e5e7eb;border-radius:99px;height:6px;margin-top:.75rem;overflow:hidden;">
+          <div id="progressBar" style="height:100%;background:#10b981;border-radius:99px;width:0%;transition:width .3s;"></div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-submit-quiz" onclick="showConfirm()">
+        Submit Quiz
+      </button>
+    </div>
+  </div>
+</form>
+
+<!-- Confirm overlay -->
+<div class="submit-confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">⚠️</div>
+    <h3>Submit Quiz?</h3>
+    <p>You have answered <strong id="confAnswered">0</strong> out of <strong>{{ questions|length }}</strong> questions.
+       This action cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="btn-conf-no" onclick="hideConfirm()">Continue</button>
+      <button class="btn-conf-yes" onclick="submitQuiz()">Submit Now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const TOTAL_SECS  = {{ time_remaining }};
+  const TOTAL_QS    = {{ questions|length }};
+  let remaining     = TOTAL_SECS;
+  let answeredSet   = new Set();
+
+  const display  = document.getElementById('timerDisplay');
+  const progress = document.getElementById('timerProgress');
+  const form     = document.getElementById('quizForm');
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function tick(){
+    if(remaining <= 0){
+      display.textContent = '00:00';
+      form.submit(); return;
+    }
+    const m = Math.floor(remaining/60), s = remaining%60;
+    display.textContent = pad(m)+':'+pad(s);
+    const pct = (remaining/TOTAL_SECS)*100;
+    progress.style.width = pct+'%';
+    if(remaining <= 60){ display.classList.add('urgent'); display.classList.remove('warning'); progress.style.background='#f87171'; }
+    else if(remaining <= 180){ display.classList.add('warning'); progress.style.background='#fbbf24'; }
+    remaining--;
+    setTimeout(tick, 1000);
+  }
+  tick();
+
+  // Track answered
+  function updateAnswered(qnum){
+    answeredSet.add(qnum);
+    document.getElementById('nav'+qnum)?.classList.add('answered');
+    const cnt = answeredSet.size;
+    document.getElementById('progressCount').textContent = cnt+'/'+TOTAL_QS;
+    document.getElementById('progressBar').style.width = (cnt/TOTAL_QS*100)+'%';
+  }
+
+  document.querySelectorAll('.choice-input').forEach(inp=>{
+    inp.addEventListener('change', ()=>{ updateAnswered(inp.dataset.qnum); });
+  });
+  document.querySelectorAll('textarea.text-answer').forEach(ta=>{
+    ta.addEventListener('input', ()=>{ if(ta.value.trim()) updateAnswered(ta.dataset.qnum); });
+  });
+
+  // Navigator scroll
+  document.querySelectorAll('.q-nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const target = document.getElementById(btn.dataset.target);
+      if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+
+  window.showConfirm = function(){
+    document.getElementById('confAnswered').textContent = answeredSet.size;
+    document.getElementById('confirmOverlay').classList.add('active');
+  };
+  window.hideConfirm = function(){
+    document.getElementById('confirmOverlay').classList.remove('active');
+  };
+  window.submitQuiz = function(){ form.submit(); };
+
+  // Prevent accidental close
+  window.addEventListener('beforeunload', e=>{
+    e.preventDefault(); e.returnValue='';
+  });
+})();
+</script>
+{% endblock %}

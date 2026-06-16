@@ -1,0 +1,9 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<div class="card" style="margin-bottom:1rem">
+  <h3>Performance Risk: <span class="badge badge-{% if risk.risk_level == 'high' %}danger{% elif risk.risk_level == 'medium' %}warning{% else %}success{% endif %}">{{ risk.risk_level }}</span></h3>
+  <p>{% for f in risk.factors %}{{ f }}{% if not forloop.last %}; {% endif %}{% empty %}No risk factors identified.{% endfor %}</p>
+</div>
+<div class="card"><h3>Recommended Courses</h3>
+<ul>{% for r in recommendations %}<li>{{ r.code }} — {{ r.title }}</li>{% empty %}<li>No recommendations at this time.</li>{% endfor %}</ul></div>
+{% endblock %}

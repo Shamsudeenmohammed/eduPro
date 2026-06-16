@@ -1,0 +1,18 @@
+{% extends "base_public.html" %}
+{% block content %}
+<div class="container" style="max-width:700px;padding:3rem 0">
+  <h1>Apply for Admission</h1>
+  <form method="post" enctype="multipart/form-data" class="card">
+    {% csrf_token %}
+    <div class="grid grid-2">
+      {% for field in form %}
+      <div style="margin-bottom:1rem{% if field.name == 'qualifications' or field.name == 'documents' %};grid-column:1/-1{% endif %}">
+        <label style="display:block;font-weight:600;margin-bottom:.35rem">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Application</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "accounts/base.html" %}
+{% block title %}Registration Received — eduPro{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center px-4 py-16">
+  <div class="max-w-md w-full text-center">
+
+    <!-- Icon -->
+    <div class="mx-auto mb-6 w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center">
+      <svg class="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/>
+      </svg>
+    </div>
+
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">Registration Received</h1>
+    <p class="text-slate-500 text-sm mb-6">
+      Your account request has been submitted and is pending administrator approval.
+    </p>
+
+    <!-- Info box -->
+    <div class="bg-white border border-amber-200 rounded-xl p-5 text-left mb-6 shadow-sm">
+      <h2 class="text-sm font-semibold text-amber-700 uppercase tracking-wide mb-3">What happens next?</h2>
+      <ul class="space-y-2 text-sm text-slate-600">
+        <li class="flex items-start gap-2">
+          <svg class="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+          </svg>
+          An administrator will review your registration request.
+        </li>
+        <li class="flex items-start gap-2">
+          <svg class="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+          </svg>
+          You will receive an email notification at
+          <strong class="text-slate-800 ml-1">{{ user_email }}</strong> once approved.
+        </li>
+        <li class="flex items-start gap-2">
+          <svg class="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+          </svg>
+          After approval, you can log in and access your dashboard.
+        </li>
+      </ul>
+    </div>
+
+    <!-- Note for admission applicants -->
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-left mb-6 text-sm text-indigo-700">
+      <p>
+        <strong>Are you a prospective student?</strong>
+        Staff registration is not the right path for you.
+        Please use the
+        <a href="{% url 'portal:apply' %}" class="font-semibold underline hover:text-indigo-900">
+          Admissions Portal
+        </a>
+        to submit your application.
+      </p>
+    </div>
+
+    <a href="{% url 'accounts:login' %}"
+      class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Back to Login
+    </a>
+
+  </div>
+</div>
+{% endblock %}

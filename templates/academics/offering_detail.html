@@ -1,0 +1,117 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+{% if user.is_admin or user.is_superuser %}
+<a href="{% url 'academics:offering_edit' offering.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+{% endif %}
+<a href="{% url 'academics:offering_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'academics:offering_list' %}">Offerings</a>
+  <span class="sep">/</span>
+  <span>{{ offering.course.code }}</span>
+</div>
+
+<div class="detail-grid" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Offering Details</span></div>
+    <div class="card-body">
+      <div class="detail-row">
+        <span class="detail-label">Course</span>
+        <span class="detail-value">
+          <a href="{% url 'academics:course_detail' offering.course.pk %}">{{ offering.course.code }}</a> — {{ offering.course.title }}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Semester</span>
+        <span class="detail-value">{{ offering.semester }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Session</span>
+        <span class="detail-value">{{ offering.semester.session.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Program</span>
+        <span class="detail-value">
+          <a href="{% url 'academics:program_detail' offering.level.program.pk %}">{{ offering.level.program.name }}</a>
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Level</span>
+        <span class="detail-value">{{ offering.level.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+          {% if offering.is_active %}<span class="badge badge-active">Active</span>
+          {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Allocated teachers -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <span class="card-title">Allocated Teachers</span>
+    {% if user.is_admin or user.is_superuser %}
+    <a href="{% url 'academics:allocation_create' %}" class="btn btn-secondary btn-sm">+ Allocate Teacher</a>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    {% if offering.allocations.all %}
+    <table>
+      <thead><tr><th>Teacher</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for alloc in offering.allocations.all %}
+        <tr>
+          <td>{{ alloc.teacher.get_full_name }}</td>
+          <td>{{ alloc.teacher.email }}</td>
+          <td><span class="badge badge-blue">{{ alloc.role }}</span></td>
+          <td>
+            {% if alloc.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">👩‍🏫</span>No teachers allocated.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Enrolled students -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Enrolled Students</span>
+    <span style="font-size:13px;color:var(--muted);">{{ offering.enrolments.count }} student{{ offering.enrolments.count|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if offering.enrolments.all %}
+    <table>
+      <thead><tr><th>Student</th><th>Email</th><th>Enrolled At</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for enrol in offering.enrolments.all %}
+        <tr>
+          <td>{{ enrol.student.get_full_name }}</td>
+          <td>{{ enrol.student.email }}</td>
+          <td>{{ enrol.enrolled_at|date:"d M Y" }}</td>
+          <td>
+            {% if enrol.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">👤</span>No students enrolled.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

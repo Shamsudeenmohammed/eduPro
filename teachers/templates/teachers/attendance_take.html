@@ -1,0 +1,85 @@
+{% extends "teachers/base.html" %}
+{% block topbar_actions %}
+<a href="{% url 'teachers:attendance_list' offering.pk %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:my_courses' %}">My Courses</a><span class="sep">/</span>
+  <a href="{% url 'teachers:course_detail' offering.pk %}">{{ offering.course.code }}</a><span class="sep">/</span>
+  <a href="{% url 'teachers:attendance_list' offering.pk %}">Attendance</a><span class="sep">/</span>
+  <span>Take Attendance</span>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <!-- Session details -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Session Details</span></div>
+    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      <div class="field-group">
+        <label class="field-label">Date <span style="color:var(--danger)">*</span></label>
+        <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Week Number</label>
+        <input type="number" name="week_number" min="1" max="52" placeholder="e.g. 3">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Topic Covered</label>
+        <input type="text" name="topic_covered" placeholder="e.g. Introduction to Arrays">
+      </div>
+    </div>
+  </div>
+
+  <!-- Student list -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Mark Attendance</span>
+      <span style="font-size:13px;color:var(--muted);">{{ enrolled|length }} student{{ enrolled|length|pluralize }}</span>
+    </div>
+    {% if enrolled %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            {% for val, label in status_choices %}
+            <th style="text-align:center;">{{ label }}</th>
+            {% endfor %}
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for enrol in enrolled %}
+          <tr>
+            <td>
+              <strong>{{ enrol.student.get_full_name }}</strong><br>
+              <span style="font-size:12px;color:var(--muted);">{{ enrol.student.email }}</span>
+            </td>
+            {% for val, label in status_choices %}
+            <td style="text-align:center;">
+              <input type="radio" name="status_{{ enrol.student.pk }}" value="{{ val }}"
+                {% if val == "present" %}checked{% endif %}
+                style="accent-color:var(--accent);width:16px;height:16px;">
+            </td>
+            {% endfor %}
+            <td>
+              <input type="text" name="remark_{{ enrol.student.pk }}" placeholder="Optional remark"
+                style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:5px 9px;font-size:13px;">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:16px 18px;border-top:1px solid var(--border);display:flex;gap:9px;">
+      <button type="submit" class="btn btn-primary">Save Attendance</button>
+      <a href="{% url 'teachers:attendance_list' offering.pk %}" class="btn btn-secondary">Cancel</a>
+    </div>
+    {% else %}
+    <div class="empty-state"><span class="icon">👤</span>No students enrolled in this course.</div>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

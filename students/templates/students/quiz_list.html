@@ -1,0 +1,149 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .quiz-hero {
+    background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+    border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem;
+    color: #fff; display: flex; align-items: center; gap: 1.5rem;
+  }
+  .quiz-hero .icon { font-size: 2.5rem; }
+  .quiz-hero h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 .25rem; }
+  .quiz-hero p  { margin: 0; opacity: .7; font-size: .9rem; }
+
+  .quiz-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 1.5rem; margin-bottom: 1rem;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 1rem; align-items: start;
+    transition: box-shadow .18s, transform .18s;
+  }
+  .quiz-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.09); transform: translateY(-2px); }
+  .quiz-card.open   { border-left: 4px solid #22c55e; }
+  .quiz-card.closed { border-left: 4px solid #9ca3af; }
+  .quiz-card.upcoming { border-left: 4px solid #f59e0b; }
+  .quiz-card.done   { border-left: 4px solid #6366f1; }
+
+  .quiz-title { font-weight: 700; font-size: 1.05rem; margin-bottom: .5rem; }
+  .quiz-meta  { display: flex; flex-wrap: wrap; gap: .8rem; font-size: .82rem; color: #6b7280; }
+  .quiz-meta span { display: flex; align-items: center; gap: .3rem; }
+
+  .quiz-actions { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
+  .badge-q {
+    font-size: .72rem; font-weight: 700; padding: .25rem .8rem;
+    border-radius: 99px;
+  }
+  .badge-open     { background: #dcfce7; color: #16a34a; }
+  .badge-upcoming { background: #fef9c3; color: #b45309; }
+  .badge-closed   { background: #f3f4f6; color: #6b7280; }
+  .badge-done     { background: #ede9fe; color: #7c3aed; }
+
+  .btn-take {
+    background: #10b981; color: #fff; border: none;
+    padding: .5rem 1.25rem; border-radius: 8px;
+    font-size: .88rem; font-weight: 700; text-decoration: none;
+    transition: background .15s; white-space: nowrap;
+  }
+  .btn-take:hover { background: #059669; color: #fff; }
+  .btn-take:disabled, .btn-take.disabled {
+    background: #d1d5db; color: #9ca3af; pointer-events: none;
+  }
+  .score-pill {
+    font-weight: 800; font-size: 1.05rem;
+    background: #ede9fe; color: #6d28d9;
+    padding: .2rem .75rem; border-radius: 8px;
+  }
+  .attempts-left { font-size: .78rem; color: #9ca3af; }
+
+  .empty-state {
+    text-align: center; padding: 4rem 1rem;
+    background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db;
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-hero">
+  <div class="icon">🧠</div>
+  <div>
+    <h1>{{ page_title }}</h1>
+    <p>{{ offering.course.title }} &mdash; {{ offering.semester }}</p>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a href="{% url 'students:course_home' offering_pk=offering.pk %}" class="btn btn-sm btn-outline-secondary">
+    ← Back to Course
+  </a>
+  <span class="text-muted" style="font-size:.85rem;">{{ quizzes|length }} quiz{{ quizzes|length|pluralize:"zes" }}</span>
+</div>
+
+{% if quizzes %}
+  {% for q in quizzes %}
+    <div class="quiz-card
+      {% if q.my_attempt and q.my_attempt.is_complete %}done
+      {% elif q.is_open %}open
+      {% elif q.start_datetime > now %}upcoming
+      {% else %}closed{% endif %}">
+
+      <div>
+        <div class="quiz-title">{{ q.title }}</div>
+        <div class="quiz-meta">
+          <span>⏱ {{ q.duration_minutes }} min</span>
+          <span>🏆 {{ q.total_marks }} marks</span>
+          <span>🔄 {{ q.max_attempts }} attempt{{ q.max_attempts|pluralize }}</span>
+          {% if q.start_datetime %}<span>🗓 Start: {{ q.start_datetime|date:"M d, Y g:i A" }}</span>{% endif %}
+          {% if q.end_datetime   %}<span>🏁 End: {{ q.end_datetime|date:"M d, Y g:i A" }}</span>{% endif %}
+        </div>
+        {% if q.description %}
+          <div style="font-size:.85rem;color:#374151;margin-top:.5rem;">{{ q.description|truncatechars:120 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="quiz-actions">
+        {% if q.my_attempt and q.my_attempt.is_complete %}
+          <span class="badge-q badge-done">Completed</span>
+          {% if q.show_result_immediately %}
+            <span class="score-pill">{{ q.my_attempt.score }}/{{ q.total_marks }}</span>
+            <a href="{% url 'students:quiz_result' attempt_pk=q.my_attempt.pk %}" class="btn-take" style="background:#6366f1;">View Result</a>
+          {% endif %}
+        {% elif q.is_open %}
+          <span class="badge-q badge-open">Open Now</span>
+          <a href="{% url 'students:quiz_start' pk=q.pk %}" class="btn-take">Take Quiz</a>
+          {% if q.max_attempts > 1 %}
+            <span class="attempts-left">0/{{ q.max_attempts }} used</span>
+          {% endif %}
+        {% elif q.start_datetime and q.start_datetime > now %}
+          <span class="badge-q badge-upcoming">Upcoming</span>
+          <span class="attempts-left" id="countdown_{{ q.pk }}" data-ts="{{ q.start_datetime|date:'U' }}">Calculating…</span>
+        {% else %}
+          <span class="badge-q badge-closed">Closed</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="empty-state">
+    <div class="icon">🧩</div>
+    <h5>No Quizzes Yet</h5>
+    <p class="text-muted">No quizzes have been published for this course.</p>
+  </div>
+{% endif %}
+
+<script>
+(function(){
+  const pads = n => String(n).padStart(2,'0');
+  document.querySelectorAll('[id^="countdown_"]').forEach(el => {
+    const ts = parseInt(el.dataset.ts, 10);
+    function tick() {
+      const diff = ts - Math.floor(Date.now()/1000);
+      if (diff <= 0) { el.textContent = 'Starting…'; return; }
+      const h = Math.floor(diff/3600), m = Math.floor((diff%3600)/60), s = diff%60;
+      el.textContent = `Starts in ${h?h+'h ':''} ${pads(m)}m ${pads(s)}s`;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  });
+})();
+</script>
+{% endblock %}

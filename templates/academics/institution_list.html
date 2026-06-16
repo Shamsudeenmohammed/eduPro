@@ -1,0 +1,51 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:institution_create' %}" class="btn btn-primary btn-sm">+ Add Institution</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Institutions</span>
+    <span style="font-size:13px;color:var(--muted);">{{ institutions|length }} record{{ institutions|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if institutions %}
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Short Name</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inst in institutions %}
+        <tr>
+          <td><strong>{{ inst.name }}</strong></td>
+          <td>{{ inst.short_name|default:"—" }}</td>
+          <td>
+            {% if inst.is_active %}
+            <span class="badge badge-active">Active</span>
+            {% else %}
+            <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'academics:institution_edit' inst.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">🏛</span>
+      No institutions found. <a href="{% url 'academics:institution_create' %}" style="color:var(--accent);">Add one</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

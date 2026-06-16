@@ -1,0 +1,280 @@
+{% extends "students/base.html" %}
+
+{% block extra_head %}
+<style>
+  .asgn-hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .asgn-hero .icon {
+    font-size: 2.2rem;
+  }
+
+  .asgn-hero h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 .2rem;
+  }
+
+  .asgn-hero p {
+    margin: 0;
+    opacity: .7;
+    font-size: .9rem;
+  }
+
+  .asgn-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: .18s;
+  }
+
+  .asgn-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,.09);
+    transform: translateY(-2px);
+  }
+
+  .asgn-card.submitted { border-left: 4px solid #22c55e; }
+  .asgn-card.late      { border-left: 4px solid #f59e0b; }
+  .asgn-card.graded    { border-left: 4px solid #6366f1; }
+  .asgn-card.overdue   { border-left: 4px solid #ef4444; }
+  .asgn-card.open      { border-left: 4px solid #3b82f6; }
+
+  .asgn-main {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .asgn-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: .4rem;
+  }
+
+  .asgn-meta {
+    font-size: .82rem;
+    color: #6b7280;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7rem;
+  }
+
+  .assignment-file {
+    margin-top: .8rem;
+    padding: .75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    font-size: .85rem;
+  }
+
+  .assignment-file a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .assignment-file a:hover {
+    text-decoration: underline;
+  }
+
+  .asgn-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .5rem;
+  }
+
+  .badge-status {
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .25rem .8rem;
+    border-radius: 99px;
+  }
+
+  .badge-submitted { background:#dcfce7; color:#16a34a; }
+  .badge-late-sub  { background:#fef3c7; color:#b45309; }
+  .badge-graded    { background:#ede9fe; color:#7c3aed; }
+  .badge-open      { background:#dbeafe; color:#1d4ed8; }
+  .badge-overdue   { background:#fee2e2; color:#dc2626; }
+  .badge-closed    { background:#f3f4f6; color:#6b7280; }
+
+  .score-pill {
+    background:#ede9fe;
+    color:#7c3aed;
+    font-weight:800;
+    padding:.25rem .8rem;
+    border-radius:8px;
+  }
+
+  .btn-submit {
+    background:#3b82f6;
+    color:#fff;
+    text-decoration:none;
+    padding:.45rem 1rem;
+    border-radius:8px;
+    font-weight:600;
+    font-size:.85rem;
+  }
+
+  .btn-submit:hover {
+    background:#2563eb;
+    color:#fff;
+  }
+
+  .empty-state {
+    text-align:center;
+    padding:4rem 1rem;
+    background:#f9fafb;
+    border-radius:12px;
+    border:1px dashed #d1d5db;
+  }
+
+  .empty-state .icon {
+    font-size:3rem;
+    margin-bottom:1rem;
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="asgn-hero">
+  <div class="icon">📝</div>
+  <div>
+    <h1>{{ page_title }}</h1>
+    <p>{{ offering.course.title }} — {{ offering.semester }}</p>
+  </div>
+</div>
+
+<a href="{% url 'students:course_home' offering_pk=offering.pk %}" class="btn btn-sm btn-outline-secondary mb-3">
+  ← Back to Course
+</a>
+
+{% for a in assignments %}
+
+<div class="asgn-card
+{% if a.my_submission %}
+    {% if a.my_submission.score is not None %}graded
+    {% elif a.my_submission.is_late %}late
+    {% else %}submitted{% endif %}
+{% elif a.is_overdue %}
+    overdue
+{% else %}
+    open
+{% endif %}
+">
+
+  <div class="asgn-main">
+
+    <div class="asgn-title">
+      {{ a.title }}
+    </div>
+
+    <div class="asgn-meta">
+      <span>📅 {{ a.due_date|date:"M d, Y g:i A" }}</span>
+      <span>🏆 {{ a.total_marks }} Marks</span>
+    </div>
+
+    {% if a.description %}
+      <p style="margin-top:.6rem;color:#4b5563;">
+        {{ a.description }}
+      </p>
+    {% endif %}
+
+    {% if a.attachment %}
+    <div class="assignment-file">
+      📎 Assignment File:
+      <a href="{{ a.attachment.url }}" target="_blank">
+        Open / Download Document
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+
+
+  <div class="asgn-right">
+
+    {% if a.my_submission %}
+
+      {% if a.my_submission.score is not None %}
+        <span class="badge-status badge-graded">Graded</span>
+        <span class="score-pill">
+          {{ a.my_submission.score }}/{{ a.total_marks }}
+        </span>
+
+      {% elif a.my_submission.is_late %}
+        <span class="badge-status badge-late-sub">
+          Submitted Late
+        </span>
+
+      {% else %}
+        <span class="badge-status badge-submitted">
+          Submitted
+        </span>
+      {% endif %}
+
+      {% if a.status == "published" and a.my_submission.score is None %}
+        <a href="{% url 'students:assignment_submit' pk=a.pk %}" class="btn-submit">
+          Re-submit
+        </a>
+      {% endif %}
+
+
+    {% else %}
+
+      {% if a.status == "published" %}
+        <span class="badge-status badge-open">
+          Open
+        </span>
+
+        <a href="{% url 'students:assignment_submit' pk=a.pk %}" class="btn-submit">
+          Submit
+        </a>
+
+      {% elif a.status == "closed" %}
+
+        <span class="badge-status badge-closed">
+          Closed
+        </span>
+
+      {% else %}
+
+        <span class="badge-status badge-graded">
+          Graded
+        </span>
+
+      {% endif %}
+
+    {% endif %}
+
+  </div>
+
+</div>
+
+{% empty %}
+
+<div class="empty-state">
+  <div class="icon">📋</div>
+  <h5>No Assignments Yet</h5>
+  <p>No assignments have been posted for this course.</p>
+</div>
+
+{% endfor %}
+
+{% endblock %}

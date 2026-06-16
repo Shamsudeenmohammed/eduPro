@@ -1,0 +1,132 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .qs-wrapper { max-width: 620px; margin: 0 auto; }
+  .qs-hero {
+    background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+    border-radius: 16px; padding: 2.5rem; margin-bottom: 2rem; color: #fff; text-align: center;
+  }
+  .qs-hero .big-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+  .qs-hero h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 .5rem; }
+  .qs-hero p  { opacity: .75; font-size: .95rem; margin: 0; }
+
+  .quiz-stats {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 2rem;
+  }
+  .stat-box {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 1.25rem; text-align: center;
+  }
+  .stat-box .val { font-size: 1.6rem; font-weight: 800; color: #1e293b; }
+  .stat-box .lbl { font-size: .78rem; color: #9ca3af; margin-top: .2rem; }
+
+  .rules-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 1.75rem; margin-bottom: 1.5rem;
+  }
+  .rules-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+  .rule-item {
+    display: flex; align-items: flex-start; gap: .75rem;
+    font-size: .88rem; color: #374151; padding: .5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
+
+  .attempts-bar {
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 10px; padding: .9rem 1.1rem;
+    font-size: .87rem; color: #374151; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: .75rem;
+  }
+  .attempts-bar .remaining { font-weight: 700; color: #4f46e5; }
+
+  .btn-start-quiz {
+    display: block; width: 100%; background: #10b981; color: #fff; border: none;
+    padding: 1rem; border-radius: 12px; font-size: 1.05rem; font-weight: 800;
+    cursor: pointer; transition: background .15s, transform .12s; text-align: center;
+  }
+  .btn-start-quiz:hover { background: #059669; transform: translateY(-2px); }
+  .btn-start-quiz:active { transform: translateY(0); }
+  .btn-start-quiz:disabled { background: #d1d5db; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qs-wrapper">
+  <div class="mb-3">
+    <a href="{% url 'students:quiz_list' offering_pk=quiz.offering.pk %}" class="btn btn-sm btn-outline-secondary">
+      ← Back to Quizzes
+    </a>
+  </div>
+
+  <div class="qs-hero">
+    <div class="big-icon">🧠</div>
+    <h1>{{ quiz.title }}</h1>
+    <p>{{ quiz.offering.course.code }} — {{ quiz.offering.course.title }}</p>
+  </div>
+
+  <div class="quiz-stats">
+    <div class="stat-box">
+      <div class="val">{{ quiz.duration_minutes }}</div>
+      <div class="lbl">Minutes</div>
+    </div>
+    <div class="stat-box">
+      <div class="val">{{ quiz.total_marks }}</div>
+      <div class="lbl">Total Marks</div>
+    </div>
+    <div class="stat-box">
+      <div class="val">{{ quiz.questions.count }}</div>
+      <div class="lbl">Questions</div>
+    </div>
+  </div>
+
+  <div class="rules-card">
+    <h3>📋 Quiz Rules &amp; Information</h3>
+    <div class="rule-item">
+      <span class="rule-icon">⏱</span>
+      <span>You will have <strong>{{ quiz.duration_minutes }} minutes</strong> to complete this quiz. The timer starts immediately when you click "Start Quiz".</span>
+    </div>
+    <div class="rule-item">
+      <span class="rule-icon">🔄</span>
+      <span>Maximum attempts allowed: <strong>{{ quiz.max_attempts }}</strong>. You have used <strong>{{ attempt_count }}</strong> attempt{{ attempt_count|pluralize }} so far.</span>
+    </div>
+    {% if quiz.randomise_questions %}
+    <div class="rule-item">
+      <span class="rule-icon">🔀</span>
+      <span>Questions will be presented in <strong>random order</strong>.</span>
+    </div>
+    {% endif %}
+    {% if quiz.show_result_immediately %}
+    <div class="rule-item">
+      <span class="rule-icon">✅</span>
+      <span>Your result will be shown <strong>immediately</strong> after submission.</span>
+    </div>
+    {% endif %}
+    <div class="rule-item">
+      <span class="rule-icon">⚠️</span>
+      <span>Do not close or refresh the page during the quiz. Your answers are saved on submission only.</span>
+    </div>
+    {% if quiz.description %}
+    <div class="rule-item">
+      <span class="rule-icon">📌</span>
+      <span>{{ quiz.description }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="attempts-bar">
+    <span>🎯</span>
+    <span>Attempts remaining: <span class="remaining">{{ quiz.max_attempts|add:"-"|add:attempt_count }}</span> of {{ quiz.max_attempts }}</span>
+  </div>
+
+  <form method="post" id="startForm">
+    {% csrf_token %}
+    {% for field in form %}{{ field }}{% endfor %}
+    <button type="submit" class="btn-start-quiz" id="startBtn"
+      onclick="this.disabled=true; this.textContent='Starting…'; this.form.submit();">
+      🚀 Start Quiz Now
+    </button>
+  </form>
+</div>
+{% endblock %}

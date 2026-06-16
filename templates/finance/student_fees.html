@@ -1,0 +1,102 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+  
+  <!-- Form Container: Fee Assignment (2/5 Screen Width) -->
+  <section aria-labelledby="form-title" class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+    <h2 id="form-title" class="text-base font-semibold text-slate-900 mb-5">Assign Student Fee</h2>
+    
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      
+      {% for field in form %}
+        <div class="flex flex-col gap-1.5">
+          <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">
+            {{ field.label }}
+          </label>
+          <div class="mt-0.5">
+            {{ field }}
+          </div>
+          {% if field.errors %}
+            <p class="text-xs text-rose-600 mt-1">{{ field.errors.0 }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="pt-2">
+        <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-lg shadow-sm transition-colors">
+          Assign Fee
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Data Display Container: Fees Ledger (3/5 Screen Width) -->
+  <section aria-labelledby="table-title" class="lg:col-span-3 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h2 id="table-title" class="text-base font-semibold text-slate-900">Assigned Student Fees</h2>
+      <span class="text-xs font-medium text-slate-500 px-2.5 py-1 bg-slate-100 rounded-full">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+    </div>
+
+    <!-- Responsive wrapper isolates cell overflow handling cleanly -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+            <th scope="col" class="px-6 py-3">Student</th>
+            <th scope="col" class="px-6 py-3">Fee Structure</th>
+            <th scope="col" class="px-6 py-3">Due</th>
+            <th scope="col" class="px-6 py-3">Paid</th>
+            <th scope="col" class="px-6 py-3">Status</th>
+            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+          {% for f in page_obj %}
+            <tr class="hover:bg-slate-50/75 transition-colors">
+              <td class="px-6 py-4 font-medium text-slate-900">{{ f.student.get_full_name }}</td>
+              <td class="px-6 py-4 text-slate-500">{{ f.fee_structure.name }}</td>
+              <td class="px-6 py-4 tabular-nums font-medium text-slate-900">{{ f.amount_due }}</td>
+              <td class="px-6 py-4 tabular-nums text-slate-600">{{ f.amount_paid }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                {% if f.status == 'Paid' or f.status == 'Fully Paid' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {{ f.status }}
+                  </span>
+                {% elif f.status == 'Partial' or f.status == 'Partially Paid' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
+                    {{ f.status }}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                    {{ f.status }}
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium">
+                {% if f.status != 'Paid' and f.status != 'Fully Paid' %}
+                  <a href="{% url 'finance:record_payment' f.pk %}" class="inline-flex items-center text-indigo-600 hover:text-indigo-900 focus:outline-none focus:underline bg-indigo-50/50 hover:bg-indigo-50 px-2.5 py-1 rounded transition-colors">
+                    Record Payment
+                  </a>
+                {% else %}
+                  <span class="text-slate-400 font-normal italic text-xs px-2.5 py-1">Settled</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-sm text-slate-400">
+                No active fee structures assigned to students.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

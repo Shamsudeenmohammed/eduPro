@@ -1,0 +1,3 @@
+email,first_name,last_name,student_number,program_code,password
+alice@student.edu,Alice,Johnson,STU2025001,BSC-CS,Student@123
+bob@student.edu,Bob,Williams,STU2025002,BSC-CS,Student@123

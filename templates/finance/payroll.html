@@ -1,0 +1,89 @@
+{% extends "base_dashboard.html" %}
+
+{% block content %}
+<div class="space-y-8">
+  <!-- Form Card -->
+  <section aria-labelledby="form-title" class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 max-w-2xl">
+    <h2 id="form-title" class="text-base font-semibold text-slate-900 mb-4">Add New Payroll Record</h2>
+    
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      
+      {# Render form fields cleanly using modern utility classes rather than rigid form.as_p #}
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {% for field in form %}
+          <div class="flex flex-col gap-1.5">
+            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">
+              {{ field.label }}
+            </label>
+            {# Hooking into custom styles or global input attributes #}
+            <div class="mt-1">
+              {{ field }}
+            </div>
+            {% if field.errors %}
+              <p class="text-xs text-rose-600 mt-1">{{ field.errors.0 }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="pt-2">
+        <button type="submit" class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-lg shadow-sm transition-colors">
+          Add Payroll
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Data Table Section -->
+  <section aria-labelledby="table-title" class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h2 id="table-title" class="text-base font-semibold text-slate-900">Payroll Records</h2>
+      <span class="text-xs font-medium text-slate-500 px-2.5 py-1 bg-slate-100 rounded-full">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+    </div>
+
+    {# Explicit overflow container prevents professional layouts from clipping or breaking grid containers #}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+            <th scope="col" class="px-6 py-3">Employee</th>
+            <th scope="col" class="px-6 py-3">Period</th>
+            <th scope="col" class="px-6 py-3">Net Pay</th>
+            <th scope="col" class="px-6 py-3 text-right">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+          {% for p in page_obj %}
+            <tr class="hover:bg-slate-50/75 transition-colors">
+              <td class="px-6 py-4 font-medium text-slate-900">{{ p.employee.get_full_name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ p.period_month|stringformat:"02d" }}/{{ p.period_year }}</td>
+              <td class="px-6 py-4 tabular-nums font-medium">{{ p.net_pay }}</td>
+              <td class="px-6 py-4 text-right whitespace-nowrap">
+                {# Conditional badge rendering based on standard model statuses #}
+                {% if p.status == 'Paid' or p.status == 'approved' %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {{ p.status }}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                    {{ p.status }}
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center text-sm text-slate-500">
+                No payroll records found for this period.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<table class="data-table card"><thead><tr><th>Course</th><th>Day</th><th>Time</th><th>Venue</th></tr></thead>
+<tbody>{% for s in slots %}<tr><td>{{ s.offering.course.code }}</td><td>{{ s.get_day_display }}</td><td>{{ s.start_time }}–{{ s.end_time }}</td><td>{{ s.venue }}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .notif-hero {
+    background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%);
+    border-radius: 16px; padding: 1.75rem 2.5rem; margin-bottom: 2rem;
+    color: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  }
+  .notif-hero h1 { font-size: 1.4rem; font-weight: 800; margin: 0; }
+  .notif-hero p  { margin: .25rem 0 0; opacity: .75; font-size: .88rem; }
+
+  .mark-all-form button {
+    background: rgba(255,255,255,.15); color: #fff; border: 1.5px solid rgba(255,255,255,.3);
+    padding: .45rem 1.1rem; border-radius: 8px; font-size: .85rem; font-weight: 600;
+    cursor: pointer; transition: background .15s;
+  }
+  .mark-all-form button:hover { background: rgba(255,255,255,.25); }
+
+  .filter-bar {
+    display: flex; gap: .5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+  .ftab {
+    padding: .3rem .9rem; border-radius: 99px; font-size: .82rem; font-weight: 600;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #374151; cursor: pointer;
+    transition: all .15s;
+  }
+  .ftab.active, .ftab:hover { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+  .notif-list { display: flex; flex-direction: column; gap: .6rem; }
+
+  .notif-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 1.1rem 1.4rem; display: flex; align-items: flex-start; gap: 1rem;
+    transition: box-shadow .15s;
+  }
+  .notif-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+  .notif-card.unread { border-left: 4px solid #6366f1; background: #f5f3ff; }
+
+  .notif-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0; background: #f3f4f6;
+  }
+  .notif-icon.info    { background: #dbeafe; }
+  .notif-icon.success { background: #dcfce7; }
+  .notif-icon.warning { background: #fef9c3; }
+  .notif-icon.error   { background: #fee2e2; }
+
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-title { font-weight: 700; font-size: .93rem; margin-bottom: .2rem; color: #1e293b; }
+  .notif-msg   { font-size: .86rem; color: #374151; }
+  .notif-time  { font-size: .76rem; color: #9ca3af; margin-top: .3rem; }
+
+  .unread-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #6366f1; flex-shrink: 0; margin-top: .4rem;
+  }
+
+  .empty-state {
+    text-align: center; padding: 4rem 1rem;
+    background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db;
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notif-hero">
+  <div>
+    <h1>🔔 {{ page_title }}</h1>
+    <p>Stay updated on academic activities and announcements</p>
+  </div>
+  <form method="post" action="{% url 'students:mark_all_read' %}" class="mark-all-form">
+    {% csrf_token %}
+    <button type="submit">✓ Mark All Read</button>
+  </form>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <button class="ftab active" data-filter="all">All</button>
+  <button class="ftab" data-filter="unread">Unread</button>
+  <button class="ftab" data-filter="read">Read</button>
+</div>
+
+{% if notifs %}
+<div class="notif-list" id="notifList">
+  {% for n in notifs %}
+  <div class="notif-card {% if not n.is_read %}unread{% endif %}"
+       data-read="{{ n.is_read|yesno:'true,false' }}">
+    <div class="notif-icon {% if n.notification_type %}{{ n.notification_type }}{% else %}info{% endif %}">
+      {% if n.notification_type == 'success' %}✅
+      {% elif n.notification_type == 'warning' %}⚠️
+      {% elif n.notification_type == 'error' %}❌
+      {% else %}ℹ️{% endif %}
+    </div>
+    <div class="notif-body">
+      <div class="notif-title">{{ n.title|default:"Notification" }}</div>
+      <div class="notif-msg">{{ n.message }}</div>
+      <div class="notif-time">
+        {{ n.created_at|timesince }} ago
+        {% if n.is_read and n.read_at %}&middot; Read {{ n.read_at|timesince }} ago{% endif %}
+      </div>
+    </div>
+    {% if not n.is_read %}
+    <div class="unread-dot"></div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="icon">🔕</div>
+  <h5>No Notifications</h5>
+  <p class="text-muted">You're all caught up! No notifications at the moment.</p>
+</div>
+{% endif %}
+
+<script>
+document.getElementById('filterBar')?.addEventListener('click', e => {
+  const btn = e.target.closest('.ftab');
+  if(!btn) return;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const f = btn.dataset.filter;
+  document.querySelectorAll('#notifList .notif-card').forEach(card => {
+    const isRead = card.dataset.read === 'true';
+    if(f === 'all') card.style.display = '';
+    else if(f === 'unread') card.style.display = !isRead ? '' : 'none';
+    else card.style.display = isRead ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

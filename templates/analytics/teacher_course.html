@@ -1,0 +1,6 @@
+{% extends "base_dashboard.html" %}
+{% block content %}
+<p>Average score: {{ avg_score|floatformat:1|default:"N/A" }}%</p>
+<table class="data-table card"><thead><tr><th>Student</th><th>Total</th><th>Grade</th></tr></thead>
+<tbody>{% for r in results %}<tr><td>{{ r.enrolment.student.get_full_name }}</td><td>{{ r.total_score }}</td><td>{{ r.grade }}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

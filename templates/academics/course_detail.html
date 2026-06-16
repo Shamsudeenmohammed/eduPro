@@ -1,0 +1,103 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+{% if user.is_admin or user.is_superuser %}
+<a href="{% url 'academics:course_edit' course.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+{% endif %}
+<a href="{% url 'academics:course_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'academics:course_list' %}">Catalogue</a>
+  <span class="sep">/</span>
+  <span>{{ course.code }}</span>
+</div>
+
+<div class="detail-grid" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Course Info</span></div>
+    <div class="card-body">
+      <div class="detail-row">
+        <span class="detail-label">Code</span>
+        <span class="detail-value">{{ course.code }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Title</span>
+        <span class="detail-value">{{ course.title }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Department</span>
+        <span class="detail-value">
+          {% if course.department %}
+          <a href="{% url 'academics:department_detail' course.department.pk %}">{{ course.department.name }}</a>
+          {% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Credit Units</span>
+        <span class="detail-value">{{ course.credit_units|default:"—" }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value">
+          {% if course.is_active %}<span class="badge badge-active">Active</span>
+          {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% if course.prerequisites.all %}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Prerequisites</span></div>
+    <div class="card-body">
+      {% for pre in course.prerequisites.all %}
+      <div style="padding:6px 0;border-bottom:1px solid var(--border);">
+        <a href="{% url 'academics:course_detail' pre.pk %}">{{ pre.code }} — {{ pre.title }}</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if course.description %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><span class="card-title">Description</span></div>
+  <div class="card-body" style="color:var(--muted);line-height:1.7;">{{ course.description }}</div>
+</div>
+{% endif %}
+
+<!-- Offerings -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Scheduled Offerings</span>
+    {% if user.is_admin or user.is_superuser %}
+    <a href="{% url 'academics:offering_create' %}" class="btn btn-secondary btn-sm">+ Schedule Offering</a>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    {% if course.offerings.all %}
+    <table>
+      <thead><tr><th>Semester</th><th>Level</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for offering in course.offerings.all %}
+        <tr>
+          <td>{{ offering.semester }}</td>
+          <td>{{ offering.level.name }}</td>
+          <td>
+            {% if offering.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+          <td><a href="{% url 'academics:offering_detail' offering.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><span class="icon">📝</span>No offerings scheduled yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

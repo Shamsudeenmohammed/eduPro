@@ -1,0 +1,33 @@
+{% extends "base_public.html" %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Welcome to {{ site_name }}</h1>
+    <p>A modern academic management platform for schools and universities.</p>
+    <a href="{% url 'portal:admission_apply' %}" class="btn btn-primary" style="background:#fff;color:var(--primary)">Apply for Admission</a>
+    <a href="{% url 'accounts:login' %}" class="btn btn-secondary" style="margin-left:.5rem;border-color:rgba(255,255,255,.5);color:#fff">Student Portal</a>
+  </div>
+</section>
+
+<section class="container" style="padding:3rem 0">
+  <h2 style="margin-bottom:1.5rem">Latest News</h2>
+  <div class="grid grid-3">
+    {% for item in announcements %}
+    <div class="card">
+      <h3 style="font-size:1rem;margin-bottom:.5rem"><a href="{% url 'portal:news_detail' item.pk %}">{{ item.title }}</a></h3>
+      <p style="color:var(--text-muted);font-size:.9rem">{{ item.summary|truncatewords:25 }}</p>
+    </div>
+    {% empty %}
+    <p style="color:var(--text-muted)">No announcements yet.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="container" style="padding-bottom:3rem">
+  <div class="grid grid-3">
+    <div class="card"><h3>🎓 Programs</h3><p style="color:var(--text-muted)">Explore our academic programs.</p><a href="{% url 'portal:programs' %}">View Programs →</a></div>
+    <div class="card"><h3>📅 Admissions</h3><p style="color:var(--text-muted)">Apply online for the next session.</p><a href="{% url 'portal:admission_apply' %}">Apply Now →</a></div>
+    <div class="card"><h3>📧 Contact</h3><p style="color:var(--text-muted)">Get in touch with our team.</p><a href="{% url 'portal:contact' %}">Contact Us →</a></div>
+  </div>
+</section>
+{% endblock %}

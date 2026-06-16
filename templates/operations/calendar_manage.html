@@ -1,0 +1,2 @@
+{% extends "base_dashboard.html" %}
+{% block content %}<div class="grid grid-2"><div class="card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add Event</button></form></div><div>{% for e in events %}<div class="card" style="margin-bottom:.5rem">{{ e.title }} — {{ e.start_date }}</div>{% endfor %}</div></div>{% endblock %}

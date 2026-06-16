@@ -1,0 +1,67 @@
+{% extends "academics/base.html" %}
+
+{% block content %}
+
+{% if student_profile %}
+<div class="stats-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Program</div>
+    <div class="stat-value" style="font-size:16px;">{{ student_profile.level.program.name|default:"—" }}</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-label">Level</div>
+    <div class="stat-value" style="font-size:16px;">{{ student_profile.level.name|default:"—" }}</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">Enrolled Courses</div>
+    <div class="stat-value">{{ enrolments|length }}</div>
+  </div>
+</div>
+{% else %}
+<div class="message message-warning" style="margin-bottom:20px;">
+  Your academic profile is not set up yet. Please contact your administrator.
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">My Enrolled Courses</span>
+  </div>
+  <div class="table-wrap">
+    {% if enrolments %}
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Course Title</th>
+          <th>Department</th>
+          <th>Semester</th>
+          <th>Session</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for enrol in enrolments %}
+        <tr>
+          <td><strong>{{ enrol.offering.course.code }}</strong></td>
+          <td>{{ enrol.offering.course.title }}</td>
+          <td>{{ enrol.offering.course.department.name|default:"—" }}</td>
+          <td>{{ enrol.offering.semester.name }}</td>
+          <td>{{ enrol.offering.semester.session.name }}</td>
+          <td>
+            {% if enrol.is_active %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📭</span>
+      You are not enrolled in any courses yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

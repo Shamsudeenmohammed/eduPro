@@ -1,0 +1,45 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+<a href="{% url 'academics:program_create' %}" class="btn btn-primary btn-sm">+ Add Program</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Programs</span>
+    <span style="font-size:13px;color:var(--muted);">{{ programs|length }} record{{ programs|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if programs %}
+    <table>
+      <thead>
+        <tr>
+          <th>Program</th>
+          <th>Department</th>
+          <th>Faculty</th>
+          <th>Duration</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for program in programs %}
+        <tr>
+          <td><a href="{% url 'academics:program_detail' program.pk %}">{{ program.name }}</a></td>
+          <td>{{ program.department.name|default:"—" }}</td>
+          <td>{{ program.department.faculty.name|default:"—" }}</td>
+          <td>{{ program.duration_years }} yr{{ program.duration_years|pluralize }}</td>
+          <td><a href="{% url 'academics:program_edit' program.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📋</span>
+      No programs yet. <a href="{% url 'academics:program_create' %}" style="color:var(--accent);">Add one</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

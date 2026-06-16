@@ -1,0 +1,14 @@
+{% extends "base_dashboard.html" %}
+{% block nav_links %}
+{% if user.is_admin %}
+<a href="{% url 'analytics:dashboard' %}">Analytics</a>
+<a href="{% url 'finance:dashboard' %}">Finance</a>
+<a href="{% url 'operations:announcements' %}">Operations</a>
+<a href="{% url 'feedback:dashboard' %}">Feedback</a>
+<a href="{% url 'academics:dashboard' %}">Academics</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+{% block page_actions %}{% endblock %}
+{% block list_content %}{% endblock %}
+{% endblock %}
