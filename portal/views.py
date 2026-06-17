@@ -21,6 +21,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+
 from django.views.decorators.http import require_http_methods
 
 from accounts.decorators import admin_required
@@ -88,8 +89,14 @@ def admission_apply(request):
     """Legacy simple application form — kept for backward compatibility."""
     form = AdmissionForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Application submitted successfully! We will contact you soon.")
+        active_cycle = AdmissionCycle.get_active()
+        if not active_cycle:
+            messages.error(request, "Admissions are currently closed. No active cycle found.")
+        else:
+            app = form.save(commit=False)
+            app.cycle = active_cycle
+            app.save()
+            messages.success(request, "Application submitted successfully! We will contact you soon.")
         return redirect("portal:admission_apply")
     return render(request, "portal/admission.html", {"form": form, "page_title": "Apply for Admission"})
 
@@ -197,6 +204,20 @@ def application_form(request):
         application = form.save(commit=False)
         application.cycle = active_cycle
         application.save()
+
+        # Create user account so the applicant can log in immediately
+        from accounts.models import EduProUser
+        user = EduProUser.objects.create_user(
+            email=application.email,
+            password=form.cleaned_data["password1"],
+            first_name=application.first_name,
+            last_name=application.last_name,
+            role="student",
+            is_active=True,  # active from start so they can check status
+        )
+        application.user = user
+        application.save(update_fields=["user"])
+
         return redirect("portal:application_confirmed", ref=application.reference_number)
 
     return render(request, "portal/application_form.html", {
@@ -388,8 +409,8 @@ def application_approve(request, pk):
                 application.save(update_fields=["review_notes"])
             messages.success(
                 request,
-                f"Application approved. User account created for "
-                f"{new_user.get_full_name()} ({new_user.email})."
+                f"✅ Application approved! {new_user.get_full_name()} can now log in "
+                f"at /accounts/login/ with the password they chose during application."
             )
         except ValidationError as e:
             messages.error(request, str(e.message))

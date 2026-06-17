@@ -1,9 +1,29 @@
-{% extends "base_public.html" %}
+{% extends "base_public.html" %}{% block title %}About Us — {{ site_name }}{% endblock %}
 {% block content %}
-<div class="container" style="padding:3rem 0;max-width:800px">
-  <h1>About Us</h1>
-  {% if page %}{{ page.content|safe }}{% else %}
-  <p>{{ site_name }} is committed to academic excellence and student success.</p>
-  {% endif %}
-</div>
+<section class="page-banner">
+  <div class="container">
+    <h1>About Us</h1>
+    <p>Learn more about {{ site_name }}</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:800px">
+    {% if page %}{{ page.content|safe }}{% else %}
+    <div class="feature-card" style="padding:2.5rem">
+      <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin-bottom:1rem">Our Mission</h2>
+      <p style="color:var(--text-muted);line-height:1.8;margin-bottom:1.5rem">{{ site_name }} is committed to academic excellence and student success. We provide a modern, technology-driven learning environment that empowers students to achieve their full potential.</p>
+      <div class="grid-2" style="margin-top:2rem">
+        <div class="feature-card" style="border:none;background:var(--surface2);padding:1.5rem;text-align:center">
+          <div style="font-size:2rem;font-weight:800;color:var(--primary);font-family:var(--font-display)">{{ stats.total_students|default:"5,000+" }}</div>
+          <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">Students Enrolled</div>
+        </div>
+        <div class="feature-card" style="border:none;background:var(--surface2);padding:1.5rem;text-align:center">
+          <div style="font-size:2rem;font-weight:800;color:var(--primary);font-family:var(--font-display)">{{ stats.total_programs|default:"50+" }}</div>
+          <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">Academic Programs</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

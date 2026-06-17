@@ -1,50 +1,175 @@
-{% extends "base_dashboard.html" %}
-{% block nav_links %}
-<a href="{% url 'analytics:dashboard' %}" class="active">Analytics</a>
-<a href="{% url 'finance:dashboard' %}">Finance</a>
-<a href="{% url 'feedback:dashboard' %}">Feedback</a>
-<a href="{% url 'core:audit_logs' %}">Audit Logs</a>
+{% extends "admin_base.html" %}
+{% load static %}
+
+{% block title %}Analytics & AI Insights · eduPro{% endblock %}
+
+{% block breadcrumb %}Analytics{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>{{ page_title|default:"Analytics & AI Insights" }}</h1>
+    <p>Platform-wide metrics, predictive analytics, and actionable intelligence</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'analytics:dashboard' %}" class="btn btn-ghost">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Refresh
+    </a>
+  </div>
+</div>
 {% endblock %}
+
 {% block content %}
-<div class="grid grid-4" style="margin-bottom:1.5rem">
-  <div class="stat-card"><div class="value">{{ stats.users }}</div><div class="label">Total Users</div></div>
-  <div class="stat-card"><div class="value">{{ stats.students }}</div><div class="label">Students</div></div>
-  <div class="stat-card"><div class="value">{{ stats.teachers }}</div><div class="label">Teachers</div></div>
-  <div class="stat-card"><div class="value">{{ stats.enrolments }}</div><div class="label">Enrolments</div></div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--blue)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--blue-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><path stroke-linecap="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val" style="animation-delay:0.1s">{{ stats.users|default:"0" }}</div>
+    <div class="kpi-label">Total Users</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--blue);width:100%"></div></div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--teal)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--teal-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val" style="animation-delay:0.2s">{{ stats.students|default:"0" }}</div>
+    <div class="kpi-label">Students</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--teal);width:100%"></div></div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--ochre)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--ochre-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="1.8"><path stroke-linecap="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val" style="animation-delay:0.3s">{{ stats.teachers|default:"0" }}</div>
+    <div class="kpi-label">Teachers</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--ochre);width:100%"></div></div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--rose)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--rose-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val" style="animation-delay:0.4s">{{ stats.enrolments|default:"0" }}</div>
+    <div class="kpi-label">Enrolments</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--rose);width:100%"></div></div>
+  </div>
 </div>
 
-<div class="grid grid-2">
-  <div class="card">
-    <h3 style="margin-bottom:1rem">Grade Distribution</h3>
-    <canvas id="gradeChart" height="200"></canvas>
+<div class="body-grid">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          Grade Distribution
+        </div>
+      </div>
+      <div style="padding:16px;height:220px">
+        <canvas id="gradeChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          Sentiment Breakdown
+        </div>
+      </div>
+      {% if sentiment_breakdown %}
+      <ul class="status-list">
+        {% for s in sentiment_breakdown %}
+        <li class="status-row">
+          <span class="s-label">{{ s.sentiment|capfirst }}</span>
+          <span class="s-val">{{ s.count }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div style="padding:24px;text-align:center;color:var(--tx3);font-size:12px">No feedback data yet</div>
+      {% endif %}
+    </div>
   </div>
-  <div class="card">
-    <h3 style="margin-bottom:1rem">Sentiment Breakdown</h3>
-    <ul>
-      {% for s in sentiment_breakdown %}
-      <li style="padding:.4rem 0">{{ s.sentiment|capfirst }}: {{ s.count }}</li>
-      {% empty %}<li>No feedback data yet</li>{% endfor %}
-    </ul>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          At-Risk Students
+        </div>
+        <span class="s-pill pill-rose">AI PREDICTIVE</span>
+      </div>
+      {% if at_risk %}
+      <div style="overflow-x:auto">
+        <table class="reg-table">
+          <thead>
+            <tr><th>Student</th><th>Risk</th><th>Score</th><th>Factors</th></tr>
+          </thead>
+          <tbody>
+            {% for item in at_risk %}
+            <tr>
+              <td style="font-weight:600">{{ item.student.get_full_name }}</td>
+              <td>
+                <span class="status-chip" style="background:{% if item.risk_level == 'high' %}var(--rose-dim);color:var(--rose){% else %}var(--ochre-dim);color:var(--ochre){% endif %}">{{ item.risk_level }}</span>
+              </td>
+              <td style="font-family:var(--mono)">{{ item.risk_score }}%</td>
+              <td style="color:var(--tx2);font-size:11.5px">{{ item.factors|join:", " }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="padding:24px;text-align:center;color:var(--tx3);font-size:12px">No at-risk students identified.</div>
+      {% endif %}
+    </div>
+
+    {% if dept_stats %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+          Enrolment by Department
+        </div>
+      </div>
+      <ul class="prog-list">
+        {% for dept in dept_stats %}
+        <li>
+          <div class="prog-head">
+            <span class="prog-name">{{ dept.name }}</span>
+            <span class="prog-pct">{{ dept.student_count }}</span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill dept-bar" style="background:var(--teal)" data-pct="{{ dept.student_count|default:0 }}"></div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </div>
 </div>
 
-<div class="card" style="margin-top:1rem">
-  <h3 style="margin-bottom:1rem">At-Risk Students (Predictive Analytics)</h3>
-  <table class="data-table">
-    <thead><tr><th>Student</th><th>Risk</th><th>Score</th><th>Factors</th></tr></thead>
-    <tbody>
-      {% for item in at_risk %}
-      <tr>
-        <td>{{ item.student.get_full_name }}</td>
-        <td><span class="badge badge-{% if item.risk_level == 'high' %}danger{% else %}warning{% endif %}">{{ item.risk_level }}</span></td>
-        <td>{{ item.risk_score }}%</td>
-        <td>{{ item.factors|join:", " }}</td>
-      </tr>
-      {% empty %}<tr><td colspan="4">No at-risk students identified.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {

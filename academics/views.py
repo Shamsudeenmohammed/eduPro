@@ -925,9 +925,11 @@ def result_sheet_list(request):
         qs = qs.filter(status=status_filter)
 
     paginator = Paginator(qs, 20)
-    return render(request, "academics/result_sheet_list.html", {
+    page_obj = paginator.get_page(request.GET.get("page"))
+    return render(request, "teachers/result_sheet_list.html", {
         "page_title":     page_title,
-        "page_obj":       paginator.get_page(request.GET.get("page")),
+        "page_obj":       page_obj,
+        "sheets":         page_obj.object_list,
         "status_choices": ResultSheet.Status.choices,
         "status_filter":  status_filter,
     })

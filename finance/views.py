@@ -5,7 +5,7 @@ from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
-from accounts.decorators import admin_required, student_required
+from accounts.decorators import admin_required, student_required, teacher_required
 from .forms import FeePaymentForm, FeeStructureForm, PayrollForm, StudentFeeForm
 from .models import FeePayment, FeeStructure, PayrollRecord, StudentFee
 
@@ -13,10 +13,13 @@ from .models import FeePayment, FeeStructure, PayrollRecord, StudentFee
 @login_required
 @admin_required
 def fee_dashboard(request):
+    total_due = StudentFee.objects.aggregate(t=Sum("amount_due"))["t"] or 0
+    total_paid = StudentFee.objects.aggregate(t=Sum("amount_paid"))["t"] or 0
     stats = {
-        "total_due": StudentFee.objects.aggregate(t=Sum("amount_due"))["t"] or 0,
-        "total_paid": StudentFee.objects.aggregate(t=Sum("amount_paid"))["t"] or 0,
+        "total_due": total_due,
+        "total_paid": total_paid,
         "pending_count": StudentFee.objects.filter(status="pending").count(),
+        "outstanding": total_due - total_paid,
     }
     recent = StudentFee.objects.select_related("student", "fee_structure").order_by("-created_at")[:10]
     return render(request, "finance/fee_dashboard.html", {
@@ -82,7 +85,7 @@ def record_payment(request, fee_pk):
 @student_required
 def my_fees(request):
     fees = StudentFee.objects.filter(student=request.user).select_related("fee_structure")
-    return render(request, "finance/my_fees.html", {"fees": fees, "page_title": "My Fees"})
+    return render(request, "students/my_fees.html", {"fees": fees, "page_title": "My Fees"})
 
 
 @login_required
@@ -100,4 +103,18 @@ def payroll_list(request):
     return render(request, "finance/payroll.html", {
         "page_obj": paginator.get_page(request.GET.get("page")),
         "form": form, "page_title": "Payroll",
+    })
+
+
+@login_required
+@teacher_required
+def my_payroll(request):
+    records = PayrollRecord.objects.filter(employee=request.user).order_by("-period_year", "-period_month")
+    paginator = Paginator(records, 25)
+    tpl = "finance/my_payroll.html"
+    if request.user.is_teacher:
+        tpl = "teachers/my_payroll.html"
+    return render(request, tpl, {
+        "page_obj": paginator.get_page(request.GET.get("page")),
+        "page_title": "My Payroll",
     })

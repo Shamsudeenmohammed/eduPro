@@ -370,32 +370,27 @@ class AdmissionApplication(models.Model):
     @transaction.atomic
     def approve(self, actor, temp_password: str = None):
         """
-        Approve the application and provision the EduProUser account.
+        Approve the application and activate the applicant's account.
 
-        Steps (all in one DB transaction):
-          1. Validate current status is PENDING or REVIEWING.
-          2. Check no user account already provisioned.
-          3. Create EduProUser (is_active=True, role=STUDENT).
-          4. Create/link StudentProfile.
-          5. Update application: status=APPROVED, user=<new user>.
+        The user account is already created at application-submission time
+        (see :view:`application_form`).  This method:
+          1. Validates current status is PENDING or REVIEWING.
+          2. Finds the existing EduProUser by email, activates / approves them.
+          3. Creates / links a StudentProfile.
+          4. Updates application: status=APPROVED.
 
         Args:
             actor:         The admin/admissions officer performing the approval.
-            temp_password: If provided, used as the account password.
-                           If None, a random secure password is set (user must
-                           reset via email).
+            temp_password: Ignored when the user was pre-created (the applicant
+                           chose their own password).  Kept for backward compat.
 
         Returns:
-            The newly provisioned EduProUser instance.
+            The EduProUser instance linked to this application.
         """
         if self.status not in (AdmissionStatus.PENDING, AdmissionStatus.REVIEWING):
             raise ValidationError(
                 _("Only PENDING or REVIEWING applications can be approved. "
                   "Current status: %(s)s.") % {"s": self.get_status_display()}
-            )
-        if self.user_id:
-            raise ValidationError(
-                _("A user account has already been provisioned for this application.")
             )
 
         from django.contrib.auth import get_user_model
@@ -403,19 +398,19 @@ class AdmissionApplication(models.Model):
 
         User = get_user_model()
 
-        # ── 1. Provision user ────────────────────────────────────────────────
-        if User.objects.filter(email=self.email).exists():
-            # Edge-case: email already in system (e.g. returning applicant).
-            # Link to existing user and re-activate.
+        # ── 1. Activate / approve user ───────────────────────────────────────
+        # User is typically pre-created at application time, but fall back
+        # to creating one for legacy applications that predate that feature.
+        try:
             new_user = User.objects.get(email=self.email)
             new_user.is_active   = True
             new_user.approved_by = actor
             new_user.approved_at = timezone.now()
             new_user.save(update_fields=["is_active", "approved_by", "approved_at"])
-        else:
+        except User.DoesNotExist:
             new_user = User.objects.create_approved_user(
                 email      = self.email,
-                password   = temp_password,   # None → unusable pw → must reset
+                password   = temp_password,
                 first_name = self.first_name,
                 last_name  = self.last_name,
                 role       = "student",

@@ -10,6 +10,10 @@ from .forms import AnnouncementForm, CalendarEventForm, SupportTicketForm, Timet
 from .models import Announcement, CalendarEvent, Hostel, HostelAllocation, SupportTicket, TimetableSlot
 
 
+def _base_for_user(user):
+    return "students/base.html" if getattr(user, "is_student", False) else "admin_base.html"
+
+
 @login_required
 def announcement_list(request):
     from django.db.models import Q
@@ -19,6 +23,7 @@ def announcement_list(request):
     return render(request, "operations/announcements.html", {
         "announcements": qs[:50],
         "page_title": "Announcements",
+        "base_template": _base_for_user(request.user),
     })
 
 
@@ -49,6 +54,7 @@ def calendar_view(request):
     return render(request, "operations/calendar.html", {
         "events": events,
         "page_title": "Academic Calendar",
+        "base_template": _base_for_user(request.user),
     })
 
 
@@ -86,6 +92,7 @@ def timetable_view(request):
         slots = slots.filter(offering_id__in=offering_ids)
     return render(request, "operations/timetable.html", {
         "slots": slots, "page_title": "Timetable",
+        "base_template": _base_for_user(request.user),
     })
 
 
@@ -149,4 +156,5 @@ def hostel_list(request):
         "hostels": hostels,
         "my_allocation": my_allocation,
         "page_title": "Hostel & Accommodation",
+        "base_template": _base_for_user(request.user),
     })

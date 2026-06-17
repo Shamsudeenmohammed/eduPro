@@ -1,5 +1,19 @@
-{% extends "base_dashboard.html" %}
+{% extends base_template %}{% block title %}Hostel & Accommodation{% endblock %}
 {% block content %}
-{% if my_allocation %}<div class="card" style="margin-bottom:1rem">Your room: <strong>{{ my_allocation.room }}</strong></div>{% endif %}
-{% for h in hostels %}<div class="card" style="margin-bottom:.75rem"><h3>{{ h.name }}</h3><p>{{ h.location }} — Capacity: {{ h.capacity }}</p></div>{% endfor %}
+{% if my_allocation %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-body">Your room: <strong>{{ my_allocation.room }}</strong> — <span class="badge badge-success">Allocated</span></div>
+</div>
+{% endif %}
+<div class="card">
+  <div class="card-header"><h3>🏠 Hostels</h3></div>
+  <div class="card-body">
+    {% for h in hostels %}
+      <div style="padding:.75rem 0;{% if not forloop.last %}border-bottom:1px solid var(--border, #eee){% endif %}">
+        <h4 style="margin:0">{{ h.name }}</h4>
+        <p style="margin:.25rem 0 0;color:var(--text-muted, #666)">{{ h.location }} — Capacity: {{ h.capacity }}</p>
+      </div>
+    {% empty %}<p class="text-muted">No hostels available.</p>{% endfor %}
+  </div>
+</div>
 {% endblock %}

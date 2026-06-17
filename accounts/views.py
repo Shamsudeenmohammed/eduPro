@@ -142,6 +142,8 @@ def register_view(request):
 def student_dashboard(request):
     if not (request.user.is_student or request.user.is_superuser):
         raise PermissionDenied
+    if not request.user.is_approved_student:
+        return redirect("accounts:student_pending")
 
     from academics.models import Enrolment, StudentProfile, AcademicSession, Semester
 
@@ -164,6 +166,25 @@ def student_dashboard(request):
         "current_semester": current_semester,
         "enrolments":       enrolments,
         "student_profile":  student_profile,
+    })
+
+
+@login_required
+def student_pending(request):
+    """Restricted landing for students whose admission hasn't been approved yet."""
+    if not (request.user.is_student or request.user.is_superuser):
+        raise PermissionDenied
+    if request.user.is_approved_student:
+        return redirect("accounts:student_dashboard")
+
+    from portal.models import AdmissionApplication
+    application = AdmissionApplication.objects.filter(
+        user=request.user
+    ).order_by("-created_at").first()
+
+    return render(request, "students/pending.html", {
+        "page_title": "Application Status",
+        "application": application,
     })
 
 
@@ -250,15 +271,31 @@ def admin_dashboard(request):
         status=AdmissionStatus.PENDING
     ).order_by("-created_at")
 
+    # Course registration requests for dashboard
+    from students.models import CourseRegistrationRequest
+    recent_registrations = (
+        CourseRegistrationRequest.objects
+        .select_related("student", "offering__course")
+        .order_by("-created_at")[:10]
+    )
+    pending_reg_count = (
+        CourseRegistrationRequest.objects
+        .filter(status="pending")
+        .count()
+    )
+
     context = {
-        "page_title":            "Admin Dashboard",
-        "current_session":       current_session,
-        "current_semester":      current_semester,
-        "pending_users":         pending_users,
-        "pending_user_count":    pending_users.count(),
-        "recent_users":          recent_users,
-        "pending_applications":  pending_applications,
-        "application_count":     pending_applications.count(),
+        "page_title":             "Admin Dashboard",
+        "current_session":        current_session,
+        "current_semester":       current_semester,
+        "pending_users":          pending_users,
+        "pending_user_count":     pending_users.count(),
+        "recent_users":           recent_users,
+        "pending_applications":   pending_applications,
+        "application_count":      pending_applications.count(),
+        "recent_registrations":   recent_registrations,
+        "pending_request_count":  pending_reg_count,
+        "pending_registrations":  pending_reg_count,
     }
 
     # Optional analytics if available
@@ -448,6 +485,18 @@ def user_list_view(request):
         "page_title": "User Management",
         "page_obj":   page_obj,
     })
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def toggle_user_active(request, pk):
+    user = get_object_or_404(EduProUser, pk=pk)
+    user.is_active = not user.is_active
+    user.save(update_fields=["is_active"])
+    label = "activated" if user.is_active else "deactivated"
+    messages.success(request, f"{user.get_full_name()} ({user.email}) has been {label}.")
+    return redirect("accounts:user_list")
 
 
 @login_required

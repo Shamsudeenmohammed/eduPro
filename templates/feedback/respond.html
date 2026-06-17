@@ -1,11 +1,47 @@
-{% extends "base_dashboard.html" %}
+{% extends "admin_base.html" %}{% block title %}Respond to Feedback{% endblock %}
+{% block breadcrumb %}Feedback / Respond{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Respond to Feedback</h1>
+    <p>{{ feedback.subject }}</p>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<div class="card" style="margin-bottom:1rem">
-  <p><strong>{{ feedback.subject }}</strong></p>
-  <p>{{ feedback.message }}</p>
-  <p>Sentiment: {{ feedback.sentiment }} ({{ feedback.sentiment_score }})</p>
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Original Feedback</div></div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Subject</span><span class="s-val" style="font-weight:600">{{ feedback.subject }}</span></li>
+      <li class="status-row"><span class="s-label">Category</span><span class="s-val">{{ feedback.get_category_display }}</span></li>
+      <li class="status-row"><span class="s-label">Sentiment</span>
+        <span class="s-pill {% if feedback.sentiment == 'positive' %}pill-green{% elif feedback.sentiment == 'negative' %}pill-rose{% elif feedback.sentiment == 'neutral' %}pill-amber{% else %}pill-muted{% endif %}">{{ feedback.sentiment|default:"unclassified" }}</span>
+      </li>
+      <li class="status-row"><span class="s-label">Score</span><span class="s-val" style="font-family:var(--mono)">{{ feedback.sentiment_score|floatformat:3|default:"—" }}</span></li>
+      <li class="status-row"><span class="s-label">Rating</span><span class="s-val">{% if feedback.rating %}{{ feedback.rating }}/5{% else %}—{% endif %}</span></li>
+      <li class="status-row"><span class="s-label">Date</span><span class="s-val" style="font-family:var(--mono);font-size:11px">{{ feedback.created_at|date:"M j, Y H:i" }}</span></li>
+    </ul>
+    <div style="padding:14px 18px;border-top:1px solid var(--border)">
+      <p style="font-size:13px;color:var(--tx2);line-height:1.6">{{ feedback.message }}</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Admin Response</div></div>
+    <form method="post" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      {% csrf_token %}
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Response</label>
+        {{ form.admin_response }}
+      </div>
+      <div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx2);cursor:pointer">
+          {{ form.is_public }} Make this response public
+        </label>
+      </div>
+      <button class="btn btn-primary" style="align-self:flex-start">Save Response</button>
+    </form>
+  </div>
 </div>
-<div class="card" style="max-width:600px">
-  <form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Save Response</button></form>
-</div>
+<style>textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;resize:vertical;min-height:120px;transition:border-color .15s}textarea:focus{outline:none;border-color:var(--ochre)}input[type=checkbox]{accent-color:var(--ochre);width:16px;height:16px}</style>
 {% endblock %}

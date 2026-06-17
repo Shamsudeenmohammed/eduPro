@@ -1,4 +1,42 @@
-{% extends "base_dashboard.html" %}
+{% extends "admin_base.html" %}{% block title %}Record Payment{% endblock %}
+{% block breadcrumb %}Finance / Record Payment{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Record Payment</h1>
+    <p>{{ fee.student.get_full_name }} — {{ fee.fee_structure.name }}</p>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<div class="card" style="max-width:500px"><p>Balance: {{ fee.balance }}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Record Payment</button></form></div>
+<div style="max-width:500px">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><div class="card-title">Fee Details</div></div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Student</span><span class="s-val">{{ fee.student.get_full_name }}</span></li>
+      <li class="status-row"><span class="s-label">Fee Structure</span><span class="s-val">{{ fee.fee_structure.name }}</span></li>
+      <li class="status-row"><span class="s-label">Amount Due</span><span class="s-val">{{ fee.amount_due }}</span></li>
+      <li class="status-row"><span class="s-label">Amount Paid</span><span class="s-val">{{ fee.amount_paid }}</span></li>
+      <li class="status-row"><span class="s-label">Balance</span><span class="s-val" style="color:var(--rose)">{{ fee.balance }}</span></li>
+      <li class="status-row"><span class="s-label">Status</span>
+        <span class="s-pill {% if fee.status == 'paid' %}pill-green{% elif fee.status == 'partial' %}pill-amber{% else %}pill-rose{% endif %}">{{ fee.status|upper }}</span>
+      </li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Payment</div></div>
+    <form method="post" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ field.errors.0 }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Record Payment</button>
+    </form>
+  </div>
+</div>
+<style>select,input,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;transition:border-color .15s}select:focus,input:focus,textarea:focus{outline:none;border-color:var(--ochre)}textarea{resize:vertical}</style>
 {% endblock %}

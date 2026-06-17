@@ -1,3 +1,10 @@
-{% extends "base_dashboard.html" %}
-{% block content %}<div class="card" style="margin-bottom:1rem"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add Slot</button></form></div>
-<table class="data-table card"><tbody>{% for s in slots %}<tr><td>{{ s }}</td></tr>{% endfor %}</tbody></table>{% endblock %}
+{% extends "admin_base.html" %}{% block title %}Manage Timetable{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:1rem">
+  <div class="card-header"><h3>Add Timetable Slot</h3></div>
+  <div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add Slot</button></form></div>
+</div>
+<div class="card">
+  <table class="data-table"><tbody>{% for s in slots %}<tr><td>{{ s }}</td></tr>{% endfor %}</tbody></table>
+</div>
+{% endblock %}

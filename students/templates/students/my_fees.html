@@ -1,0 +1,56 @@
+{% extends "students/base.html" %}
+{% block extra_head %}
+<style>
+  .page-header p { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+  .fee-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .fee-summary .stat-card { text-align: center; }
+  @media (max-width: 600px) { .fee-summary { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>My Fee Statement</h1>
+    <p>View your fee obligations and payment history</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Fee Records</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Fee</th><th>Amount Due</th><th>Paid</th><th>Balance</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for f in fees %}
+        <tr>
+          <td><strong>{{ f.fee_structure.name }}</strong></td>
+          <td>{{ f.amount_due }}</td>
+          <td>{{ f.amount_paid }}</td>
+          <td style="color:var(--danger);font-weight:600">{{ f.balance }}</td>
+          <td>
+            {% if f.status == 'paid' %}
+              <span class="pill pill-green">PAID</span>
+            {% elif f.status == 'partial' %}
+              <span class="pill pill-yellow">PARTIAL</span>
+            {% elif f.status == 'overdue' %}
+              <span class="pill pill-red">OVERDUE</span>
+            {% elif f.status == 'waived' %}
+              <span class="pill pill-blue">WAIVED</span>
+            {% else %}
+              <span class="pill pill-gray">{{ f.status|upper }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">No fee records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

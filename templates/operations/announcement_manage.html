@@ -1,7 +1,86 @@
-{% extends "base_dashboard.html" %}
+{% extends "admin_base.html" %}{% block title %}Manage Announcements{% endblock %}
+{% block breadcrumb %}Manage Announcements{% endblock %}
 {% block content %}
-<div class="grid grid-2">
-  <div class="card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Post</button></form></div>
-  <div>{% for i in items %}<div class="card" style="margin-bottom:.5rem">{{ i.title }}</div>{% endfor %}</div>
+<div class="page-header">
+  <div class="ph-left">
+    <h1>📢 Announcements</h1>
+    <p>Create and manage system-wide announcements</p>
+  </div>
 </div>
+
+<div class="body-grid">
+  <div>
+    {% for i in items %}
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-header">
+        <div class="card-title">
+          {% if i.is_pinned %}<span style="color:var(--ochre)">📌</span>{% endif %}
+          {{ i.title }}
+        </div>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">{{ i.created_at|date:"M j, Y" }}</span>
+      </div>
+      <div class="card-body" style="padding:12px 18px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <p style="font-size:12.5px;color:var(--tx2);line-height:1.5;flex:1;min-width:0">{{ i.content|truncatewords:30 }}</p>
+          <span class="{% if i.priority == 'urgent' %}pill-rose{% elif i.priority == 'high' %}pill-amber{% elif i.priority == 'low' %}pill-muted{% else %}pill-green{% endif %}" style="white-space:nowrap;flex-shrink:0;font-size:10px;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-weight:600">{{ i.get_priority_display }}</span>
+        </div>
+        {% if i.target_roles %}
+        <div style="margin-top:8px;display:flex;gap:4px">
+          {% for r in i.target_roles.split %}
+          <span style="font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;background:var(--surface2);color:var(--tx3)">{{ r }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="card"><div class="card-body" style="text-align:center;color:var(--tx3);padding:40px">No announcements posted yet.</div></div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">✏️ New Announcement</div></div>
+      <div class="card-body">
+        <form method="post" style="display:flex;flex-direction:column;gap:14px">
+          {% csrf_token %}
+          {% for field in form %}
+          <div>
+            <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div style="font-size:11px;color:var(--rose);margin-top:3px">{{ field.errors.0 }}</div>
+            {% endif %}
+            {% if field.help_text %}
+            <div style="font-size:10px;color:var(--tx3);margin-top:3px">{{ field.help_text }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          <button class="btn btn-primary">Post Announcement</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .body-grid select,
+  .body-grid input[type="text"],
+  .body-grid input[type="datetime-local"],
+  .body-grid textarea {
+    width:100%;background:var(--surface2);color:var(--tx1);
+    border:1px solid var(--border2);border-radius:var(--r);
+    padding:8px 10px;font-family:var(--font);font-size:12.5px;
+    transition:border-color 0.15s;
+  }
+  .body-grid select:focus,
+  .body-grid input:focus,
+  .body-grid textarea:focus {
+    outline:none;border-color:var(--ochre);
+  }
+  .body-grid textarea { resize:vertical; }
+  .body-grid input[type="checkbox"] {
+    accent-color:var(--ochre);width:16px;height:16px;
+  }
+</style>
 {% endblock %}

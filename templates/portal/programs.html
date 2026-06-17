@@ -1,16 +1,44 @@
-{% extends "base_public.html" %}
+{% extends "base_public.html" %}{% block title %}Academic Programs — {{ site_name }}{% endblock %}
 {% block content %}
-<div class="container" style="padding:3rem 0">
-  <h1>Academic Programs</h1>
-  <div class="table-wrap card" style="margin-top:1.5rem;padding:0">
-    <table class="data-table">
-      <thead><tr><th>Code</th><th>Program</th><th>Department</th><th>Duration</th></tr></thead>
-      <tbody>
-        {% for p in programs %}
-        <tr><td>{{ p.code }}</td><td>{{ p.name }}</td><td>{{ p.department.name }}</td><td>{{ p.duration_years }} years</td></tr>
-        {% empty %}<tr><td colspan="4">No programs listed.</td></tr>{% endfor %}
-      </tbody>
-    </table>
+<section class="page-banner">
+  <div class="container">
+    <h1>Academic Programs</h1>
+    <p>Explore our range of accredited programs</p>
   </div>
-</div>
+</section>
+<section class="section">
+  <div class="container">
+    <div class="feature-card" style="padding:0;overflow:hidden">
+      <div class="table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+          <thead>
+            <tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Code</th>
+              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Program</th>
+              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Department</th>
+              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in programs %}
+            <tr style="border-bottom:1px solid var(--border);transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+              <td style="padding:12px 18px;font-family:monospace;font-size:.85rem;color:var(--primary)">{{ p.code }}</td>
+              <td style="padding:12px 18px;font-weight:600">{{ p.name }}</td>
+              <td style="padding:12px 18px;color:var(--text-muted)">{{ p.department.name }}</td>
+              <td style="padding:12px 18px">{{ p.duration_years }} years</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="padding:3rem;text-align:center;color:var(--text-muted)">No programs listed yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="cta-section" style="margin-top:2.5rem">
+      <h2>Find Your Program</h2>
+      <p>Ready to take the next step? Apply today and start your journey.</p>
+      <a href="{% url 'portal:apply' %}" class="btn">Apply Now →</a>
+    </div>
+  </div>
+</section>
 {% endblock %}

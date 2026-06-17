@@ -1,0 +1,25 @@
+{% extends "base_public.html" %}{% block title %}Admissions Closed — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Admissions Closed</h1>
+    <p>We are not currently accepting applications</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:550px;text-align:center">
+    <div class="feature-card" style="padding:2.5rem">
+      <div style="font-size:3rem;margin-bottom:1rem">📋</div>
+      <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:.75rem">Applications Are Currently Closed</h2>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem">We are not accepting new applications at this time. Please check back later for the next intake cycle.</p>
+      {% if cycle %}
+      <div style="background:var(--surface2);padding:1rem;border-radius:10px;margin-bottom:1.5rem">
+        <p style="font-weight:600;margin-bottom:.25rem">{{ cycle.name }}</p>
+        <p style="font-size:.85rem;color:var(--text-muted)">{{ cycle.start_date|date:"M j, Y" }} – {{ cycle.end_date|date:"M j, Y" }}</p>
+      </div>
+      {% endif %}
+      <a href="{% url 'portal:home' %}" class="btn" style="display:inline-flex;align-items:center;gap:6px;color:var(--primary);text-decoration:none;font-weight:600">← Back to Home</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

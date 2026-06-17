@@ -1,0 +1,86 @@
+{% extends "admin_base.html" %}{% block title %}Admissions Dashboard{% endblock %}
+{% block breadcrumb %}Admissions{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>🎓 Admissions Dashboard</h1>
+    <p>{% if active_cycle %}{{ active_cycle.name }} ({{ active_cycle.academic_year }}) — {{ active_cycle.start_date|date:"M j" }} – {{ active_cycle.end_date|date:"M j, Y" }}{% else %}No active cycle{% endif %}</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'portal:application_list' %}" class="btn btn-ghost">All Applications</a>
+    <a href="{% url 'portal:cycle_list' %}" class="btn btn-ghost">Cycles</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--blue)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--blue-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ status_counts.total }}</div>
+    <div class="kpi-label">Total Applications</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--blue);width:100%"></div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--ochre)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--ochre-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="1.8"><path stroke-linecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ status_counts.pending }}</div>
+    <div class="kpi-label">Pending</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--ochre)" data-pct="{% widthratio status_counts.pending status_counts.total 100 %}"></div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--teal)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--teal-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ status_counts.approved }}</div>
+    <div class="kpi-label">Approved</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--teal)" data-pct="{% widthratio status_counts.approved status_counts.total 100 %}"></div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--rose)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--rose-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ status_counts.rejected }}</div>
+    <div class="kpi-label">Rejected</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--rose)" data-pct="{% widthratio status_counts.rejected status_counts.total 100 %}"></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Recent Pending Applications</div>
+    <a href="{% url 'portal:application_list' %}?status=pending" class="card-action">View all pending →</a>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Reference</th><th>Applicant</th><th>Program</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for app in recent_pending %}
+        <tr>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ app.reference_number }}</td>
+          <td style="font-weight:600"><a href="{% url 'portal:application_detail' app.pk %}" style="color:inherit;text-decoration:none">{{ app.get_full_name }}</a></td>
+          <td style="color:var(--tx2)">{{ app.program_applied.name|truncatewords:4 }}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ app.created_at|date:"M j, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:24px">No pending applications for the current cycle.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

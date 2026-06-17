@@ -1,5 +1,33 @@
-{% extends "base_dashboard.html" %}
+{% extends "admin_base.html" %}{% block title %}My Fees{% endblock %}
+{% block breadcrumb %}My Fees{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>My Fee Statement</h1>
+    <p>View your fee obligations and payment history</p>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<table class="data-table card"><thead><tr><th>Fee</th><th>Due</th><th>Paid</th><th>Status</th></tr></thead>
-<tbody>{% for f in fees %}<tr><td>{{ f.fee_structure.name }}</td><td>{{ f.amount_due }}</td><td>{{ f.amount_paid }}</td><td>{{ f.status }}</td></tr>{% endfor %}</tbody></table>
+<div class="card">
+  <div class="card-header"><div class="card-title">Fee Records</div></div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Fee</th><th>Due</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for f in fees %}
+        <tr>
+          <td style="font-weight:600">{{ f.fee_structure.name }}</td>
+          <td><span style="font-family:var(--mono)">{{ f.amount_due }}</span></td>
+          <td><span style="font-family:var(--mono)">{{ f.amount_paid }}</span></td>
+          <td><span style="font-family:var(--mono);color:var(--rose)">{{ f.balance }}</span></td>
+          <td>{% if f.status == 'paid' %}<span class="s-pill pill-green">PAID</span>{% elif f.status == 'partial' %}<span class="s-pill pill-amber">PARTIAL</span>{% else %}<span class="s-pill pill-rose">{{ f.status|upper }}</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:24px">No fee records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

@@ -10,4 +10,5 @@ urlpatterns = [
     path("students/<int:fee_pk>/pay/", views.record_payment, name="record_payment"),
     path("my-fees/", views.my_fees, name="my_fees"),
     path("payroll/", views.payroll_list, name="payroll"),
+    path("my-payroll/", views.my_payroll, name="my_payroll"),
 ]

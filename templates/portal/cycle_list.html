@@ -1,0 +1,41 @@
+{% extends "admin_base.html" %}{% block title %}Admission Cycles{% endblock %}
+{% block breadcrumb %}Admissions / Cycles{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Admission Cycles</h1>
+    <p>Manage intake windows for applications</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'portal:cycle_create' %}" class="btn btn-primary">+ New Cycle</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><div class="card-title">Cycles</div></div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Academic Year</th><th>Period</th><th>Max Apps</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for c in cycles %}
+        <tr>
+          <td style="font-weight:600">{{ c.name }}</td>
+          <td style="color:var(--tx2)">{{ c.academic_year }}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ c.start_date|date:"M j" }} – {{ c.end_date|date:"M j, Y" }}</td>
+          <td style="font-family:var(--mono)">{{ c.max_applications|default:"∞" }}</td>
+          <td>
+            {% if c.is_active and c.is_open %}<span class="s-pill pill-green">Active</span>
+            {% elif c.is_active %}<span class="s-pill pill-amber">Inactive</span>
+            {% else %}<span class="s-pill pill-muted">Closed</span>{% endif %}
+          </td>
+          <td style="text-align:right"><a href="{% url 'portal:cycle_edit' c.pk %}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Edit</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:24px">No admission cycles defined yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

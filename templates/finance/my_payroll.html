@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}{% block title %}My Payroll{% endblock %}
+{% block breadcrumb %}My Payroll{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>My Payroll Records</h1>
+    <p>View your monthly payroll history</p>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Payroll History</div>
+    {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Period</th><th>Basic Salary</th><th>Allowances</th><th>Deductions</th><th>Net Pay</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for r in page_obj %}
+        <tr>
+          <td style="font-family:var(--mono);font-weight:600">{{ r.period_month|stringformat:"02d" }}/{{ r.period_year }}</td>
+          <td><span style="font-family:var(--mono)">{{ r.basic_salary }}</span></td>
+          <td><span style="font-family:var(--mono)">{{ r.allowances }}</span></td>
+          <td><span style="font-family:var(--mono);color:var(--rose)">{{ r.deductions }}</span></td>
+          <td><span style="font-family:var(--mono);font-weight:600;color:var(--teal)">{{ r.net_pay }}</span></td>
+          <td>{% if r.status == 'paid' %}<span class="s-pill pill-green">PAID</span>{% elif r.status == 'processed' %}<span class="s-pill pill-amber">PROCESSED</span>{% else %}<span class="s-pill pill-rose">{{ r.status|upper }}</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:24px">No payroll records found for you.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:12px 18px;border-top:1px solid var(--border)">
+    <div class="pagination" style="margin:0">
+      {% if page_obj.has_previous %}<a href="?page=1" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>{% endif %}
+      <span class="page-link current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

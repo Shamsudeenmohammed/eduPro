@@ -1,0 +1,33 @@
+{% extends "admin_base.html" %}{% block title %}{{ page_title }}{% endblock %}
+{% block breadcrumb %}Admissions / Cycles / {{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>{{ page_title }}</h1>
+    <p>{% if cycle %}Edit the admission cycle details{% else %}Define a new intake window{% endif %}</p>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div style="max-width:600px">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Cycle Details</div></div>
+    <form method="post" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div style="font-size:10px;color:var(--tx3);margin-top:3px">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ field.errors.0 }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="submit" class="btn btn-primary">{% if cycle %}Update Cycle{% else %}Create Cycle{% endif %}</button>
+        <a href="{% url 'portal:cycle_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<style>select,input{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;transition:border-color .15s}select:focus,input:focus{outline:none;border-color:var(--ochre)}input[type=checkbox]{width:auto}</style>
+{% endblock %}

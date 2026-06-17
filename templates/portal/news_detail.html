@@ -1,8 +1,20 @@
-{% extends "base_public.html" %}
+{% extends "base_public.html" %}{% block title %}{{ item.title }} — {{ site_name }}{% endblock %}
 {% block content %}
-<article class="container" style="max-width:800px;padding:3rem 0">
-  <h1>{{ item.title }}</h1>
-  <p style="color:var(--text-muted);margin-bottom:1.5rem">{{ item.published_at|date:"F j, Y" }}</p>
-  <div class="card">{{ item.content|linebreaks }}</div>
-</article>
+<section class="page-banner">
+  <div class="container">
+    <h1>{{ item.title }}</h1>
+    <p>{{ item.published_at|date:"F j, Y" }}</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:800px">
+    <div class="feature-card" style="padding:2rem">
+      {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%;max-height:400px;object-fit:cover;border-radius:8px;margin-bottom:1.5rem">{% endif %}
+      <div style="font-size:1rem;color:var(--text-muted);line-height:1.8">{{ item.content|linebreaks }}</div>
+      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+        <a href="{% url 'portal:news_list' %}" style="color:var(--primary);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:6px">← Back to News</a>
+      </div>
+    </div>
+  </div>
+</section>
 {% endblock %}

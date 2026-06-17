@@ -1,0 +1,76 @@
+{% extends "teachers/base.html" %}
+{% block extra_head %}
+<style>
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-header h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+  .page-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .pay-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 22px; }
+  .pay-summary .stat-card { padding: 18px; }
+  @media (max-width: 600px) { .pay-summary { grid-template-columns: 1fr; } }
+  .mono { font-family: 'DM Sans', monospace; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>My Payroll History</h1>
+    <p>View your monthly payroll records</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Payroll Records</div>
+    <span style="font-size:11px;color:var(--muted);font-family:monospace">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Period</th><th>Basic Salary</th><th>Allowances</th><th>Deductions</th><th>Net Pay</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for r in page_obj %}
+        <tr>
+          <td style="font-weight:600;font-family:monospace">{{ r.period_month|stringformat:"02d" }}/{{ r.period_year }}</td>
+          <td style="font-family:monospace">{{ r.basic_salary }}</td>
+          <td style="font-family:monospace">{{ r.allowances }}</td>
+          <td style="font-family:monospace;color:var(--danger)">{{ r.deductions }}</td>
+          <td style="font-family:monospace;font-weight:700;color:var(--success)">{{ r.net_pay }}</td>
+          <td>
+            {% if r.status == 'paid' %}
+              <span class="badge badge-active">PAID</span>
+            {% elif r.status == 'processed' %}
+              <span class="badge badge-purple">PROCESSED</span>
+            {% elif r.status == 'draft' %}
+              <span class="badge badge-inactive">DRAFT</span>
+            {% else %}
+              <span class="badge badge-inactive">{{ r.status|upper }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No payroll records yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:14px 18px">
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page=1" class="page-link">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>
+      {% endif %}
+      <span class="page-link current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -185,6 +185,15 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
     @property
     def is_student(self):
         return self.role == Role.STUDENT
+
+    @property
+    def is_approved_student(self):
+        """True when the student has a StudentProfile (i.e. admission approved)."""
+        if self.role != Role.STUDENT:
+            return False
+        from academics.models import StudentProfile
+        return StudentProfile.objects.filter(student=self).exists()
+
     @property
     def is_hod(self):
         from academics.models import Department
@@ -230,7 +239,9 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
             return reverse("accounts:dashboard")
         if self.is_teacher:
             return reverse("accounts:teacher_dashboard")
-        return reverse("accounts:student_dashboard")
+        if self.is_approved_student:
+            return reverse("accounts:student_dashboard")
+        return reverse("accounts:student_pending")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

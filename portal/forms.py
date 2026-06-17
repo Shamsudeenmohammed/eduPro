@@ -62,10 +62,28 @@ class StyledFieldsMixin:
 class AdmissionApplicationForm(StyledFieldsMixin, forms.ModelForm):
     """
     Public-facing application form for prospective students.
-    Does NOT require an existing user account.
+    Creates a user account automatically so the applicant can log in
+    and track their application status.
 
     The cycle is injected via __init__ and is NOT shown as a field.
     """
+
+    password1 = forms.CharField(
+        label=_("Create a Password"),
+        widget=forms.PasswordInput(attrs={
+            "placeholder": "At least 8 characters",
+            "autocomplete": "new-password",
+        }),
+        min_length=8,
+    )
+    password2 = forms.CharField(
+        label=_("Confirm Password"),
+        widget=forms.PasswordInput(attrs={
+            "placeholder": "Re-enter your password",
+            "autocomplete": "new-password",
+        }),
+        min_length=8,
+    )
 
     class Meta:
         model  = AdmissionApplication
@@ -147,6 +165,18 @@ class AdmissionApplicationForm(StyledFieldsMixin, forms.ModelForm):
                         "An application from %(email)s already exists for this cycle. "
                         "Use the status-check page to track your application."
                     ) % {"email": email}
+                )
+        pw1 = cleaned.get("password1")
+        pw2 = cleaned.get("password2")
+        if pw1 and pw2 and pw1 != pw2:
+            self.add_error("password2", _("Passwords do not match."))
+        if email:
+            from accounts.models import EduProUser
+            existing_user = EduProUser.objects.filter(email=email).first()
+            if existing_user and existing_user.role in ("student", "teacher", "admin"):
+                self.add_error(
+                    "email",
+                    _("This email is already registered. Please log in instead."),
                 )
         return cleaned
 

@@ -1,18 +1,31 @@
-{% extends "base_public.html" %}
+{% extends "base_public.html" %}{% block title %}Apply for Admission — {{ site_name }}{% endblock %}
 {% block content %}
-<div class="container" style="max-width:700px;padding:3rem 0">
-  <h1>Apply for Admission</h1>
-  <form method="post" enctype="multipart/form-data" class="card">
-    {% csrf_token %}
-    <div class="grid grid-2">
-      {% for field in form %}
-      <div style="margin-bottom:1rem{% if field.name == 'qualifications' or field.name == 'documents' %};grid-column:1/-1{% endif %}">
-        <label style="display:block;font-weight:600;margin-bottom:.35rem">{{ field.label }}</label>
-        {{ field }}
+<section class="page-banner">
+  <div class="container">
+    <h1>Apply for Admission</h1>
+    <p>Start your academic journey with {{ site_name }}</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:750px">
+    <div class="feature-card" style="padding:2rem">
+      <div style="background:rgba(79,70,229,.06);border:1px solid rgba(79,70,229,.15);border-radius:10px;padding:1rem;margin-bottom:1.5rem;font-size:.875rem;color:var(--text-muted)">
+        <strong style="color:var(--primary)">Looking for the new application experience?</strong> Try our <a href="{% url 'portal:apply' %}" style="color:var(--primary);text-decoration:underline">improved application form</a> with guided steps and real-time validation.
       </div>
-      {% endfor %}
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          {% for field in form %}
+          <div style="{% if field.name == 'qualifications' or field.name == 'documents' %}grid-column:1/-1{% endif %}">
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="color:var(--danger);font-size:.85rem;margin-top:.25rem">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn" style="margin-top:1.25rem;background:var(--primary);color:#fff;padding:11px 28px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Submit Application →</button>
+      </form>
     </div>
-    <button type="submit" class="btn btn-primary">Submit Application</button>
-  </form>
-</div>
+  </div>
+</section>
 {% endblock %}

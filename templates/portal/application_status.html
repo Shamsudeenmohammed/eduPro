@@ -1,0 +1,88 @@
+{% extends "base_public.html" %}{% block title %}Check Application Status — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Check Application Status</h1>
+    <p>Enter your reference number and email to track your application</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:580px">
+    <div class="feature-card" style="padding:2rem">
+      <form method="post">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Reference Number</label>
+            {{ form.reference_number }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Email Address</label>
+            {{ form.email }}
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <button type="submit" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px">Check Status →</button>
+        </div>
+      </form>
+    </div>
+
+    {% if application %}
+    <div class="feature-card" style="margin-top:1.5rem;padding:1.75rem">
+      <h3 style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:1rem">Application Status</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.9rem">
+        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Reference</div>
+          <div style="font-family:monospace;font-weight:700">{{ application.reference_number }}</div>
+        </div>
+        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Program</div>
+          <div>{{ application.program_applied.name|default:"—" }}</div>
+        </div>
+        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Applicant</div>
+          <div>{{ application.get_full_name }}</div>
+        </div>
+        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Status</div>
+          <div><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:600;{% if application.status == 'approved' or application.status == 'accepted' %}background:rgba(5,150,105,.12);color:var(--success){% elif application.status == 'rejected' %}background:rgba(220,38,38,.12);color:var(--danger){% elif application.status == 'reviewing' or application.status == 'review' %}background:rgba(217,119,6,.12);color:var(--warning){% else %}background:var(--surface2);color:var(--text-muted){% endif %}">{{ application.get_status_display }}</span></div>
+        </div>
+      </div>
+
+      {% if application.user_id and application.status == 'approved' %}
+      <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
+        <p style="font-weight:600;color:var(--success);margin-bottom:.25rem">✅ Application Approved</p>
+        <p style="font-size:.85rem;color:var(--text-muted)">Congratulations! Your application has been approved. You can log in to the student portal using your email and the password you created during application.</p>
+        <a href="{% url 'accounts:login' %}" class="btn" style="margin-top:.75rem;background:var(--success);color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+      </div>
+      {% elif application.status == 'approved' or application.status == 'accepted' %}
+      <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
+        <p style="font-weight:600;color:var(--success);margin-bottom:.25rem">✅ Application Approved</p>
+        <p style="font-size:.85rem;color:var(--text-muted)">Congratulations! Your application has been approved. You will receive an email with login instructions.</p>
+      </div>
+      {% endif %}
+
+      {% if application.status == 'pending' or application.status == 'reviewing' or application.status == 'review' %}
+      <div style="margin-top:1rem;padding:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+        {% if application.user_id %}
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">Your account is active. Log in to the student portal to check for updates.</p>
+        <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+        {% endif %}
+        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}" style="margin-top:.75rem">
+          {% csrf_token %}
+          <button type="submit" class="btn" style="background:rgba(220,38,38,.08);color:var(--danger);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid rgba(220,38,38,.2);cursor:pointer" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if application.rejection_reason %}
+      <div style="margin-top:1rem;padding:1rem;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.12);border-radius:10px">
+        <p style="font-weight:600;color:var(--danger);margin-bottom:.25rem">Reason</p>
+        <p style="font-size:.875rem;color:var(--text-muted)">{{ application.rejection_reason }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

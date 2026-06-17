@@ -1,2 +1,16 @@
-{% extends "base_dashboard.html" %}
-{% block content %}<div class="grid grid-2"><div class="card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add Event</button></form></div><div>{% for e in events %}<div class="card" style="margin-bottom:.5rem">{{ e.title }} — {{ e.start_date }}</div>{% endfor %}</div></div>{% endblock %}
+{% extends "admin_base.html" %}{% block title %}Manage Calendar{% endblock %}
+{% block content %}
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-header"><h3>Add Event</h3></div>
+    <div class="card-body">
+      <form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Add Event</button></form>
+    </div>
+  </div>
+  <div>
+    {% for e in events %}
+      <div class="card" style="margin-bottom:.5rem"><div class="card-body">{{ e.title }} — {{ e.start_date }}</div></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

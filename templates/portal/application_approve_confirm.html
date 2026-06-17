@@ -1,0 +1,42 @@
+{% extends "admin_base.html" %}{% block title %}Approve Application{% endblock %}
+{% block breadcrumb %}Admissions / Approve{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Approve Application</h1>
+    <p>{{ application.get_full_name }} — {{ application.reference_number }}</p>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Application Summary</div></div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Name</span><span class="s-val" style="font-weight:600">{{ application.get_full_name }}</span></li>
+      <li class="status-row"><span class="s-label">Program</span><span class="s-val">{{ application.program_applied.name }}</span></li>
+      <li class="status-row"><span class="s-label">Email</span><span class="s-val" style="font-family:var(--mono)">{{ application.email }}</span></li>
+      <li class="status-row"><span class="s-label">Status</span><span class="s-pill pill-amber">{{ application.get_status_display }}</span></li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Confirm Approval</div></div>
+    <form method="post" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      {% csrf_token %}
+      <p style="font-size:12.5px;color:var(--tx2);line-height:1.6">This will approve the application for <strong>{{ application.get_full_name }}</strong> and activate their student account.</p>
+      <div style="background:var(--teal-dim);border:1px solid rgba(62,207,178,.25);border-radius:var(--r);padding:12px 14px;margin-bottom:12px">
+        <p style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">Account Already Created</p>
+        <p style="font-size:11px;color:var(--tx2)">The applicant created their account during the application process. After approval, they can log in at <strong style="color:var(--tx1)">/accounts/login/</strong> with the password they chose.</p>
+      </div>
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Review Notes (optional)</label>
+        <textarea name="review_notes" rows="3" style="width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;resize:vertical" placeholder="Internal notes…"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="submit" class="btn btn-primary">✅ Approve &amp; Create Account</button>
+        <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

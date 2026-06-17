@@ -1,102 +1,63 @@
-{% extends "base_dashboard.html" %}
-
+{% extends "admin_base.html" %}{% block title %}Student Fees{% endblock %}
+{% block breadcrumb %}Finance / Student Fees{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Student Fees</h1>
+    <p>Assign fees to students and track payments</p>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-  
-  <!-- Form Container: Fee Assignment (2/5 Screen Width) -->
-  <section aria-labelledby="form-title" class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-    <h2 id="form-title" class="text-base font-semibold text-slate-900 mb-5">Assign Student Fee</h2>
-    
-    <form method="post" class="space-y-4">
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Assign Student Fee</div></div>
+    <form method="post" style="padding:16px;display:flex;flex-direction:column;gap:12px">
       {% csrf_token %}
-      
       {% for field in form %}
-        <div class="flex flex-col gap-1.5">
-          <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">
-            {{ field.label }}
-          </label>
-          <div class="mt-0.5">
-            {{ field }}
-          </div>
-          {% if field.errors %}
-            <p class="text-xs text-rose-600 mt-1">{{ field.errors.0 }}</p>
-          {% endif %}
-        </div>
-      {% endfor %}
-
-      <div class="pt-2">
-        <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-lg shadow-sm transition-colors">
-          Assign Fee
-        </button>
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ field.errors.0 }}</div>{% endif %}
       </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Assign Fee</button>
     </form>
-  </section>
-
-  <!-- Data Display Container: Fees Ledger (3/5 Screen Width) -->
-  <section aria-labelledby="table-title" class="lg:col-span-3 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-      <h2 id="table-title" class="text-base font-semibold text-slate-900">Assigned Student Fees</h2>
-      <span class="text-xs font-medium text-slate-500 px-2.5 py-1 bg-slate-100 rounded-full">
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-      </span>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Assigned Student Fees</div>
+      {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
     </div>
-
-    <!-- Responsive wrapper isolates cell overflow handling cleanly -->
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
-            <th scope="col" class="px-6 py-3">Student</th>
-            <th scope="col" class="px-6 py-3">Fee Structure</th>
-            <th scope="col" class="px-6 py-3">Due</th>
-            <th scope="col" class="px-6 py-3">Paid</th>
-            <th scope="col" class="px-6 py-3">Status</th>
-            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
+    <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Fee Structure</th><th>Due</th><th>Paid</th><th>Status</th><th></th></tr></thead>
+        <tbody>
           {% for f in page_obj %}
-            <tr class="hover:bg-slate-50/75 transition-colors">
-              <td class="px-6 py-4 font-medium text-slate-900">{{ f.student.get_full_name }}</td>
-              <td class="px-6 py-4 text-slate-500">{{ f.fee_structure.name }}</td>
-              <td class="px-6 py-4 tabular-nums font-medium text-slate-900">{{ f.amount_due }}</td>
-              <td class="px-6 py-4 tabular-nums text-slate-600">{{ f.amount_paid }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                {% if f.status == 'Paid' or f.status == 'Fully Paid' %}
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {{ f.status }}
-                  </span>
-                {% elif f.status == 'Partial' or f.status == 'Partially Paid' %}
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
-                    {{ f.status }}
-                  </span>
-                {% else %}
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                    {{ f.status }}
-                  </span>
-                {% endif %}
-              </td>
-              <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium">
-                {% if f.status != 'Paid' and f.status != 'Fully Paid' %}
-                  <a href="{% url 'finance:record_payment' f.pk %}" class="inline-flex items-center text-indigo-600 hover:text-indigo-900 focus:outline-none focus:underline bg-indigo-50/50 hover:bg-indigo-50 px-2.5 py-1 rounded transition-colors">
-                    Record Payment
-                  </a>
-                {% else %}
-                  <span class="text-slate-400 font-normal italic text-xs px-2.5 py-1">Settled</span>
-                {% endif %}
-              </td>
-            </tr>
+          <tr>
+            <td style="font-weight:600">{{ f.student.get_full_name }}</td>
+            <td style="color:var(--tx2)">{{ f.fee_structure.name }}</td>
+            <td><span style="font-family:var(--mono)">{{ f.amount_due }}</span></td>
+            <td><span style="font-family:var(--mono)">{{ f.amount_paid }}</span></td>
+            <td>{% if f.status == 'paid' %}<span class="s-pill pill-green">PAID</span>{% elif f.status == 'partial' %}<span class="s-pill pill-amber">PARTIAL</span>{% else %}<span class="s-pill pill-rose">{{ f.status|upper }}</span>{% endif %}</td>
+            <td style="text-align:right">{% if f.status != 'paid' %}<a href="{% url 'finance:record_payment' f.pk %}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Pay</a>{% else %}<span style="color:var(--tx3);font-size:11px;font-family:var(--mono)">Settled</span>{% endif %}</td>
+          </tr>
           {% empty %}
-            <tr>
-              <td colspan="6" class="px-6 py-12 text-center text-sm text-slate-400">
-                No active fee structures assigned to students.
-              </td>
-            </tr>
+          <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:24px">No fees assigned to students yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-  </section>
-
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div style="padding:12px 18px;border-top:1px solid var(--border)">
+      <div class="pagination" style="margin:0">
+        {% if page_obj.has_previous %}<a href="?page=1" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>{% endif %}
+        <span class="page-link current">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
 </div>
+<style>.body-grid select,.body-grid input,.body-grid textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;transition:border-color .15s}.body-grid select:focus,.body-grid input:focus,.body-grid textarea:focus{outline:none;border-color:var(--ochre)}</style>
 {% endblock %}

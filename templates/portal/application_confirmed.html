@@ -1,0 +1,33 @@
+{% extends "base_public.html" %}{% block title %}Application Submitted — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Application Submitted</h1>
+    <p>Thank you for applying</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:550px;text-align:center">
+    <div class="feature-card" style="padding:2.5rem">
+      <div style="font-size:3rem;margin-bottom:1rem">✅</div>
+      <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:.5rem">Application Submitted Successfully</h2>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem">Thank you, <strong>{{ application.first_name }}</strong>! We have received your application and will review it shortly.</p>
+      <div style="background:var(--surface2);padding:1.25rem;border-radius:10px;margin-bottom:1.5rem">
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600">Your Reference Number</p>
+        <p style="font-size:1.35rem;font-weight:800;letter-spacing:1.5px;font-family:monospace;color:var(--primary)">{{ ref }}</p>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:1.25rem;border-radius:10px;margin-bottom:1.5rem;text-align:left">
+        <p style="font-size:.8rem;color:#166534;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Your Login Credentials</p>
+        <p style="font-size:.9rem;color:#166534;margin-bottom:.3rem">Email: <strong>{{ application.email }}</strong></p>
+        <p style="font-size:.9rem;color:#166534;margin-bottom:.75rem">Password: <em>(the one you just created)</em></p>
+        <a href="{% url 'accounts:login' %}" class="btn" style="background:#166534;color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Your Portal →</a>
+      </div>
+      <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1.5rem">You can also check your application status online using your reference number.</p>
+      <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+        <a href="{% url 'portal:application_status' %}" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px">Check Status →</a>
+        <a href="{% url 'portal:home' %}" class="btn" style="background:var(--surface2);color:var(--text);padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border)">Back to Home</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,5 +1,15 @@
-{% extends "base_dashboard.html" %}
+{% extends "admin_base.html" %}{% block title %}Support Tickets (Admin){% endblock %}
 {% block content %}
-<table class="data-table card"><thead><tr><th>Student</th><th>Subject</th><th>Status</th><th>Date</th></tr></thead>
-<tbody>{% for t in page_obj %}<tr><td>{{ t.student.get_full_name }}</td><td>{{ t.subject }}</td><td>{{ t.status }}</td><td>{{ t.created_at|date }}</td></tr>{% endfor %}</tbody></table>
+<div class="card">
+  <div class="card-header"><h3>All Support Tickets</h3></div>
+  <table class="data-table">
+    <thead><tr><th>Student</th><th>Subject</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>{% for t in page_obj %}<tr>
+      <td>{{ t.student.get_full_name }}</td>
+      <td>{{ t.subject }}</td>
+      <td>{{ t.status }}</td>
+      <td>{{ t.created_at|date }}</td>
+    </tr>{% empty %}<tr><td colspan="4" style="padding:.75rem;color:var(--text-muted,#666);text-align:center">No tickets.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
 {% endblock %}

@@ -1,33 +1,78 @@
-{% extends "base_public.html" %}
+{% extends "base_public.html" %}{% block title %}Welcome — {{ site_name }}{% endblock %}
 {% block content %}
 <section class="hero">
-  <div class="container">
-    <h1>Welcome to {{ site_name }}</h1>
-    <p>A modern academic management platform for schools and universities.</p>
-    <a href="{% url 'portal:admission_apply' %}" class="btn btn-primary" style="background:#fff;color:var(--primary)">Apply for Admission</a>
-    <a href="{% url 'accounts:login' %}" class="btn btn-secondary" style="margin-left:.5rem;border-color:rgba(255,255,255,.5);color:#fff">Student Portal</a>
+  <div class="container hero-content">
+    <h1>Shape Your Future at<br>{{ site_name }}</h1>
+    <p>A modern academic management platform designed to empower students, teachers, and administrators with seamless digital tools for learning and institutional management.</p>
   </div>
 </section>
 
-<section class="container" style="padding:3rem 0">
-  <h2 style="margin-bottom:1.5rem">Latest News</h2>
-  <div class="grid grid-3">
-    {% for item in announcements %}
-    <div class="card">
-      <h3 style="font-size:1rem;margin-bottom:.5rem"><a href="{% url 'portal:news_detail' item.pk %}">{{ item.title }}</a></h3>
-      <p style="color:var(--text-muted);font-size:.9rem">{{ item.summary|truncatewords:25 }}</p>
+<section class="section">
+  <div class="container section-center">
+    <h2 class="section-title">Why Choose Us</h2>
+    <p class="section-subtitle">We provide a world-class education experience with modern tools and dedicated support.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎓</div>
+        <h3>Quality Programs</h3>
+        <p>Accredited programs designed to meet global standards, taught by experienced faculty committed to your success.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💻</div>
+        <h3>Digital Campus</h3>
+        <p>Access courses, results, and resources through our integrated online portal. Learn anytime, anywhere.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤝</div>
+        <h3>Student Support</h3>
+        <p>Dedicated support services including academic advising, counseling, and career guidance to help you thrive.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Real-time Analytics</h3>
+        <p>Track academic progress, attendance, and performance with detailed analytics and insights.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Secure &amp; Reliable</h3>
+        <p>Enterprise-grade security ensuring your academic data and personal information are always protected.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌍</div>
+        <h3>Global Community</h3>
+        <p>Join a diverse community of learners from around the world and build your international network.</p>
+      </div>
     </div>
-    {% empty %}
-    <p style="color:var(--text-muted)">No announcements yet.</p>
-    {% endfor %}
   </div>
 </section>
 
-<section class="container" style="padding-bottom:3rem">
-  <div class="grid grid-3">
-    <div class="card"><h3>🎓 Programs</h3><p style="color:var(--text-muted)">Explore our academic programs.</p><a href="{% url 'portal:programs' %}">View Programs →</a></div>
-    <div class="card"><h3>📅 Admissions</h3><p style="color:var(--text-muted)">Apply online for the next session.</p><a href="{% url 'portal:admission_apply' %}">Apply Now →</a></div>
-    <div class="card"><h3>📧 Contact</h3><p style="color:var(--text-muted)">Get in touch with our team.</p><a href="{% url 'portal:contact' %}">Contact Us →</a></div>
+{% if announcements %}
+<section class="section" style="padding-top:0">
+  <div class="container section-center">
+    <h2 class="section-title">Latest News</h2>
+    <p class="section-subtitle">Stay updated with the latest announcements and events.</p>
+    <div class="feature-grid">
+      {% for item in announcements %}
+      <div class="feature-card" onclick="window.location='{% url 'portal:news_detail' item.pk %}'" style="cursor:pointer">
+        {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem">{% endif %}
+        <h3 style="font-size:1rem">{{ item.title }}</h3>
+        <p style="font-size:.85rem">{{ item.summary|truncatewords:20 }}</p>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.75rem">{{ item.published_at|date:"M j, Y" }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-3"><a href="{% url 'portal:news_list' %}" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px">View All News →</a></div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="cta-section">
+      <h2>Ready to Begin Your Journey?</h2>
+      <p>Apply now and take the first step toward a brighter future at {{ site_name }}.</p>
+      <a href="{% url 'portal:apply' %}" class="btn">Apply for Admission →</a>
+    </div>
   </div>
 </section>
 {% endblock %}

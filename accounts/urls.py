@@ -23,6 +23,7 @@ urlpatterns = [
     # ── Dashboard entry points ─────────────────────────────────────────────────
     path("dashboard/",          views.dashboard_redirect,  name="dashboard_redirect"),
     path("dashboard/student/",  views.student_dashboard,   name="student_dashboard"),
+    path("dashboard/pending/",  views.student_pending,     name="student_pending"),
     path("dashboard/teacher/",  views.teacher_dashboard,   name="teacher_dashboard"),
     path("dashboard/admin/",    views.admin_dashboard,     name="dashboard"),
 
@@ -47,8 +48,9 @@ urlpatterns = [
     path("profile/change-password/", views.change_password_view, name="change_password"),
 
     # ── Admin user management ─────────────────────────────────────────────────
-    path("users/",             views.user_list_view,   name="user_list"),
-    path("users/<int:pk>/",    views.user_detail_view, name="user_detail"),
+    path("users/",             views.user_list_view,    name="user_list"),
+    path("users/<int:pk>/",    views.user_detail_view,  name="user_detail"),
+    path("users/<int:pk>/toggle-active/", views.toggle_user_active, name="toggle_user_active"),
 
     # ── Password Reset ────────────────────────────────────────────────────────
     path(

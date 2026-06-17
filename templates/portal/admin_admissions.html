@@ -1,43 +1,55 @@
-{% extends "base_dashboard.html" %}
-{% block page_title %}{{ page_title }}{% endblock %}
+{% extends "admin_base.html" %}{% block title %}Admission Applications (Legacy){% endblock %}
+{% block breadcrumb %}Admissions (Legacy){% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Admission Applications</h1>
+    <p>Legacy view — consider using the new <a href="{% url 'portal:admissions_dashboard' %}" style="color:var(--ochre)">Admissions Dashboard</a></p>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">
-  <a href="?" class="btn btn-secondary">All</a>
-  <a href="?status=pending" class="btn btn-secondary">Pending</a>
-  <a href="?status=review" class="btn btn-secondary">Under Review</a>
-  <a href="?status=accepted" class="btn btn-secondary">Accepted</a>
-  <a href="?status=rejected" class="btn btn-secondary">Rejected</a>
+<div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap">
+  <a href="?" class="btn btn-ghost">All</a>
+  <a href="?status=pending" class="btn btn-ghost">Pending</a>
+  <a href="?status=review" class="btn btn-ghost">Under Review</a>
+  <a href="?status=accepted" class="btn btn-ghost">Accepted</a>
+  <a href="?status=rejected" class="btn btn-ghost">Rejected</a>
 </div>
 <div class="card">
-  <table class="data-table" style="width:100%;border-collapse:collapse">
-    <thead>
-      <tr>
-        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Applicant</th>
-        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Program</th>
-        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Status</th>
-        <th style="text-align:left;padding:.75rem;border-bottom:1px solid var(--border)">Applied</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for app in page_obj %}
-      <tr>
-        <td style="padding:.75rem;border-bottom:1px solid var(--border)">
-          <strong>{{ app.first_name }} {{ app.last_name }}</strong><br>
-          <span style="font-size:.85rem;color:var(--text-muted)">{{ app.email }}</span>
-        </td>
-        <td style="padding:.75rem;border-bottom:1px solid var(--border)">{{ app.program_applied }}</td>
-        <td style="padding:.75rem;border-bottom:1px solid var(--border)">{{ app.get_status_display }}</td>
-        <td style="padding:.75rem;border-bottom:1px solid var(--border)">{{ app.created_at|date:"M j, Y" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4" style="padding:2rem;text-align:center;color:var(--text-muted)">No applications found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% if page_obj.has_other_pages %}
-  <div style="padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>{% endif %}
-    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>{% endif %}
+  <div class="card-header">
+    <div class="card-title">Applications</div>
+    {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Applicant</th><th>Program</th><th>Status</th><th>Applied</th></tr></thead>
+      <tbody>
+        {% for app in page_obj %}
+        <tr>
+          <td style="font-weight:600">{{ app.first_name }} {{ app.last_name }}<br><span style="font-size:11px;color:var(--tx3);font-family:var(--mono)">{{ app.email }}</span></td>
+          <td style="color:var(--tx2)">{{ app.program_applied }}</td>
+          <td>
+            {% if app.status == 'accepted' or app.status == 'approved' %}<span class="s-pill pill-green">{{ app.get_status_display }}</span>
+            {% elif app.status == 'rejected' %}<span class="s-pill pill-rose">{{ app.get_status_display }}</span>
+            {% elif app.status == 'review' or app.status == 'reviewing' %}<span class="s-pill pill-amber">{{ app.get_status_display }}</span>
+            {% else %}<span class="s-pill pill-muted">{{ app.get_status_display }}</span>{% endif %}
+          </td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ app.created_at|date:"M j, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:24px">No applications found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:12px 18px;border-top:1px solid var(--border)">
+    <div class="pagination" style="margin:0">
+      {% if page_obj.has_previous %}<a href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">‹</a>{% endif %}
+      <span class="page-link current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">&raquo;</a>{% endif %}
+    </div>
   </div>
   {% endif %}
 </div>

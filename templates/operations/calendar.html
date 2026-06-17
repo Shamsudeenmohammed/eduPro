@@ -1,2 +1,14 @@
-{% extends "base_dashboard.html" %}
-{% block content %}{% for e in events %}<div class="card" style="margin-bottom:.5rem"><strong>{{ e.title }}</strong> — {{ e.start_date }}{% if e.location %} @ {{ e.location }}{% endif %}</div>{% empty %}<p>No events scheduled.</p>{% endfor %}{% endblock %}
+{% extends base_template %}{% block title %}Academic Calendar{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h3>📅 Academic Calendar</h3></div>
+  <div class="card-body">
+    {% for e in events %}
+      <div style="padding:.75rem 0;{% if not forloop.last %}border-bottom:1px solid var(--border, #eee){% endif %}">
+        <strong>{{ e.title }}</strong><br>
+        <span style="color:var(--text-muted, #666)">{{ e.start_date }}{% if e.end_date %} – {{ e.end_date }}{% endif %}{% if e.location %} @ {{ e.location }}{% endif %}</span>
+      </div>
+    {% empty %}<p class="text-muted">No events scheduled.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

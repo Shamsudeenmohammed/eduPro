@@ -1,5 +1,20 @@
-{% extends "base_dashboard.html" %}
+{% extends base_template %}{% block title %}Timetable{% endblock %}
 {% block content %}
-<table class="data-table card"><thead><tr><th>Course</th><th>Day</th><th>Time</th><th>Venue</th></tr></thead>
-<tbody>{% for s in slots %}<tr><td>{{ s.offering.course.code }}</td><td>{{ s.get_day_display }}</td><td>{{ s.start_time }}–{{ s.end_time }}</td><td>{{ s.venue }}</td></tr>{% endfor %}</tbody></table>
+<div class="card">
+  <div class="card-header"><h3>📋 Timetable</h3></div>
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr style="border-bottom:2px solid var(--border, #ddd)">
+      <th style="padding:.75rem;text-align:left">Course</th>
+      <th style="padding:.75rem;text-align:left">Day</th>
+      <th style="padding:.75rem;text-align:left">Time</th>
+      <th style="padding:.75rem;text-align:left">Venue</th>
+    </tr></thead>
+    <tbody>{% for s in slots %}<tr style="border-bottom:1px solid var(--border, #eee)">
+      <td style="padding:.75rem">{{ s.offering.course.code }}</td>
+      <td style="padding:.75rem">{{ s.get_day_display }}</td>
+      <td style="padding:.75rem">{{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}</td>
+      <td style="padding:.75rem">{{ s.venue }}</td>
+    </tr>{% empty %}<tr><td colspan="4" style="padding:.75rem;color:var(--text-muted,#666)">No slots available.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
 {% endblock %}

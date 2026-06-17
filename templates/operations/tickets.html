@@ -1,3 +1,16 @@
-{% extends "base_dashboard.html" %}
-{% block content %}<a href="{% url 'operations:ticket_create' %}" class="btn btn-primary" style="margin-bottom:1rem">New Ticket</a>
-{% for t in tickets %}<div class="card" style="margin-bottom:.5rem"><strong>{{ t.subject }}</strong> <span class="badge">{{ t.status }}</span></div>{% endfor %}{% endblock %}
+{% extends "students/base.html" %}{% block title %}Support Tickets{% endblock %}
+{% block content %}
+<div style="margin-bottom:1rem"><a href="{% url 'operations:ticket_create' %}" class="btn btn-primary">📝 New Ticket</a></div>
+<div class="card">
+  <div class="card-header"><h3>My Tickets</h3></div>
+  <div class="card-body">
+    {% for t in tickets %}
+      <div style="padding:.75rem 0;{% if not forloop.last %}border-bottom:1px solid var(--border, #eee){% endif %}">
+        <strong>{{ t.subject }}</strong>
+        <span class="pill pill-green" style="float:right">{{ t.status }}</span>
+        <p style="margin:.25rem 0 0;color:var(--text-muted, #666);font-size:.9rem">{{ t.created_at|date }}</p>
+      </div>
+    {% empty %}<p class="text-muted">No tickets submitted.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

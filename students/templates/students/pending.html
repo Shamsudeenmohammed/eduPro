@@ -1,0 +1,58 @@
+{% extends "students/base.html" %}{% block title %}Application Status{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:2rem auto">
+  <div class="card" style="text-align:center;padding:2.5rem">
+    <div style="font-size:2.5rem;margin-bottom:.75rem">
+      {% if application.status == 'rejected' %}❌{% else %}⏳{% endif %}
+    </div>
+    <h1 style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:.5rem">
+      {% if application.status == 'rejected' %}Application Not Approved{% else %}Application Pending{% endif %}
+    </h1>
+    <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.5rem">
+      {% if application.status == 'rejected' %}
+        Your application was not approved. Please check the reason below or contact admissions.
+      {% else %}
+        Your application is being reviewed. You'll be able to access the full student portal once your admission is approved.
+      {% endif %}
+    </p>
+
+    {% if application %}
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:1.25rem;text-align:left">
+      <div style="display:grid;gap:.75rem">
+        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Reference</span><br><span style="font-family:monospace;font-weight:700;font-size:1.1rem">{{ application.reference_number }}</span></div>
+        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Applicant</span><br><span style="font-weight:600">{{ application.get_full_name }}</span></div>
+        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Email</span><br><span>{{ application.email }}</span></div>
+        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Program</span><br><span>{{ application.program_applied.name|default:"—" }}</span></div>
+        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Submitted</span><br><span>{{ application.created_at|date:"M j, Y" }}</span></div>
+        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Status</span><br>
+          <span class="pill {% if application.status == 'approved' %}pill-green{% elif application.status == 'rejected' %}pill-red{% elif application.status == 'reviewing' %}pill-yellow{% else %}pill-gray{% endif %}">{{ application.get_status_display }}</span>
+        </div>
+      </div>
+      {% if application.rejection_reason %}
+      <div style="margin-top:1rem;padding:.75rem;background:rgba(255,107,107,.08);border-radius:8px">
+        <p style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--danger);font-weight:600;margin-bottom:.25rem">Reason</p>
+        <p style="font-size:.875rem;color:var(--muted)">{{ application.rejection_reason }}</p>
+      </div>
+      {% endif %}
+      {% if application.status != 'rejected' and application.status != 'withdrawn' %}
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:1.25rem">
+      <p style="color:var(--muted);font-size:.9rem">No application found. If you believe this is an error, please contact support.</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:1.5rem;display:flex;gap:.75rem;justify-content:center">
+      <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">My Profile</a>
+      <a href="{% url 'accounts:logout' %}" class="btn btn-secondary">Sign Out</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

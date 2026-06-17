@@ -178,12 +178,31 @@
     </a>
     {% endif %}
 
+    <div class="nav-section">Finance</div>
+    <a href="{% url 'finance:my_payroll' %}" class="nav-item {% if request.resolver_match.url_name == 'my_payroll' %}active{% endif %}">
+      <span class="nav-icon">💰</span><span>My Payroll</span>
+    </a>
+
+    <div class="nav-section">Operations</div>
+    <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.url_name == 'announcements' %}active{% endif %}">
+      <span class="nav-icon">📢</span><span>Announcements</span>
+    </a>
+    <a href="{% url 'operations:calendar' %}" class="nav-item {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+      <span class="nav-icon">📅</span><span>Calendar</span>
+    </a>
+    <a href="{% url 'operations:timetable' %}" class="nav-item {% if request.resolver_match.url_name == 'timetable' %}active{% endif %}">
+      <span class="nav-icon">📋</span><span>Timetable</span>
+    </a>
+    <a href="{% url 'operations:hostel' %}" class="nav-item {% if request.resolver_match.url_name == 'hostel' %}active{% endif %}">
+      <span class="nav-icon">🏠</span><span>Hostel</span>
+    </a>
+    <a href="{% url 'feedback:submit' %}" class="nav-item {% if request.resolver_match.url_name == 'submit' %}active{% endif %}">
+      <span class="nav-icon">💬</span><span>Feedback</span>
+    </a>
+
     <div class="nav-section">Account</div>
     <a href="{% url 'teachers:profile_edit' %}" class="nav-item {% if request.resolver_match.url_name == 'profile_edit' %}active{% endif %}">
       <span class="nav-icon">👤</span><span>My Profile</span>
-    </a>
-    <a href="{% url 'academics:dashboard' %}" class="nav-item">
-      <span class="nav-icon">🎓</span><span>Academics</span>
     </a>
   </nav>
 

@@ -1,26 +1,98 @@
-{% extends "base_dashboard.html" %}
-{% block content %}
-<div class="grid grid-4" style="margin-bottom:1.5rem">
-  <div class="stat-card"><div class="value">{{ stats.total }}</div><div class="label">Total Feedback</div></div>
-  <div class="stat-card"><div class="value">{{ stats.positive }}</div><div class="label">Positive</div></div>
-  <div class="stat-card"><div class="value">{{ stats.negative }}</div><div class="label">Negative</div></div>
-  <div class="stat-card"><div class="value">{{ stats.avg_rating|floatformat:1|default:"—" }}</div><div class="label">Avg Rating</div></div>
+{% extends "admin_base.html" %}{% block title %}Feedback Dashboard{% endblock %}
+{% block breadcrumb %}Feedback &amp; Sentiment Analysis{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>📊 Feedback Dashboard</h1>
+    <p>Aggregated feedback with sentiment analysis</p>
+  </div>
 </div>
-<div class="card table-wrap">
-  <table class="data-table">
-    <thead><tr><th>Subject</th><th>Category</th><th>Sentiment</th><th>Score</th><th>Rating</th><th>Action</th></tr></thead>
-    <tbody>
-      {% for fb in page_obj %}
-      <tr>
-        <td>{{ fb.subject }}</td>
-        <td>{{ fb.get_category_display }}</td>
-        <td><span class="badge badge-{% if fb.sentiment == 'positive' %}success{% elif fb.sentiment == 'negative' %}danger{% else %}info{% endif %}">{{ fb.sentiment|default:"—" }}</span></td>
-        <td>{{ fb.sentiment_score|default:"—" }}</td>
-        <td>{{ fb.rating|default:"—" }}</td>
-        <td><a href="{% url 'feedback:respond' fb.pk %}">Respond</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% endblock %}
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--tx2)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--surface3)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--tx1)" stroke-width="1.8"><path stroke-linecap="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ stats.total }}</div>
+    <div class="kpi-label">Total Feedback</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--tx2);width:100%"></div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--teal)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--teal-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><path stroke-linecap="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ stats.positive }}</div>
+    <div class="kpi-label">Positive</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--teal)" data-pct="{% widthratio stats.positive stats.total 100 %}"></div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--rose)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--rose-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><path stroke-linecap="round" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ stats.negative }}</div>
+    <div class="kpi-label">Negative</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--rose)" data-pct="{% widthratio stats.negative stats.total 100 %}"></div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-accent" style="background:var(--blue)"></div>
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background:var(--blue-dim)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+    </div>
+    <div class="kpi-val">{{ stats.avg_rating|floatformat:1|default:"—" }}</div>
+    <div class="kpi-label">Avg Rating</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--blue)" data-pct="{% widthratio stats.avg_rating 5 100 %}"></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">All Feedback</div>
+    {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Category</th><th>Sentiment</th><th>Score</th><th>Rating</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for fb in page_obj %}
+        <tr>
+          <td style="font-weight:600">{{ fb.subject }}</td>
+          <td style="color:var(--tx2)">{{ fb.get_category_display }}</td>
+          <td>
+            {% if fb.sentiment == 'positive' %}<span class="s-pill pill-green">Positive</span>
+            {% elif fb.sentiment == 'negative' %}<span class="s-pill pill-rose">Negative</span>
+            {% elif fb.sentiment == 'neutral' %}<span class="s-pill pill-amber">Neutral</span>
+            {% else %}<span class="s-pill pill-muted">—{% endif %}</span>
+          </td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ fb.sentiment_score|floatformat:3|default:"—" }}</td>
+          <td>{% if fb.rating %}<span style="font-family:var(--mono)">{{ fb.rating }}/5</span>{% else %}—{% endif %}</td>
+          <td><a href="{% url 'feedback:respond' fb.pk %}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Respond</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:24px">No feedback submitted yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:12px 18px;border-top:1px solid var(--border)">
+    <div class="pagination" style="margin:0">
+      {% if page_obj.has_previous %}<a href="?page=1" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>{% endif %}
+      <span class="page-link current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

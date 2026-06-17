@@ -1,0 +1,128 @@
+{% extends "base_public.html" %}{% block title %}Apply for Admission — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Apply for Admission</h1>
+    <p>{{ cycle.name }} ({{ cycle.academic_year }})</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:820px">
+    <div class="feature-card" style="padding:2rem">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Personal Information</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">First Name</label>
+            {{ form.first_name }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Last Name</label>
+            {{ form.last_name }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Other Names</label>
+            {{ form.other_names }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Date of Birth</label>
+            {{ form.date_of_birth }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Gender</label>
+            {{ form.gender }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Nationality</label>
+            {{ form.nationality }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Email</label>
+            {{ form.email }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Phone</label>
+            {{ form.phone }}
+          </div>
+        </div>
+
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Program &amp; Academic Background</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Program Applied For</label>
+            {{ form.program_applied }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Application Type</label>
+            {{ form.application_type }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Previous School</label>
+            {{ form.previous_school }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Qualification</label>
+            {{ form.qualification }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Year of Completion</label>
+            {{ form.year_of_completion }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Aggregate Score</label>
+            {{ form.aggregate_score }}
+          </div>
+        </div>
+
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Address</h3>
+        <div style="margin-bottom:1.5rem">
+          <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Residential Address</label>
+          {{ form.address }}
+        </div>
+
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Create Your Login</h3>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem">Set a password so you can log in to track your application status.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Password</label>
+            {{ form.password1 }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Confirm Password</label>
+            {{ form.password2 }}
+          </div>
+        </div>
+
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Documents</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Transcript</label>
+            {{ form.transcript }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">ID Document</label>
+            {{ form.id_document }}
+          </div>
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Passport Photo</label>
+            {{ form.passport_photo }}
+          </div>
+        </div>
+        <div style="margin-bottom:1.5rem">
+          <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Personal Statement</label>
+          {{ form.personal_statement }}
+        </div>
+
+        {% if form.errors %}
+        <div style="color:var(--danger);font-size:.875rem;margin-bottom:1rem;padding:.75rem;background:rgba(220,38,38,.06);border-radius:8px">
+          {% for field, errors in form.errors.items %}{% for error in errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn" style="background:var(--primary);color:#fff;padding:11px 32px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Submit Application →</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.decorators import role_required, teacher_required, hod_required
-from academics.models import CourseAllocation, CourseOffering, Enrolment
+from academics.models import CourseAllocation, CourseOffering, Enrolment, TeacherDepartment
 from students.models import StudentNotification
 
 from .forms import (
@@ -95,13 +95,14 @@ def notify_students(offering, title, message):
 @login_required
 @teacher_required
 def teacher_dashboard(request):
-    profile    = _get_teacher_profile(request.user)
+    user        = request.user
+    profile     = _get_teacher_profile(user)
     allocations = profile.get_current_semester_allocations()
 
-    # Aggregate stats for this teacher
-    allocation_pks    = allocations.values_list("pk", flat=True)
-    offering_pks      = allocations.values_list("offering_id", flat=True)
-    total_students    = Enrolment.objects.filter(
+    allocation_pks = allocations.values_list("pk", flat=True)
+    offering_pks   = allocations.values_list("offering_id", flat=True)
+
+    total_students = Enrolment.objects.filter(
         offering_id__in=offering_pks, is_active=True
     ).count()
     pending_submissions = AssignmentSubmission.objects.filter(
@@ -110,21 +111,40 @@ def teacher_dashboard(request):
     ).count()
     open_result_sheets = ResultSheet.objects.filter(
         offering_id__in=offering_pks,
-        status__in=[ResultSheet.SheetStatus.OPEN, ResultSheet.SheetStatus.REJECTED],
+        status__in=["open", "rejected"],
     ).count()
     recent_materials = LectureMaterial.objects.filter(
         allocation__in=allocation_pks, is_active=True
     ).select_related("allocation__offering__course").order_by("-created_at")[:5]
+    recent_submissions = AssignmentSubmission.objects.filter(
+        assignment__offering_id__in=offering_pks,
+    ).select_related("student", "assignment__offering__course").order_by("-submitted_at")[:10]
+    teacher_departments = TeacherDepartment.objects.filter(
+        teacher=user, is_active=True
+    ).select_related("department")
+
+    # HOD/admin stats
+    hod_pending_sheets = ResultSheet.objects.none()
+    if user.is_admin or user.is_superuser or user.is_hod:
+        hod_depts = user.get_hod_departments()
+        if hod_depts:
+            hod_pending_sheets = ResultSheet.objects.filter(
+                offering__course__department__in=hod_depts, status="submitted"
+            ).select_related("offering__course", "submitted_by")
 
     context = {
-        "page_title":           "Teacher Dashboard",
-        "profile":              profile,
-        "allocations":          allocations,
-        "total_courses":        allocations.count(),
-        "total_students":       total_students,
-        "pending_submissions":  pending_submissions,
-        "open_result_sheets":   open_result_sheets,
-        "recent_materials":     recent_materials,
+        "page_title":                "Teacher Dashboard",
+        "profile":                   profile,
+        "teacher_allocations":       allocations,
+        "teacher_course_count":      allocations.count(),
+        "teacher_student_count":     total_students,
+        "teacher_pending_submissions":   pending_submissions,
+        "teacher_open_results":      open_result_sheets,
+        "recent_materials":          recent_materials,
+        "recent_submissions":        recent_submissions,
+        "teacher_departments":       teacher_departments,
+        "pending_hod_approvals_count": hod_pending_sheets.count(),
+        "hod_pending_sheets":        hod_pending_sheets,
     }
     return render(request, "teachers/dashboard.html", context)
 
