@@ -491,6 +491,33 @@ def document_request_fulfill(request, pk):
     return redirect("portal:application_detail", pk=doc_req.application_id)
 
 
+@login_required
+@require_http_methods(["POST"])
+def applicant_upload_document(request, pk):
+    """Applicant-facing: upload a file to fulfill a document request."""
+    doc_req = get_object_or_404(
+        DocumentRequest.objects.select_related("application"),
+        pk=pk,
+    )
+    # Ensure this document belongs to the current user's application
+    if doc_req.application.user_id != request.user.pk:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied
+    if doc_req.status != DocumentRequest.RequestStatus.PENDING:
+        messages.warning(request, "This document request has already been fulfilled or waived.")
+        return redirect("accounts:student_pending")
+
+    uploaded = request.FILES.get("uploaded_file")
+    if uploaded:
+        doc_req.uploaded_file = uploaded
+        doc_req.mark_fulfilled()
+        doc_req.save(update_fields=["uploaded_file", "status", "fulfilled_at"])
+        messages.success(request, f"'{doc_req.document_name}' uploaded successfully. Thank you!")
+    else:
+        messages.error(request, "Please select a file to upload.")
+    return redirect("accounts:student_pending")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # NEW: ADMISSION CYCLE MANAGEMENT (admin only)
 # ─────────────────────────────────────────────────────────────────────────────

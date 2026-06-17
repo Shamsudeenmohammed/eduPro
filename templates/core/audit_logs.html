@@ -1,5 +1,129 @@
-{% extends "base_dashboard.html" %}
+{% extends "admin_base.html" %}{% block title %}Audit Logs{% endblock %}
+{% block breadcrumb %}System / Audit Logs{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Audit Logs</h1>
+    <p>Track admin and system actions across the platform</p>
+  </div>
+  <div class="ph-right">
+    <span style="font-size:12px;color:var(--tx3)">{{ page_obj.paginator.count }} total entries</span>
+  </div>
+</div>
+{% endblock %}
 {% block content %}
-<table class="data-table card"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Object</th><th>IP</th></tr></thead>
-<tbody>{% for log in page_obj %}<tr><td>{{ log.created_at }}</td><td>{{ log.user }}</td><td>{{ log.action }}</td><td>{{ log.object_repr }}</td><td>{{ log.ip_address }}</td></tr>{% endfor %}</tbody></table>
+<form method="get" class="filter-bar" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:18px;padding:14px 18px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border2)">
+  <div>
+    <label style="display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);margin-bottom:4px">Action</label>
+    <select name="action" onchange="this.form.submit()" style="background:var(--surface);color:var(--tx1);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;min-width:110px">
+      <option value="">All Actions</option>
+      {% for val, label in action_choices %}
+      <option value="{{ val }}" {% if current_action == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label style="display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);margin-bottom:4px">Model</label>
+    <select name="model" onchange="this.form.submit()" style="background:var(--surface);color:var(--tx1);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;min-width:140px">
+      <option value="">All Models</option>
+      {% for m in model_choices %}
+      <option value="{{ m }}" {% if current_model == m %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label style="display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);margin-bottom:4px">From</label>
+    <input type="date" name="from" value="{{ current_from }}" onchange="this.form.submit()" style="background:var(--surface);color:var(--tx1);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit">
+  </div>
+  <div>
+    <label style="display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);margin-bottom:4px">To</label>
+    <input type="date" name="to" value="{{ current_to }}" onchange="this.form.submit()" style="background:var(--surface);color:var(--tx1);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit">
+  </div>
+  <div style="flex:1;min-width:180px">
+    <label style="display:block;font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);margin-bottom:4px">Search</label>
+    <div style="display:flex;gap:6px">
+      <input type="text" name="q" value="{{ current_q }}" placeholder="User, object, path…" style="flex:1;background:var(--surface);color:var(--tx1);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit">
+      <button type="submit" class="btn btn-primary" style="padding:6px 14px;font-size:12px">Search</button>
+      {% if current_action or current_model or current_q or current_from or current_to %}
+      <a href="{% url 'core:audit_logs' %}" class="btn btn-ghost" style="padding:6px 14px;font-size:12px">Clear</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:150px">Time</th>
+        <th style="width:180px">User</th>
+        <th style="width:100px">Action</th>
+        <th>Object</th>
+        <th style="width:120px">IP Address</th>
+        <th style="width:50px"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in page_obj %}
+      <tr>
+        <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">
+          <span title="{{ log.created_at|date:'M j, Y H:i:s' }}">{{ log.created_at|date:"M j, Y" }}</span><br>
+          <span style="color:var(--tx3);font-size:10px">{{ log.created_at|date:"H:i" }}</span>
+        </td>
+        <td style="white-space:nowrap">
+          {% if log.user %}
+          <span style="font-weight:600">{{ log.user.get_full_name|default:log.user.email }}</span><br>
+          <span style="font-size:10.5px;color:var(--tx3);font-family:var(--mono)">{{ log.user.email }}</span>
+          {% else %}
+          <span style="color:var(--tx3)">System</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="s-pill
+            {% if log.action == 'create' %}pill-green
+            {% elif log.action == 'update' %}pill-blue
+            {% elif log.action == 'delete' %}pill-rose
+            {% elif log.action == 'approve' %}pill-green
+            {% elif log.action == 'reject' %}pill-rose
+            {% elif log.action == 'login' or log.action == 'logout' %}pill-muted
+            {% elif log.action == 'export' or log.action == 'import' %}pill-amber
+            {% else %}pill-muted{% endif %}">
+            {{ log.get_action_display }}
+          </span>
+        </td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          {% if log.object_repr %}
+          <span>{{ log.object_repr|truncatechars:60 }}</span>
+          {% if log.model_name %}<br><span style="font-size:10px;color:var(--tx3);font-family:var(--mono)">{{ log.model_name }}{% if log.object_id %} · #{{ log.object_id }}{% endif %}</span>{% endif %}
+          {% elif log.path %}
+          <span style="color:var(--tx3);font-family:var(--mono);font-size:11px">{{ log.path|truncatechars:60 }}</span>
+          {% else %}
+          <span style="color:var(--tx3)">—</span>
+          {% endif %}
+        </td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ log.ip_address|default:"—" }}</td>
+        <td><a href="{% url 'core:audit_log_detail' log.pk %}" class="btn btn-ghost" style="padding:4px 8px;font-size:11px">View</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--tx3)">No audit log entries found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  <span class="step-links">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}" class="page-link">&laquo; first</a>
+    <a href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}" class="page-link">‹ prev</a>
+    {% endif %}
+    <span class="current page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}" class="page-link">next ›</a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}" class="page-link">last &raquo;</a>
+    {% endif %}
+  </span>
+</div>
+{% endif %}
 {% endblock %}

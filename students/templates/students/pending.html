@@ -1,58 +1,201 @@
-{% extends "students/base.html" %}{% block title %}Application Status{% endblock %}
+{% extends "students/base.html" %}{% block title %}Application Dashboard{% endblock %}
 {% block content %}
-<div style="max-width:600px;margin:2rem auto">
-  <div class="card" style="text-align:center;padding:2.5rem">
-    <div style="font-size:2.5rem;margin-bottom:.75rem">
-      {% if application.status == 'rejected' %}❌{% else %}⏳{% endif %}
-    </div>
-    <h1 style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:.5rem">
-      {% if application.status == 'rejected' %}Application Not Approved{% else %}Application Pending{% endif %}
-    </h1>
-    <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.5rem">
-      {% if application.status == 'rejected' %}
-        Your application was not approved. Please check the reason below or contact admissions.
-      {% else %}
-        Your application is being reviewed. You'll be able to access the full student portal once your admission is approved.
-      {% endif %}
-    </p>
+<div class="page-header">
+  <h1>Application Dashboard</h1>
+  <p>Track your admission application and respond to requests</p>
+</div>
 
-    {% if application %}
-    <div style="background:var(--surface2);border-radius:var(--radius);padding:1.25rem;text-align:left">
-      <div style="display:grid;gap:.75rem">
-        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Reference</span><br><span style="font-family:monospace;font-weight:700;font-size:1.1rem">{{ application.reference_number }}</span></div>
-        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Applicant</span><br><span style="font-weight:600">{{ application.get_full_name }}</span></div>
-        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Email</span><br><span>{{ application.email }}</span></div>
-        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Program</span><br><span>{{ application.program_applied.name|default:"—" }}</span></div>
-        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Submitted</span><br><span>{{ application.created_at|date:"M j, Y" }}</span></div>
-        <div><span style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Status</span><br>
-          <span class="pill {% if application.status == 'approved' %}pill-green{% elif application.status == 'rejected' %}pill-red{% elif application.status == 'reviewing' %}pill-yellow{% else %}pill-gray{% endif %}">{{ application.get_status_display }}</span>
-        </div>
+{% if application %}
+<div class="grid g2" style="display:grid;grid-template-columns:1fr 320px;gap:18px">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    {% if doc_requests %}
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📄 Document Requests</span>
+        <span class="pill {% if doc_requests|length > 0 %}pill-yellow{% else %}pill-gray{% endif %}">{{ doc_requests|length }} pending</span>
       </div>
-      {% if application.rejection_reason %}
-      <div style="margin-top:1rem;padding:.75rem;background:rgba(255,107,107,.08);border-radius:8px">
-        <p style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--danger);font-weight:600;margin-bottom:.25rem">Reason</p>
-        <p style="font-size:.875rem;color:var(--muted)">{{ application.rejection_reason }}</p>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr><th>Document</th><th>Instructions</th><th>Status</th><th>Upload</th></tr>
+          </thead>
+          <tbody>
+            {% for dr in doc_requests %}
+            <tr>
+              <td style="font-weight:600">{{ dr.document_name }}</td>
+              <td style="font-size:.8rem;color:var(--muted);max-width:200px">{{ dr.instructions|truncatechars:80|default:"—" }}</td>
+              <td>
+                {% if dr.status == 'fulfilled' %}
+                <span class="pill pill-green">Fulfilled</span>
+                {% elif dr.status == 'waived' %}
+                <span class="pill pill-gray">Waived</span>
+                {% else %}
+                <span class="pill pill-yellow">Required</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if dr.status == 'pending' %}
+                <form method="post" action="{% url 'portal:applicant_upload_document' dr.pk %}" enctype="multipart/form-data" style="display:flex;gap:6px;align-items:center">
+                  {% csrf_token %}
+                  <input type="file" name="uploaded_file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required style="font-size:.75rem;max-width:130px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text)">
+                  <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+                </form>
+                {% elif dr.uploaded_file %}
+                <a href="{{ dr.uploaded_file.url }}" target="_blank" class="btn btn-sm btn-secondary">View</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
+      {% if doc_requests|length > 0 %}
+      <p style="font-size:.78rem;color:var(--muted);margin-top:8px">Upload the requested documents to help the admissions team process your application faster.</p>
       {% endif %}
-      {% if application.status != 'rejected' and application.status != 'withdrawn' %}
-      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
-        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
-        </form>
-      </div>
-      {% endif %}
-    </div>
-    {% else %}
-    <div style="background:var(--surface2);border-radius:var(--radius);padding:1.25rem">
-      <p style="color:var(--muted);font-size:.9rem">No application found. If you believe this is an error, please contact support.</p>
     </div>
     {% endif %}
 
-    <div style="margin-top:1.5rem;display:flex;gap:.75rem;justify-content:center">
-      <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">My Profile</a>
-      <a href="{% url 'accounts:logout' %}" class="btn btn-secondary">Sign Out</a>
+    <div class="card">
+      <div class="card-title">Application Overview</div>
+      <div style="display:grid;gap:12px">
+        <div class="stat-card" style="padding:14px 16px">
+          <div class="stat-label">Reference Number</div>
+          <div style="font-family:monospace;font-weight:700;font-size:1.2rem;letter-spacing:1px;color:var(--accent)">{{ application.reference_number }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-label">Applicant</div>
+            <div style="font-weight:600;font-size:.95rem">{{ application.get_full_name }}</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-label">Email</div>
+            <div style="font-size:.85rem;font-family:monospace">{{ application.email }}</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-label">Program</div>
+            <div style="font-weight:600;font-size:.9rem">{{ application.program_applied.name|default:"—" }}</div>
+          </div>
+          <div class="stat-card" style="padding:12px 14px">
+            <div class="stat-label">Submitted</div>
+            <div style="font-size:.85rem">{{ application.created_at|date:"M j, Y" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Personal Information</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.85rem">
+        <div><span style="color:var(--muted)">Full Name</span><br><span style="font-weight:600">{{ application.get_full_name }}</span></div>
+        <div><span style="color:var(--muted)">Date of Birth</span><br><span>{{ application.date_of_birth|date:"M j, Y"|default:"—" }}</span></div>
+        <div><span style="color:var(--muted)">Gender</span><br><span>{{ application.get_gender_display|default:"—" }}</span></div>
+        <div><span style="color:var(--muted)">Nationality</span><br><span>{{ application.nationality|default:"—" }}</span></div>
+        <div><span style="color:var(--muted)">Phone</span><br><span>{{ application.phone|default:"—" }}</span></div>
+        <div><span style="color:var(--muted)">Qualification</span><br><span>{{ application.qualification|default:"—" }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-title">Application Status</div>
+      <div style="text-align:center;padding:.5rem 0">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">
+          {% if application.status == 'rejected' %}❌{% elif application.status == 'approved' %}✅{% else %}⏳{% endif %}
+        </div>
+        <span class="pill
+          {% if application.status == 'approved' %}pill-green
+          {% elif application.status == 'rejected' %}pill-red
+          {% elif application.status == 'reviewing' %}pill-yellow
+          {% else %}pill-gray{% endif %}"
+          style="font-size:.9rem;padding:5px 18px">
+          {{ application.get_status_display }}
+        </span>
+        <div style="margin-top:1rem;font-size:.8rem;color:var(--muted)">
+          {% if application.status == 'rejected' %}
+          Your application was not approved.
+          {% elif application.status == 'approved' %}
+          Your admission has been granted! You can now access the full student portal.
+          {% elif application.status == 'reviewing' %}
+          Your application is currently being reviewed by the admissions team.
+          {% else %}
+          Your application is pending review. We will notify you once it's been processed.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Application Timeline</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">✓</div>
+          <div>
+            <div style="font-weight:600;font-size:.85rem">Application Submitted</div>
+            <div style="font-size:.75rem;color:var(--muted)">{{ application.created_at|date:"F j, Y" }}</div>
+          </div>
+        </div>
+        {% if application.reviewed_at %}
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--accent2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">⟳</div>
+          <div>
+            <div style="font-weight:600;font-size:.85rem">Under Review</div>
+            <div style="font-size:.75rem;color:var(--muted)">{{ application.reviewed_at|date:"F j, Y" }}</div>
+          </div>
+        </div>
+        {% endif %}
+        {% if application.approved_at %}
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">✓</div>
+          <div>
+            <div style="font-weight:600;font-size:.85rem">Approved</div>
+            <div style="font-size:.75rem;color:var(--muted)">{{ application.approved_at|date:"F j, Y" }}</div>
+          </div>
+        </div>
+        {% endif %}
+        {% if application.rejected_at %}
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--danger);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">✕</div>
+          <div>
+            <div style="font-weight:600;font-size:.85rem">Rejected</div>
+            <div style="font-size:.75rem;color:var(--muted)">{{ application.rejected_at|date:"F j, Y" }}</div>
+          </div>
+        </div>
+        {% endif %}
+        {% if not application.reviewed_at and not application.approved_at and not application.rejected_at %}
+        <div style="text-align:center;padding:.5rem 0;color:var(--muted);font-size:.85rem">No updates yet. Check back soon.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if application.status == 'rejected' and application.rejection_reason %}
+    <div class="card" style="border-color:rgba(255,107,107,.3)">
+      <div class="card-title" style="color:var(--danger)">Rejection Reason</div>
+      <p style="font-size:.85rem;color:var(--muted)">{{ application.rejection_reason }}</p>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-title">Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="{% url 'accounts:profile' %}" class="btn btn-secondary" style="justify-content:center">👤 My Profile</a>
+        {% if application.status != 'rejected' and application.status != 'withdrawn' and application.status != 'approved' %}
+        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger" style="width:100%;justify-content:center" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
+        </form>
+        {% endif %}
+        <a href="{% url 'accounts:logout' %}" class="btn btn-secondary" style="justify-content:center">🚪 Sign Out</a>
+      </div>
     </div>
   </div>
 </div>
+{% else %}
+<div class="card" style="text-align:center;padding:3rem">
+  <div style="font-size:3rem;margin-bottom:1rem">📋</div>
+  <h2 style="font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:.5rem">No Application Found</h2>
+  <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.5rem">We couldn't find an admission application linked to your account. If you believe this is an error, please contact support.</p>
+  <a href="{% url 'portal:apply' %}" class="btn btn-primary">Apply for Admission</a>
+</div>
+{% endif %}
 {% endblock %}

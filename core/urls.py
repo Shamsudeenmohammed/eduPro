@@ -5,6 +5,7 @@ app_name = "core"
 
 urlpatterns = [
     path("audit-logs/", views.audit_log_list, name="audit_logs"),
+    path("audit-logs/<int:pk>/", views.audit_log_detail, name="audit_log_detail"),
     path("transcript/", views.transcript_pdf, name="transcript_pdf"),
     path("transcript/<int:user_pk>/", views.transcript_pdf, name="transcript_pdf_user"),
     path("id-card/", views.id_card_pdf, name="id_card_pdf"),

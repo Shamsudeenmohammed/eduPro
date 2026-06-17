@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}{% block title %}Audit Log Detail{% endblock %}
+{% block breadcrumb %}System / <a href="{% url 'core:audit_logs' %}">Audit Logs</a> / Detail{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Audit Log Entry</h1>
+    <p>{{ log.get_action_display }} — {{ log.created_at|date:"M j, Y H:i:s" }}</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'core:audit_logs' %}" class="btn btn-ghost">← Back to Logs</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="body-grid">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Overview</div></div>
+      <ul class="status-list">
+        <li class="status-row">
+          <span class="s-label">Action</span>
+          <span class="s-pill
+            {% if log.action == 'create' %}pill-green
+            {% elif log.action == 'update' %}pill-blue
+            {% elif log.action == 'delete' %}pill-rose
+            {% elif log.action == 'approve' %}pill-green
+            {% elif log.action == 'reject' %}pill-rose
+            {% elif log.action == 'login' or log.action == 'logout' %}pill-muted
+            {% elif log.action == 'export' or log.action == 'import' %}pill-amber
+            {% else %}pill-muted{% endif %}">
+            {{ log.get_action_display }}
+          </span>
+        </li>
+        <li class="status-row"><span class="s-label">Timestamp</span><span class="s-val" style="font-family:var(--mono);font-size:12px">{{ log.created_at|date:"M j, Y H:i:s" }}</span></li>
+        <li class="status-row"><span class="s-label">User</span>
+          <span class="s-val">
+            {% if log.user %}
+            <strong>{{ log.user.get_full_name|default:log.user.email }}</strong>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--tx3)"> ({{ log.user.email }})</span>
+            {% else %}
+            <span style="color:var(--tx3)">System (deleted user)</span>
+            {% endif %}
+          </span>
+        </li>
+        <li class="status-row"><span class="s-label">Model</span><span class="s-val" style="font-family:var(--mono);font-size:12px">{{ log.model_name|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Object ID</span><span class="s-val" style="font-family:var(--mono);font-size:12px">{{ log.object_id|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Object</span><span class="s-val">{{ log.object_repr|default:"—" }}</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Request Details</div></div>
+      <ul class="status-list">
+        <li class="status-row"><span class="s-label">Path</span><span class="s-val" style="font-family:var(--mono);font-size:11px;word-break:break-all">{{ log.path|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">IP Address</span><span class="s-val" style="font-family:var(--mono);font-size:12px">{{ log.ip_address|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">User Agent</span><span class="s-val" style="font-size:11px;word-break:break-all;color:var(--tx2)">{{ log.user_agent|default:"—" }}</span></li>
+      </ul>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Changes</div></div>
+      <div style="padding:14px 18px">
+        {% if log.changes %}
+        <pre style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:12px;font-size:11px;line-height:1.5;overflow-x:auto;color:var(--tx1);white-space:pre-wrap;word-break:break-word;margin:0">{{ log.changes|pprint }}</pre>
+        {% else %}
+        <p style="color:var(--tx3);font-size:13px">No change data recorded.</p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Raw Entry</div></div>
+      <div style="padding:14px 18px">
+        <pre style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:12px;font-size:11px;line-height:1.5;overflow-x:auto;color:var(--tx1);white-space:pre-wrap;word-break:break-word;margin:0">PK: {{ log.pk }}
+Action: {{ log.action }}
+Model: {{ log.model_name }}
+Object ID: {{ log.object_id }}
+Created: {{ log.created_at|date:"c" }}
+Updated: {{ log.updated_at|date:"c" }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

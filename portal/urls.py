@@ -65,6 +65,11 @@ urlpatterns = [
         views.document_request_fulfill,
         name="document_request_fulfill",
     ),
+    path(
+        "doc-requests/<int:pk>/upload/",
+        views.applicant_upload_document,
+        name="applicant_upload_document",
+    ),
 
     # ── New: admission cycle management (admin) ───────────────────────────────
     path("admissions/cycles/",               views.cycle_list,   name="cycle_list"),

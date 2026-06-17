@@ -60,7 +60,9 @@ def _role_dashboard_name(user):
         return "accounts:dashboard"
     if user.is_teacher:
         return "teachers:dashboard"
-    return "students:dashboard"
+    if user.is_approved_student:
+        return "students:dashboard"
+    return "accounts:student_pending"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -182,9 +184,12 @@ def student_pending(request):
         user=request.user
     ).order_by("-created_at").first()
 
+    doc_requests = application.document_requests.all() if application else []
+
     return render(request, "students/pending.html", {
         "page_title": "Application Status",
         "application": application,
+        "doc_requests": doc_requests,
     })
 
 
