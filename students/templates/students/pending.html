@@ -178,6 +178,10 @@
     <div class="card">
       <div class="card-title">Quick Actions</div>
       <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn btn-secondary" style="justify-content:center">📄 Download Application Letter</a>
+        {% if application.status == 'approved' %}
+        <a href="{% url 'portal:admission_letter_pdf' application.reference_number %}" class="btn btn-primary" style="justify-content:center">🎓 Download Admission Letter</a>
+        {% endif %}
         <a href="{% url 'accounts:profile' %}" class="btn btn-secondary" style="justify-content:center">👤 My Profile</a>
         {% if application.status != 'rejected' and application.status != 'withdrawn' and application.status != 'approved' %}
         <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">

@@ -75,4 +75,8 @@ urlpatterns = [
     path("admissions/cycles/",               views.cycle_list,   name="cycle_list"),
     path("admissions/cycles/add/",           views.cycle_create, name="cycle_create"),
     path("admissions/cycles/<int:pk>/edit/", views.cycle_edit,   name="cycle_edit"),
+
+    # ── Letter downloads (applicant-facing) ────────────────────────────────────
+    path("letters/application/<str:ref>/",   views.application_letter_pdf,  name="application_letter_pdf"),
+    path("letters/admission/<str:ref>/",     views.admission_letter_pdf,    name="admission_letter_pdf"),
 ]

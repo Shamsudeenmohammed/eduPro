@@ -24,6 +24,7 @@
       </div>
       <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1.5rem">You can also check your application status online using your reference number.</p>
       <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+        <a href="{% url 'portal:application_letter_pdf' ref %}" class="btn" style="background:var(--surface2);color:var(--text);padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border)">📄 Download Application Letter</a>
         <a href="{% url 'portal:application_status' %}" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px">Check Status →</a>
         <a href="{% url 'portal:home' %}" class="btn" style="background:var(--surface2);color:var(--text);padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border)">Back to Home</a>
       </div>

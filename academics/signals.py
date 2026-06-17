@@ -1,26 +1,15 @@
 """
 academics/signals.py
 
-Post-save signal: automatically create a StudentProfile when a new
-EduProUser with role='student' is created.
+Post-save signal: formerly auto-created a StudentProfile when a new
+EduProUser with role='student' was created.  This is now **removed**
+because:
+
+1. It caused UNIQUE constraint failures on student_number (blank + unique).
+2. It made is_approved_student return True before admission was approved.
+3. StudentProfile is now created explicitly in AdmissionApplication.approve()
+   and in academics/views.py profile editing, where a proper student_number
+   can be assigned.
+
+The ready() import in apps.py is kept for future signals.
 """
-
-from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_student_academic_profile(sender, instance, created, **kwargs):
-    """
-    On first save of a student user, create a blank StudentProfile.
-    Importing here (not at module level) avoids circular import at app load.
-    """
-    if not created:
-        return
-    if getattr(instance, "role", None) != "student":
-        return
-
-    from academics.models import StudentProfile
-
-    StudentProfile.objects.get_or_create(student=instance)

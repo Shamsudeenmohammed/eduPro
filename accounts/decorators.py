@@ -143,6 +143,26 @@ def student_required(view_func):
     return wrapper
 
 
+def approved_student_required(view_func):
+    """
+    Require an approved student account (has StudentProfile).
+    Unapproved applicants are redirected to their pending dashboard.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return _login_redirect(request)
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        if request.user.role != Role.STUDENT:
+            return _deny(request, _("Student access required."))
+        if not request.user.is_approved_student:
+            from django.shortcuts import redirect
+            return redirect("accounts:student_pending")
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MULTI-RESPONSIBILITY DECORATORS
 # ─────────────────────────────────────────────────────────────────────────────

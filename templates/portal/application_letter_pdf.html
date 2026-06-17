@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Application Letter</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; color: #222; }
+  .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1a365d; padding-bottom: 15px; }
+  .header h1 { font-size: 18pt; color: #1a365d; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .header h2 { font-size: 14pt; color: #2d3748; margin: 0; font-weight: normal; }
+  .header p { font-size: 9pt; color: #666; margin: 4px 0 0; }
+  .ref { text-align: right; font-size: 10pt; margin-bottom: 20px; }
+  .ref strong { color: #1a365d; }
+  .salutation { margin-bottom: 15px; }
+  .salutation p { margin: 4px 0; }
+  table.details { width: 100%; border-collapse: collapse; margin: 15px 0; }
+  table.details td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  table.details td:first-child { width: 160px; font-weight: 600; color: #4a5568; }
+  table.details td:last-child { color: #222; }
+  .section-title { font-size: 12pt; font-weight: 700; color: #1a365d; margin: 20px 0 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+  .status-badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 10pt; font-weight: 600; }
+  .pending { background: #fef3c7; color: #92400e; }
+  .reviewing { background: #dbeafe; color: #1e40af; }
+  .approved { background: #dcfce7; color: #166534; }
+  .rejected { background: #fee2e2; color: #991b1b; }
+  .footer { margin-top: 30px; font-size: 9pt; color: #666; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  .footer p { margin: 2px 0; }
+</style>
+</head><body>
+<div class="header">
+  <h1>{{ site_name|default:"Institution Name" }}</h1>
+  <h2>Application for Admission</h2>
+  <p>Academic Year {{ application.cycle.academic_year|default:"—" }}</p>
+</div>
+
+<div class="ref">
+  <strong>Reference:</strong> {{ application.reference_number }}<br>
+  <strong>Date:</strong> {{ application.created_at|date:"F j, Y" }}
+</div>
+
+<div class="salutation">
+  <p><strong>The Admissions Office</strong></p>
+  <p>{{ site_name|default:"Institution Name" }}</p>
+</div>
+
+<div class="section-title">Applicant Details</div>
+<table class="details">
+  <tr><td>Full Name</td><td>{{ application.get_full_name }}</td></tr>
+  <tr><td>Date of Birth</td><td>{{ application.date_of_birth|date:"F j, Y"|default:"—" }}</td></tr>
+  <tr><td>Gender</td><td>{{ application.get_gender_display|default:"—" }}</td></tr>
+  <tr><td>Nationality</td><td>{{ application.nationality|default:"—" }}</td></tr>
+  <tr><td>Email</td><td>{{ application.email }}</td></tr>
+  <tr><td>Phone</td><td>{{ application.phone|default:"—" }}</td></tr>
+  <tr><td>Address</td><td>{{ application.address|default:"—" }}</td></tr>
+</table>
+
+<div class="section-title">Program &amp; Academic Background</div>
+<table class="details">
+  <tr><td>Program Applied</td><td>{{ application.program_applied.name|default:"—" }}</td></tr>
+  <tr><td>Application Type</td><td>{{ application.get_application_type_display|default:"—" }}</td></tr>
+  <tr><td>Previous School</td><td>{{ application.previous_school|default:"—" }}</td></tr>
+  <tr><td>Qualification</td><td>{{ application.qualification|default:"—" }}</td></tr>
+  <tr><td>Year of Completion</td><td>{{ application.year_of_completion|default:"—" }}</td></tr>
+  <tr><td>Aggregate Score</td><td>{{ application.aggregate_score|default:"—" }}</td></tr>
+</table>
+
+<div class="section-title">Application Status</div>
+<table class="details">
+  <tr><td>Current Status</td><td><span class="status-badge {% if application.status == 'approved' %}approved{% elif application.status == 'rejected' %}rejected{% elif application.status == 'reviewing' %}reviewing{% else %}pending{% endif %}">{{ application.get_status_display }}</span></td></tr>
+  <tr><td>Submitted</td><td>{{ application.created_at|date:"F j, Y \a\t H:i" }}</td></tr>
+</table>
+
+{% if application.personal_statement %}
+<div class="section-title">Personal Statement</div>
+<p style="font-style:italic;color:#555;margin:8px 0">{{ application.personal_statement }}</p>
+{% endif %}
+
+<div class="footer">
+  <p>This is a computer-generated document. No signature is required.</p>
+  <p>{{ site_name|default:"Institution Name" }} &mdash; Admissions Office</p>
+</div>
+</body></html>

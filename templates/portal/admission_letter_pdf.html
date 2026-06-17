@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Admission Letter</title>
+<style>
+  @page { size: A4; margin: 2.5cm; }
+  body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #222; }
+  .header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #1a365d; padding-bottom: 15px; }
+  .header h1 { font-size: 20pt; color: #1a365d; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1.5px; }
+  .header h2 { font-size: 14pt; color: #2d3748; margin: 0; font-weight: normal; text-transform: uppercase; letter-spacing: 3px; border: 1px solid #1a365d; display: inline-block; padding: 4px 18px; margin-top: 6px; }
+  .header p { font-size: 9pt; color: #666; margin: 4px 0 0; }
+  .ref { font-size: 10pt; margin-bottom: 25px; }
+  .ref table { width: 100%; }
+  .ref td { padding: 2px 0; }
+  .ref td:last-child { text-align: right; }
+  .ref strong { color: #1a365d; }
+  .salutation { margin: 20px 0; }
+  .salutation p { margin: 3px 0; }
+  .body-text { margin: 15px 0; text-align: justify; }
+  .body-text p { margin: 8px 0; }
+  .highlight-box { border: 1px solid #1a365d; border-radius: 6px; padding: 14px 18px; margin: 18px 0; background: #f8fafc; }
+  .highlight-box table { width: 100%; border-collapse: collapse; }
+  .highlight-box td { padding: 5px 8px; vertical-align: top; }
+  .highlight-box td:first-child { width: 140px; font-weight: 600; color: #4a5568; }
+  .next-steps { margin: 18px 0; }
+  .next-steps ol { margin: 8px 0; padding-left: 20px; }
+  .next-steps li { margin: 5px 0; }
+  .signature { margin-top: 30px; }
+  .signature .line { border-top: 1px solid #333; width: 200px; margin-top: 40px; padding-top: 4px; font-weight: 600; }
+  .footer { margin-top: 30px; font-size: 9pt; color: #666; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+  .footer p { margin: 2px 0; }
+</style>
+</head><body>
+<div class="header">
+  <h1>{{ site_name|default:"Institution Name" }}</h1>
+  <p>Office of Admissions</p>
+  <h2>Letter of Admission</h2>
+</div>
+
+<div class="ref">
+  <table><tr>
+    <td><strong>Reference:</strong> {{ application.reference_number }}</td>
+    <td><strong>Date:</strong> {{ application.approved_at|date:"F j, Y" }}</td>
+  </tr></table>
+</div>
+
+<div class="salutation">
+  <p><strong>{{ application.get_full_name }}</strong></p>
+  <p>{{ application.email }}</p>
+  {% if application.address %}<p>{{ application.address|linebreaksbr }}</p>{% endif %}
+</div>
+
+<div class="body-text">
+  <p>Dear <strong>{{ application.first_name }}</strong>,</p>
+
+  <p>On behalf of the Admissions Committee, I am pleased to inform you that your application for admission has been carefully reviewed and you have been <strong>approved for admission</strong> to <strong>{{ site_name|default:"our institution" }}</strong>.</p>
+</div>
+
+<div class="highlight-box">
+  <table>
+    <tr><td>Program of Study</td><td><strong>{{ application.program_applied.name|default:"—" }}</strong></td></tr>
+    <tr><td>Academic Year</td><td><strong>{{ application.cycle.academic_year|default:"—" }}</strong></td></tr>
+    <tr><td>Application Type</td><td>{{ application.get_application_type_display|default:"—" }}</td></tr>
+    <tr><td>Approved On</td><td>{{ application.approved_at|date:"F j, Y" }}</td></tr>
+    <tr><td>Approved By</td><td>{{ application.approved_by.get_full_name|default:"Admissions Office" }}</td></tr>
+  </table>
+</div>
+
+<div class="body-text">
+  <p>Congratulations on this achievement! We are confident that you will find your time at {{ site_name|default:"our institution" }} both rewarding and fulfilling.</p>
+</div>
+
+<div class="next-steps">
+  <p><strong>Next Steps:</strong></p>
+  <ol>
+    <li>Log in to the Student Portal using your email and the password you created during application.</li>
+    <li>Update your personal profile and contact information.</li>
+    <li>Proceed with course registration for the current semester.</li>
+    <li>Review the fee schedule and complete payment before the deadline.</li>
+    <li>Attend the orientation program for new students (date to be announced).</li>
+  </ol>
+</div>
+
+<div class="body-text">
+  <p>Should you have any questions or require further assistance, please do not hesitate to contact the Admissions Office.</p>
+  <p>We look forward to welcoming you to our community.</p>
+</div>
+
+<div class="signature">
+  <p>Sincerely,</p>
+  <div class="line">{{ application.approved_by.get_full_name|default:"Admissions Officer" }}</div>
+  <p style="font-size:10pt;color:#666">Admissions Office<br>{{ site_name|default:"Institution Name" }}</p>
+</div>
+
+<div class="footer">
+  <p>This is a computer-generated document issued by the Admissions Office.</p>
+  <p>{{ site_name|default:"Institution Name" }} &mdash; Admissions Office &mdash; {{ application.approved_at|date:"Y" }}</p>
+</div>
+</body></html>

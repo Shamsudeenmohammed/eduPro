@@ -53,7 +53,11 @@
       <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
         <p style="font-weight:600;color:var(--success);margin-bottom:.25rem">✅ Application Approved</p>
         <p style="font-size:.85rem;color:var(--text-muted)">Congratulations! Your application has been approved. You can log in to the student portal using your email and the password you created during application.</p>
-        <a href="{% url 'accounts:login' %}" class="btn" style="margin-top:.75rem;background:var(--success);color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+        <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+          <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn" style="background:var(--surface2);color:var(--text);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px">📄 Application Letter</a>
+          <a href="{% url 'portal:admission_letter_pdf' application.reference_number %}" class="btn" style="background:var(--success);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">🎓 Admission Letter</a>
+          <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+        </div>
       </div>
       {% elif application.status == 'approved' or application.status == 'accepted' %}
       <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
@@ -66,9 +70,12 @@
       <div style="margin-top:1rem;padding:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
         {% if application.user_id %}
         <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">Your account is active. Log in to the student portal to check for updates.</p>
-        <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">
+          <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn" style="background:var(--surface2);color:var(--text);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px">📄 Application Letter</a>
+          <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+        </div>
         {% endif %}
-        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}" style="margin-top:.75rem">
+        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">
           {% csrf_token %}
           <button type="submit" class="btn" style="background:rgba(220,38,38,.08);color:var(--danger);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid rgba(220,38,38,.2);cursor:pointer" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
         </form>

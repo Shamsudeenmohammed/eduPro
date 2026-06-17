@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from accounts.decorators import student_required
+from accounts.decorators import approved_student_required, student_required
 from academics.models import (
     AcademicSession,
     CourseOffering,
@@ -75,8 +75,10 @@ def _enrolled_offering_or_404(user, offering_pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def student_dashboard(request):
+    if not request.user.is_approved_student:
+        return redirect("accounts:student_pending")
     user    = request.user
     profile = _get_profile(user)
     current_semester = Semester.get_current()
@@ -156,7 +158,7 @@ def student_dashboard(request):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def my_courses(request):
     enrolments = (
         Enrolment.objects
@@ -175,7 +177,7 @@ def my_courses(request):
 
 
 @login_required
-@student_required
+@approved_student_required
 def course_home(request, offering_pk):
     """Hub for a single enrolled course — materials, assignments, quizzes, results."""
     offering, _ = _enrolled_offering_or_404(request.user, offering_pk)
@@ -216,7 +218,7 @@ def course_home(request, offering_pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def course_registration(request):
     """Student self-service course registration request."""
     if request.method == "POST":
@@ -244,7 +246,7 @@ def course_registration(request):
 
 
 @login_required
-@student_required
+@approved_student_required
 def registration_list(request):
     requests = (
         CourseRegistrationRequest.objects
@@ -263,7 +265,7 @@ def registration_list(request):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def materials_list(request, offering_pk):
     offering, _ = _enrolled_offering_or_404(request.user, offering_pk)
     if offering is None:
@@ -282,7 +284,7 @@ def materials_list(request, offering_pk):
 
 
 @login_required
-@student_required
+@approved_student_required
 def material_access(request, pk):
     """Log the download and redirect to file or external URL."""
     material = get_object_or_404(
@@ -318,7 +320,7 @@ def material_access(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def assignment_list(request, offering_pk):
     offering, _ = _enrolled_offering_or_404(request.user, offering_pk)
     if offering is None:
@@ -347,7 +349,7 @@ def assignment_list(request, offering_pk):
 
 
 @login_required
-@student_required
+@approved_student_required
 @require_http_methods(["GET", "POST"])
 def assignment_submit(request, pk):
     # CHANGED: Query against Assignment.objects instead of Assignment.all_objects
@@ -397,7 +399,7 @@ def assignment_submit(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def quiz_list(request, offering_pk):
     offering, _ = _enrolled_offering_or_404(request.user, offering_pk)
     if offering is None:
@@ -425,7 +427,7 @@ def quiz_list(request, offering_pk):
 
 
 @login_required
-@student_required
+@approved_student_required
 @require_http_methods(["GET", "POST"])
 def quiz_start(request, pk):
     quiz = get_object_or_404(Quiz.all_objects, pk=pk, is_published=True, is_active=True)
@@ -468,7 +470,7 @@ def quiz_start(request, pk):
 
 
 @login_required
-@student_required
+@approved_student_required
 @require_http_methods(["GET", "POST"])
 def quiz_take(request, attempt_pk):
     attempt = get_object_or_404(
@@ -531,7 +533,7 @@ def quiz_take(request, attempt_pk):
 
 
 @login_required
-@student_required
+@approved_student_required
 def quiz_result(request, attempt_pk):
     attempt = get_object_or_404(
         QuizAttempt, pk=attempt_pk, student=request.user, is_complete=True
@@ -555,7 +557,7 @@ def quiz_result(request, attempt_pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def results_list(request):
     """All approved results across all of the student's enrolments."""
     results = (
@@ -586,7 +588,7 @@ def results_list(request):
 
 
 @login_required
-@student_required
+@approved_student_required
 def result_detail(request, offering_pk):
     """Single course result detail view."""
 
@@ -625,7 +627,7 @@ def result_detail(request, offering_pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def attendance_summary(request, offering_pk):
     offering, _ = _enrolled_offering_or_404(request.user, offering_pk)
     if offering is None:
@@ -665,7 +667,7 @@ def attendance_summary(request, offering_pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@student_required
+@approved_student_required
 def academic_progress(request):
     """
     Comprehensive academic progress view:
@@ -793,21 +795,21 @@ from django.db import models
 
 
 @login_required
-@student_required
+@approved_student_required
 def transcript_redirect(request):
     from core.views import transcript_pdf
     return transcript_pdf(request)
 
 
 @login_required
-@student_required
+@approved_student_required
 def my_fees_redirect(request):
     from finance.views import my_fees
     return my_fees(request)
 
 
 @login_required
-@student_required
+@approved_student_required
 def insights_redirect(request):
     from analytics.views import student_recommendations
     return student_recommendations(request)

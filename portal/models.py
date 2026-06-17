@@ -420,11 +420,18 @@ class AdmissionApplication(models.Model):
             new_user.save(update_fields=["approved_by", "approved_at"])
 
         # ── 2. Create / update StudentProfile ────────────────────────────────
-        profile, _ = StudentProfile.all_objects.get_or_create(student=new_user)
+        profile, created = StudentProfile.all_objects.get_or_create(student=new_user)
+        if created:
+            from django.utils.crypto import get_random_string
+            profile.student_number = (
+                f"{self.program_applied.code if self.program_applied else 'STU'}/"
+                f"{timezone.now().year}/"
+                f"{get_random_string(6).upper()}"
+            )
         if self.program_applied:
             profile.program        = self.program_applied
             profile.admission_date = timezone.now().date()
-            profile.save(update_fields=["program", "admission_date"])
+        profile.save(update_fields=["student_number", "program", "admission_date"] if created else ["program", "admission_date"])
 
         # ── 3. Update application record ──────────────────────────────────────
         self.status      = AdmissionStatus.APPROVED

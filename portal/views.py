@@ -18,7 +18,7 @@ New views (added by refactor):
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -562,3 +562,33 @@ def cycle_edit(request, pk):
         "form":       form,
         "cycle":      cycle,
     })
+
+
+# ── Letter downloads (applicant-facing) ────────────────────────────────────
+
+from .utils import render_admission_letter, render_application_letter  # noqa: E402
+
+
+@login_required
+def application_letter_pdf(request, ref):
+    """Download the application letter as PDF (applicant only)."""
+    application = get_object_or_404(
+        AdmissionApplication, reference_number__iexact=ref,
+    )
+    if application.user_id != request.user.pk:
+        raise PermissionDenied
+    return render_application_letter(application)
+
+
+@login_required
+def admission_letter_pdf(request, ref):
+    """Download the admission letter as PDF (applicant only, approved only)."""
+    application = get_object_or_404(
+        AdmissionApplication, reference_number__iexact=ref,
+    )
+    if application.user_id != request.user.pk:
+        raise PermissionDenied
+    if application.status not in (AdmissionStatus.APPROVED,):
+        from django.http import HttpResponseNotFound
+        return HttpResponseNotFound("Admission letter is only available after approval.")
+    return render_admission_letter(application)
