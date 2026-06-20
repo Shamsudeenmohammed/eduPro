@@ -1,82 +1,88 @@
-"""
-accounts/templatetags/role_tags.py
-
-Custom template tags and filters for role-based rendering in templates.
-
-Usage:
-    {% load role_tags %}
-    {% if request.user|is_admin %}...{% endif %}
-    {% if request.user|has_role:"teacher" %}...{% endif %}
-    {% if request.user|has_role:"hod" %}...{% endif %}
-"""
-
 from django import template
-from accounts.models import Role
+from accounts.models import StaffResponsibility
 
 register = template.Library()
 
 
 @register.filter(name="is_admin")
 def is_admin(user):
-    """Return True if the user has the ADMIN role or is a Django superuser."""
     if not user or user.is_anonymous:
         return False
-    return getattr(user, "role", None) == Role.ADMIN or getattr(user, "is_superuser", False)
+    return getattr(user, "is_admin", False) or getattr(user, "is_superuser", False)
 
 
 @register.filter(name="is_teacher")
 def is_teacher(user):
-    """Return True if the user has the TEACHER role."""
     if not user or user.is_anonymous:
         return False
-    return getattr(user, "role", None) == Role.TEACHER
+    return getattr(user, "is_teacher", False)
 
 
 @register.filter(name="is_student")
 def is_student(user):
-    """Return True if the user has the STUDENT role."""
     if not user or user.is_anonymous:
         return False
-    return getattr(user, "role", None) == Role.STUDENT
+    return getattr(user, "is_student", False)
 
 
 @register.filter(name="has_role")
 def has_role(user, role_name: str):
-    """
-    Checks if a user matches a primary role OR any assigned fine-grained staff responsibilities.
-    Accepts comma-separated roles: {{ user|has_role:"admin,hod" }}
-    """
     if not user or user.is_anonymous:
         return False
 
     if getattr(user, "is_superuser", False):
         return True
 
-    # Split comma-separated inputs (e.g., "teacher,hod" -> ["teacher", "hod"])
     target_roles = [r.strip().lower() for r in role_name.split(",")]
 
-    # 1. Check backward compatibility against the primary classification field
-    user_primary_role = getattr(user, "role", "").lower()
-    if user_primary_role in target_roles:
+    if getattr(user, "role", "").lower() in target_roles:
         return True
 
-    # 2. Check fine-grained stacked responsibilities from your new model architecture
     if hasattr(user, "has_responsibility"):
         for role in target_roles:
-            if user.has_responsibility(role):
+            if role == "hod":
+                if user.has_responsibility(StaffResponsibility.HOD):
+                    return True
+            elif user.has_responsibility(role):
                 return True
+
+    if hasattr(user, "is_hod") and "hod" in target_roles and user.is_hod:
+        return True
+    if hasattr(user, "is_admin") and "admin" in target_roles and user.is_admin:
+        return True
+    if hasattr(user, "is_teacher") and "teacher" in target_roles and user.is_teacher:
+        return True
+    if hasattr(user, "is_student") and "student" in target_roles and user.is_student:
+        return True
 
     return False
 
 
+@register.filter(name="is_hod_of")
+def is_hod_of(user, department):
+    if not user or not user.is_authenticated:
+        return False
+
+    if getattr(user, "is_superuser", False) or getattr(user, "is_admin", False):
+        return True
+
+    if hasattr(user, "is_hod_of") and callable(user.is_hod_of):
+        return user.is_hod_of(department)
+
+    return getattr(department, "hod_id", None) == user.pk
+
+
 @register.simple_tag(takes_context=True)
 def active_if(context, *url_names):
-    """
-    Returns 'active' CSS class string if the current URL name matches.
-    Usage: {% active_if "accounts:profile" "accounts:change_password" %}
-    """
     request = context.get("request")
-    if request is None:
+    if not request or not request.resolver_match:
         return ""
-    current = request.resolver_match.view_name if request.resolver_match else ""
-    return "active" if current in url_names else ""
+
+    current_view = request.resolver_match.view_name
+    current_url = request.resolver_match.url_name
+
+    for url in url_names:
+        if url == current_view or url == current_url:
+            return "active"
+
+    return ""

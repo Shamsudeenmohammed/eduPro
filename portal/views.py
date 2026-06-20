@@ -569,7 +569,7 @@ def cycle_edit(request, pk):
 from .utils import render_admission_letter, render_application_letter  # noqa: E402
 
 
-@login_required
+
 def application_letter_pdf(request, ref):
     """Download the application letter as PDF (applicant only)."""
     application = get_object_or_404(
@@ -580,7 +580,7 @@ def application_letter_pdf(request, ref):
     return render_application_letter(application)
 
 
-@login_required
+
 def admission_letter_pdf(request, ref):
     """Download the admission letter as PDF (applicant only, approved only)."""
     application = get_object_or_404(
