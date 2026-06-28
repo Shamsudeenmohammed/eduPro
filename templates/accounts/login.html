@@ -36,6 +36,7 @@
     .pl-c3 { top:40%; left:55%; width:200px; height:200px; background:rgba(167,139,250,.1); }
 
     .brand-logo { position:relative; z-index:1; font-size:1.85rem; font-weight:800; letter-spacing:-.5px; color:#fff; }
+    .brand-logo a {text-decoration: none; color:white}
     .brand-logo span { color:#a5b4fc; }
     .panel-copy { position:relative; z-index:1; }
     .panel-copy h1 { font-size:2.2rem; font-weight:800; color:#fff; line-height:1.2; margin-bottom:1rem; }
@@ -145,10 +146,10 @@
     <div class="pl-circle pl-c1"></div>
     <div class="pl-circle pl-c2"></div>
     <div class="pl-circle pl-c3"></div>
-    <div class="brand-logo">edu<span>Pro</span></div>
+    <div class="brand-logo"><a href = "{% url 'portal:home' %}">edu<span>Pro</span></a></div>
     <div class="panel-copy">
-      <h1>The enterprise platform for modern education.</h1>
-      <p>Manage courses, track progress, and empower every learner — all in one secure place.</p>
+      <h1>Welcome Your School Name Login Portal.</h1>
+      <p>Manage courses, track progress, and empower every learner — all in one secure place. Developed by Shamsudeen Mohammed</p>
       <div class="features">
         <div class="feat"><span class="feat-dot"></span>Role-based access: Admins, Teachers & Students</div>
         <div class="feat"><span class="feat-dot"></span>Real-time progress tracking and analytics</div>
@@ -166,7 +167,7 @@
     <div class="auth-card">
       <span class="mobile-logo">edu<span>Pro</span></span>
       <h1 class="auth-heading">Welcome back</h1>
-      <p class="auth-sub">Sign in to your account to continue.</p>
+      <p class="auth-sub">Sign in with your <strong>Student ID</strong> or <strong>Staff ID</strong> to access the dashboard.</p>
 
       {% if form.non_field_errors %}
       <div class="error-banner" role="alert">
@@ -180,17 +181,17 @@
         {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
 
         <div class="field">
-          <label for="id_email">Email address</label>
+          <label for="id_identifier">Student ID / Staff ID</label>
           <div class="input-wrap">
             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            <input type="email" id="id_email" name="email"
-                   value="{{ form.email.value|default:'' }}"
-                   placeholder="you@example.com"
-                   autocomplete="email"
-                   {% if form.email.errors %}class="is-error"{% endif %}
+            <input type="text" id="id_identifier" name="identifier"
+                   value="{{ form.identifier.value|default:'' }}"
+                   placeholder="Student ID or Staff ID"
+                   autocomplete="username"
+                   {% if form.identifier.errors %}class="is-error"{% endif %}
                    autofocus />
           </div>
-          {% if form.email.errors %}<p class="field-error" role="alert">{{ form.email.errors|join:", " }}</p>{% endif %}
+          {% if form.identifier.errors %}<p class="field-error" role="alert">{{ form.identifier.errors|join:", " }}</p>{% endif %}
         </div>
 
         <div class="field">
@@ -222,7 +223,8 @@
         </button>
       </form>
 
-      <p class="signup-prompt">Don't have an account? <a href="{% url 'accounts:register' %}">Create one free</a></p>
+      <p class="signup-prompt">New student? <a href="{% url 'portal:apply' %}">Apply for Admission</a></p>
+      <p class="signup-prompt">Applicant? <a href="{% url 'portal:portal_login' %}">Applicant Sign In</a></p>
     </div>
   </main>
 
@@ -250,9 +252,9 @@
       toggleBtn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     });
 
-    var form      = document.getElementById('login-form');
-    var emailIn   = document.getElementById('id_email');
-    var submitBtn = document.getElementById('submit-btn');
+    var form        = document.getElementById('login-form');
+    var identIn     = document.getElementById('id_identifier');
+    var submitBtn   = document.getElementById('submit-btn');
 
     function setError(input, msg) {
       input.classList.add('is-error');
@@ -273,20 +275,14 @@
       if (err) err.textContent = '';
     }
     function setValid(input) { clearError(input); input.classList.add('is-valid'); }
-    function validEmail(v)   { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
 
-    emailIn.addEventListener('blur', function () {
-      if (!this.value.trim()) return;
-      validEmail(this.value) ? setValid(this) : setError(this, 'Enter a valid email address.');
-    });
-    emailIn.addEventListener('input', function () { if (this.classList.contains('is-error')) clearError(this); });
+    identIn.addEventListener('input', function () { if (this.classList.contains('is-error')) clearError(this); });
     pwInput.addEventListener('input',  function () { if (this.classList.contains('is-error')) clearError(this); });
 
     form.addEventListener('submit', function (e) {
       var ok = true;
-      if (!emailIn.value.trim())       { setError(emailIn, 'Email is required.');    ok = false; }
-      else if (!validEmail(emailIn.value)) { setError(emailIn, 'Enter a valid email.'); ok = false; }
-      if (!pwInput.value)              { setError(pwInput, 'Password is required.'); ok = false; }
+      if (!identIn.value.trim()) { setError(identIn, 'Student ID, Staff ID, or email is required.'); ok = false; }
+      if (!pwInput.value)        { setError(pwInput, 'Password is required.');                     ok = false; }
       if (!ok) { e.preventDefault(); return; }
       submitBtn.disabled = true;
       submitBtn.classList.add('is-loading');

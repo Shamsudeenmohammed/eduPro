@@ -402,13 +402,14 @@
           </div>
           <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
             {% for alloc in teacher_allocations %}
-            <a href="{% url 'teachers:course_detail' alloc.offering.pk %}" class="course-card">
+            <a href="{% url 'teachers:course_detail' alloc.offering.pk %}" class="course-card" style="position:relative">
               <div class="cc-header">
                 <div class="cc-icon">📘</div>
                 <div style="flex:1;min-width:0">
                   <div class="cc-title">{{ alloc.offering.course.title }}</div>
                   <div class="cc-meta">{{ alloc.offering.course.code }} · {{ alloc.offering.level.program.name }} · {{ alloc.offering.semester }}</div>
                 </div>
+                <a href="{% url 'teachers:result_sheet_setup' alloc.offering.pk %}" class="btn btn-sm" style="flex-shrink:0;background:var(--brand);color:#fff;padding:6px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap" onclick="event.stopPropagation()">📊 Result Sheet</a>
               </div>
               <div class="cc-stats">
                 <span class="cc-stat">👥 <strong>{{ alloc.offering.enrolments.count }}</strong> students</span>

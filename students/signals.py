@@ -17,13 +17,25 @@ def auto_enrol_on_approval(sender, instance, **kwargs):
     if instance.status != "approved":
         return
     from academics.models import Enrolment
+    defaults = {
+        "status": Enrolment.EnrolmentStatus.ACTIVE,
+        "is_active": True,
+        "is_retake": instance.is_retake,
+    }
+    if instance.is_retake:
+        original = (
+            Enrolment.objects
+            .filter(student=instance.student, offering__course=instance.offering.course)
+            .exclude(is_retake=True)
+            .order_by("-enrolled_at")
+            .first()
+        )
+        if original:
+            defaults["original_enrolment"] = original
     Enrolment.objects.get_or_create(
         student=instance.student,
         offering=instance.offering,
-        defaults={
-            "status": Enrolment.EnrolmentStatus.ACTIVE,
-            "is_active": True,
-        },
+        defaults=defaults,
     )
 
 

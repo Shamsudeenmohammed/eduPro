@@ -8,10 +8,56 @@
 {% if application %}
 <div class="grid g2" style="display:grid;grid-template-columns:1fr 320px;gap:18px">
   <div style="display:flex;flex-direction:column;gap:16px">
+
+    {% if application.status == 'approved' %}
+    <div class="card" style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1.5px solid #86efac;text-align:center;padding:2rem">
+      <div style="font-size:3rem;margin-bottom:.75rem">🎉</div>
+      <h2 style="font-size:1.3rem;font-weight:800;color:#166534;margin:0 0 .5rem">Congratulations!</h2>
+      <p style="font-size:.95rem;color:#15803d;margin:0 0 .25rem">
+        Your application has been <strong>approved</strong>.
+      </p>
+      <p style="font-size:.85rem;color:#166534;margin:0">
+        Welcome to <strong>{{ application.program_applied.department.institution.name|default:"the Institution" }}</strong>.
+      </p>
+    </div>
+
+    <div class="card" style="border-color:var(--accent2);background:rgba(78,205,196,.08)">
+      <div class="card-title" style="color:var(--accent2)">Your Student Credentials</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Student ID</div>
+          <div style="font-weight:700;font-family:monospace;font-size:1.1rem;color:var(--text);margin-top:3px;word-break:break-all">{{ request.user.academic_profile.student_number }}</div>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Institutional Email</div>
+          <div style="font-weight:500;font-size:.9rem;color:var(--text);margin-top:3px;word-break:break-all">{{ request.user.institutional_email }}</div>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Programme</div>
+          <div style="font-weight:600;font-size:.95rem;color:var(--text);margin-top:3px">{{ application.program_applied.name }}</div>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Level</div>
+          <div style="font-weight:600;font-size:.95rem;color:var(--text);margin-top:3px">{{ request.user.academic_profile.current_level.name|default:"100" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:#fde68a;background:#fffbeb">
+      <div class="card-title" style="color:#92400e">Next Steps</div>
+      <ol style="margin:0;padding-left:1.25rem;font-size:.85rem;color:#78350f;display:flex;flex-direction:column;gap:8px">
+        <li><strong>Download your admission letter</strong> below — it contains your official admission details.</li>
+        <li><strong>Sign out</strong> of this portal.</li>
+        <li><strong>Sign in to the Student Dashboard</strong> at <code>/accounts/login/</code> using your <strong>Student ID</strong> and the default password <strong>0123456789</strong>.</li>
+        <li>You will be prompted to change your password after your first login.</li>
+      </ol>
+    </div>
+    {% endif %}
+
     {% if doc_requests %}
     <div class="card">
       <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-        <span>📄 Document Requests</span>
+        <span>Document Requests</span>
         <span class="pill {% if doc_requests|length > 0 %}pill-yellow{% else %}pill-gray{% endif %}">{{ doc_requests|length }} pending</span>
       </div>
       <div style="overflow-x:auto">
@@ -115,7 +161,8 @@
           {% if application.status == 'rejected' %}
           Your application was not approved.
           {% elif application.status == 'approved' %}
-          Your admission has been granted! You can now access the full student portal.
+          Your admission has been granted! See your credentials above and
+          download your admission letter to get started.
           {% elif application.status == 'reviewing' %}
           Your application is currently being reviewed by the admissions team.
           {% else %}
@@ -178,18 +225,17 @@
     <div class="card">
       <div class="card-title">Quick Actions</div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn btn-secondary" style="justify-content:center">📄 Download Application Letter</a>
+        <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn btn-secondary" style="justify-content:center">Download Application Letter</a>
         {% if application.status == 'approved' %}
-        <a href="{% url 'portal:admission_letter_pdf' application.reference_number %}" class="btn btn-primary" style="justify-content:center">🎓 Download Admission Letter</a>
+        <a href="{% url 'portal:admission_letter_pdf' application.reference_number %}" class="btn btn-primary" style="justify-content:center;font-weight:700">Download Admission Letter</a>
         {% endif %}
-        <a href="{% url 'accounts:profile' %}" class="btn btn-secondary" style="justify-content:center">👤 My Profile</a>
         {% if application.status != 'rejected' and application.status != 'withdrawn' and application.status != 'approved' %}
         <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-danger" style="width:100%;justify-content:center" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
         </form>
         {% endif %}
-        <a href="{% url 'accounts:logout' %}" class="btn btn-secondary" style="justify-content:center">🚪 Sign Out</a>
+        <a href="{% url 'accounts:logout' %}" class="btn btn-secondary" style="justify-content:center">Sign Out</a>
       </div>
     </div>
   </div>

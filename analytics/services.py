@@ -51,7 +51,7 @@ def predict_student_risk(student):
 
     # Results
     results = StudentResult.objects.filter(
-        enrolment__student=student, total_score__isnull=False
+        enrolment__student=student, result_sheet__status="approved", total_score__isnull=False
     )
     avg = results.aggregate(a=Avg("total_score"))["a"]
     if avg is not None:
@@ -92,7 +92,8 @@ def predict_student_risk(student):
 
 def get_grade_distribution():
     return list(
-        StudentResult.objects.exclude(grade="")
+        StudentResult.objects.filter(result_sheet__status="approved")
+        .exclude(grade="")
         .values("grade")
         .annotate(count=Count("id"))
         .order_by("-count")
@@ -131,7 +132,8 @@ def get_smart_recommendations(student):
     ).values_list("offering__course_id", flat=True)
 
     offerings = CourseOffering.objects.filter(
-        level__program=profile.program,
+        departments=profile.program.department,
+        level_name=profile.current_level.name,
         semester=current,
         is_active=True,
     ).exclude(course_id__in=enrolled_ids).select_related("course")[:5]

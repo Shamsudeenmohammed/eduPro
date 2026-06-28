@@ -33,14 +33,18 @@
         <span class="detail-value">{{ offering.semester.session.name }}</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Program</span>
-        <span class="detail-value">
-          <a href="{% url 'academics:program_detail' offering.level.program.pk %}">{{ offering.level.program.name }}</a>
-        </span>
+        <span class="detail-label">Level</span>
+        <span class="detail-value">{{ offering.level_name }}</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Level</span>
-        <span class="detail-value">{{ offering.level.name }}</span>
+        <span class="detail-label">Departments</span>
+        <span class="detail-value">
+          {% for d in offering.departments.all %}
+            <a href="{% url 'academics:department_detail' d.pk %}">{{ d.name }}</a>{% if not forloop.last %}, {% endif %}
+          {% empty %}
+            <span style="color:var(--muted);">None assigned</span>
+          {% endfor %}
+        </span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Status</span>

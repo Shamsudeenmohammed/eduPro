@@ -1,13 +1,16 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from accounts.decorators import admin_required, student_required, teacher_required
 from .forms import FeePaymentForm, FeeStructureForm, PayrollForm, StudentFeeForm
 from .models import FeePayment, FeeStructure, PayrollRecord, StudentFee
+
+User = get_user_model()
 
 
 @login_required
@@ -45,15 +48,50 @@ def fee_structure_list(request):
 @admin_required
 def student_fees(request):
     qs = StudentFee.objects.select_related("student", "fee_structure")
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        qs = qs.filter(
+            Q(student__first_name__icontains=search_query) |
+            Q(student__last_name__icontains=search_query) |
+            Q(student__email__icontains=search_query)
+        )
+
     paginator = Paginator(qs, 25)
     form = StudentFeeForm(request.POST or None)
+
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Fee assigned to student.")
         return redirect("finance:student_fees")
+
+    if request.method == "POST" and "bulk_assign" in request.POST:
+        fee_structure_id = request.POST.get("bulk_fee_structure")
+        amount_due = request.POST.get("bulk_amount_due")
+        due_date = request.POST.get("bulk_due_date") or None
+        if fee_structure_id and amount_due:
+            fee_structure = FeeStructure.objects.get(pk=fee_structure_id)
+            students = User.objects.filter(role="student", is_active=True)
+            created = 0
+            for student in students:
+                _, was_created = StudentFee.objects.get_or_create(
+                    student=student,
+                    fee_structure=fee_structure,
+                    defaults={
+                        "amount_due": amount_due,
+                        "due_date": due_date if due_date else fee_structure.due_date,
+                    },
+                )
+                if was_created:
+                    created += 1
+            messages.success(request, f"Fee assigned to {created} student(s).")
+            return redirect("finance:student_fees")
+
     return render(request, "finance/student_fees.html", {
         "page_obj": paginator.get_page(request.GET.get("page")),
         "form": form, "page_title": "Student Fees",
+        "search_query": search_query,
+        "fee_structures": FeeStructure.objects.filter(is_active=True),
     })
 
 
@@ -92,6 +130,15 @@ def my_fees(request):
 @admin_required
 def payroll_list(request):
     qs = PayrollRecord.objects.select_related("employee").order_by("-period_year", "-period_month")
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        qs = qs.filter(
+            Q(employee__first_name__icontains=search_query) |
+            Q(employee__last_name__icontains=search_query) |
+            Q(employee__email__icontains=search_query)
+        )
+
     form = PayrollForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         rec = form.save(commit=False)
@@ -103,6 +150,7 @@ def payroll_list(request):
     return render(request, "finance/payroll.html", {
         "page_obj": paginator.get_page(request.GET.get("page")),
         "form": form, "page_title": "Payroll",
+        "search_query": search_query,
     })
 
 

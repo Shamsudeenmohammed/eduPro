@@ -422,18 +422,32 @@ class AdmissionApplication(models.Model):
         # ── 2. Create / update StudentProfile ────────────────────────────────
         profile, created = StudentProfile.all_objects.get_or_create(student=new_user)
         if created:
-            from django.utils.crypto import get_random_string
-            profile.student_number = (
-                f"{self.program_applied.code if self.program_applied else 'STU'}/"
-                f"{timezone.now().year}/"
-                f"{get_random_string(6).upper()}"
-            )
+            from academics.models import StudentProfile as SP
+            program_code = self.program_applied.code if self.program_applied else 'STU'
+            year = timezone.now().year
+            prefix = f"{program_code}/{year}/"
+            last = SP.objects.filter(student_number__startswith=prefix).order_by('student_number').last()
+            if last:
+                try:
+                    last_num = int(last.student_number.rsplit('/', 1)[-1])
+                    new_num = last_num + 1
+                except (ValueError, IndexError):
+                    new_num = 1
+            else:
+                new_num = 1
+            profile.student_number = f"{prefix}{new_num:04d}"
         if self.program_applied:
             profile.program        = self.program_applied
             profile.admission_date = timezone.now().date()
-        profile.save(update_fields=["student_number", "program", "admission_date"] if created else ["program", "admission_date"])
+            if not profile.current_level:
+                profile.current_level = self.program_applied.get_starting_level()
+        profile.save(update_fields=["student_number", "program", "admission_date", "current_level"] if created else ["program", "admission_date", "current_level"])
 
-        # ── 3. Update application record ──────────────────────────────────────
+        # ── 3. Reset password to default ──────────────────────────────────────
+        new_user.set_default_password()
+        new_user.save(update_fields=["password"])
+
+        # ── 4. Update application record ──────────────────────────────────────
         self.status      = AdmissionStatus.APPROVED
         self.user        = new_user
         self.approved_by = actor

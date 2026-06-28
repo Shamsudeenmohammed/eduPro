@@ -15,12 +15,15 @@ Key changes from v1:
   provision_student_from_application() creates/links the EduProUser.
 """
 
+import csv
+
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.paginator import Paginator
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods,require_POST
@@ -32,12 +35,13 @@ from .decorators import (
     teacher_required,
 )
 from .forms import (
+    BulkStudentUploadForm,
     LoginForm,
     PendingRegistrationForm,
     ProfileForm,
     UserInfoForm,
 )
-from .models import EduProUser, StaffResponsibility, UserProfile, UserStaffRole
+from .models import EduProUser, Role, StaffResponsibility, UserProfile, UserStaffRole
 from students.models import CourseRegistrationRequest
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -173,11 +177,13 @@ def student_dashboard(request):
 
 @login_required
 def student_pending(request):
-    """Restricted landing for students whose admission hasn't been approved yet."""
+    """
+    Landing for all applicants (approved or not) after portal login.
+    Approved students see their admission letter here instead of being
+    sent straight to the student dashboard.
+    """
     if not (request.user.is_student or request.user.is_superuser):
         raise PermissionDenied
-    if request.user.is_approved_student:
-        return redirect("accounts:student_dashboard")
 
     from portal.models import AdmissionApplication
     application = AdmissionApplication.objects.filter(
@@ -289,6 +295,12 @@ def admin_dashboard(request):
         .count()
     )
 
+    # Hostel applications
+    from operations.models import HostelApplication
+    pending_hostel_count = HostelApplication.objects.filter(
+        status=HostelApplication.Status.PENDING
+    ).count()
+
     context = {
         "page_title":             "Admin Dashboard",
         "current_session":        current_session,
@@ -301,6 +313,7 @@ def admin_dashboard(request):
         "recent_registrations":   recent_registrations,
         "pending_request_count":  pending_reg_count,
         "pending_registrations":  pending_reg_count,
+        "pending_hostel_count":   pending_hostel_count,
     }
 
     # Optional analytics if available
@@ -481,6 +494,141 @@ def change_password_view(request):
 
 @login_required
 @admin_required
+@require_http_methods(["GET", "POST"])
+def bulk_student_upload_view(request):
+    from academics.models import Program, StudentProfile
+
+    form = BulkStudentUploadForm(request.POST or None, request.FILES or None)
+    results = None
+
+    if request.method == "POST" and form.is_valid():
+        rows = form.rows
+        fieldnames = form.fieldnames
+        has_program = "program_code" in fieldnames
+        has_email = "email" in fieldnames
+
+        created = []
+        skipped = []
+        errors = []
+        auto_enrolled = []
+
+        for i, row in enumerate(rows, start=2):
+            first_name = row.get("first_name", "").strip()
+            last_name  = row.get("last_name", "").strip()
+            email      = row.get("email", "").strip().lower() if has_email else ""
+            program_code = row.get("program_code", "").strip() if has_program else ""
+
+            if not first_name or not last_name:
+                errors.append(f"Row {i}: first_name and last_name are required.")
+                continue
+
+            try:
+                if not email:
+                    email = f"{first_name.lower()}.{last_name.lower()}.{i}@placeholder.edu"
+
+                if EduProUser.objects.filter(email=email).exists():
+                    skipped.append(f"Row {i}: {email} already exists.")
+                    continue
+
+                user = EduProUser(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=Role.STUDENT,
+                    is_active=True,
+                    approved_by=request.user,
+                    approved_at=timezone.now(),
+                )
+                user.set_default_password()
+                user.save()
+
+                program = None
+                if program_code:
+                    program = Program.objects.filter(code=program_code).first()
+
+                prefix = f"{program_code if program_code else 'STU'}/{timezone.now().year}/"
+                last_sp = StudentProfile.objects.filter(student_number__startswith=prefix).order_by('student_number').last()
+                if last_sp:
+                    try:
+                        last_num = int(last_sp.student_number.rsplit('/', 1)[-1])
+                        new_num = last_num + 1
+                    except (ValueError, IndexError):
+                        new_num = 1
+                else:
+                    new_num = 1
+
+                from academics.models import Level
+                profile = StudentProfile.objects.create(
+                    student=user,
+                    program=program,
+                    student_number=f"{prefix}{new_num:04d}",
+                    admission_date=timezone.now().date(),
+                )
+                if program:
+                    first_level = program.get_starting_level()
+                    if first_level:
+                        profile.current_level = first_level
+                        profile.save(update_fields=["current_level"])
+
+                # ── Auto-enrol into matching course offerings ────────────────
+                if profile.current_level and program:
+                    from academics.models import CourseOffering, Enrolment, Semester
+                    current_sem = Semester.get_current()
+                    if current_sem:
+                        offerings = CourseOffering.objects.filter(
+                            is_active=True,
+                            level_name=profile.current_level.name,
+                            departments=program.department,
+                            semester=current_sem,
+                        )
+                        enrolled = []
+                        for off in offerings:
+                            _, created_enr = Enrolment.objects.get_or_create(
+                                student=user,
+                                offering=off,
+                                defaults={
+                                    "status": Enrolment.EnrolmentStatus.ACTIVE,
+                                    "is_active": True,
+                                },
+                            )
+                            if created_enr:
+                                enrolled.append(off.course.code)
+                        if enrolled:
+                            auto_enrolled.append(
+                                f"{first_name} {last_name} → {', '.join(enrolled)}"
+                            )
+
+                created.append(f"Row {i}: {first_name} {last_name} — {email}")
+
+            except Exception as e:
+                errors.append(f"Row {i}: {first_name} {last_name} — {str(e)}")
+
+        results = {
+            "created": created,
+            "skipped": skipped,
+            "errors": errors,
+            "total": len(created) + len(skipped) + len(errors),
+            "auto_enrolled": auto_enrolled,
+        }
+
+        if created:
+            messages.success(request, f"{len(created)} student(s) created successfully.")
+        if auto_enrolled:
+            messages.info(request, f"{len(auto_enrolled)} student(s) auto-enrolled into courses.")
+        if errors:
+            messages.warning(request, f"{len(errors)} row(s) had errors.")
+
+    programs = Program.objects.filter(is_active=True).values_list("code", "name", "department__code")
+    return render(request, "accounts/student_bulk_upload.html", {
+        "page_title": "Bulk Student Upload",
+        "form": form,
+        "results": results,
+        "programs": programs,
+    })
+
+
+@login_required
+@admin_required
 def user_list_view(request):
     qs = EduProUser.objects.select_related("profile").order_by("last_name")
     paginator = Paginator(qs, 25)
@@ -514,6 +662,14 @@ def user_detail_view(request, pk):
     profile_form = ProfileForm(request.POST or None, request.FILES or None, instance=profile)
 
     if request.method == "POST":
+        if "reset_password" in request.POST:
+            target_user.set_default_password()
+            target_user.save(update_fields=["password"])
+            messages.success(
+                request,
+                f"Password for {target_user.get_full_name()} has been reset to default (0-9)."
+            )
+            return redirect("accounts:user_detail", pk=pk)
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
@@ -521,12 +677,19 @@ def user_detail_view(request, pk):
             return redirect("accounts:user_detail", pk=pk)
         messages.error(request, "Please correct errors below.")
 
+    from academics.models import StudentProfile as SP
+    try:
+        student_profile = target_user.academic_profile
+    except SP.DoesNotExist:
+        student_profile = None
+
     return render(request, "accounts/profile.html", {
-        "page_title":   "Edit User",
-        "target_user":  target_user,
-        "user_form":    user_form,
-        "profile_form": profile_form,
-        "profile":      profile,
+        "page_title":      "Edit User",
+        "target_user":     target_user,
+        "user_form":       user_form,
+        "profile_form":    profile_form,
+        "profile":         profile,
+        "student_profile": student_profile,
     })
 
 
@@ -574,3 +737,29 @@ def reject_registration(request, pk):
     reg.save()
     messages.warning(request, f"Rejected: {reg.student.get_full_name()} → {reg.offering.course.code}")
     return redirect("accounts:admin_registrations")
+
+
+@login_required
+@admin_required
+def download_sample_csv(request):
+    from academics.models import Program
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="student_upload_sample.csv"'
+
+    writer = csv.writer(response)
+
+    programs = Program.objects.filter(is_active=True).select_related("department")
+    if programs:
+        writer.writerow([f"# Available programs: code (name) — dept"])
+        for p in programs:
+            writer.writerow([f"#   {p.code} ({p.name}) — {p.department.code}"])
+        writer.writerow([])
+
+    writer.writerow(["first_name", "last_name", "email", "program_code"])
+    writer.writerow(["John", "Doe", "john.doe@example.com", programs[0].code if programs else "BSC-CS"])
+    if len(programs) > 1:
+        writer.writerow(["Jane", "Smith", "jane.smith@example.com", programs[1].code])
+    writer.writerow(["Alice", "Johnson", "", ""])
+
+    return response

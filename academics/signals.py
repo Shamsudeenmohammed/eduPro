@@ -1,15 +1,24 @@
-"""
-academics/signals.py
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
-Post-save signal: formerly auto-created a StudentProfile when a new
-EduProUser with role='student' was created.  This is now **removed**
-because:
 
-1. It caused UNIQUE constraint failures on student_number (blank + unique).
-2. It made is_approved_student return True before admission was approved.
-3. StudentProfile is now created explicitly in AdmissionApplication.approve()
-   and in academics/views.py profile editing, where a proper student_number
-   can be assigned.
+@receiver(post_save, sender="academics.Program")
+def auto_create_program_levels(sender, instance, created, **kwargs):
+    """Auto-create levels 100, 200, 300, 400 when a new Program is created."""
+    if not created:
+        return
+    from .models import Level
 
-The ready() import in apps.py is kept for future signals.
-"""
+    defaults = {"is_active": True}
+    levels = [
+        {"name": "100", "order": 1},
+        {"name": "200", "order": 2},
+        {"name": "300", "order": 3},
+        {"name": "400", "order": 4},
+    ]
+    for lv in levels:
+        Level.objects.get_or_create(
+            program=instance,
+            order=lv["order"],
+            defaults={"name": lv["name"], **defaults},
+        )

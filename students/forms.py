@@ -1,10 +1,27 @@
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 
 from academics.models import CourseOffering
 from teachers.models import AssignmentSubmission, QuizAnswer, QuizAttempt
 
+from accounts.models import EduProUser
 from .models import CourseRegistrationRequest
+
+
+class StudentProfileEditForm(forms.ModelForm):
+    class Meta:
+        model  = EduProUser
+        fields = ["email"]
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower().strip()
+        qs = EduProUser.objects.filter(email=email).exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError(
+                _("Another account is already using this email address.")
+            )
+        return email
 
 
 class StyledMixin:
@@ -38,8 +55,8 @@ class CourseRegistrationForm(StyledMixin, forms.ModelForm):
 
     def __init__(self, student, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Only show active offerings the student is not already enrolled in
         from academics.models import Enrolment
+
         enrolled_pks = Enrolment.objects.filter(
             student=student, is_active=True
         ).values_list("offering_id", flat=True)
@@ -47,10 +64,41 @@ class CourseRegistrationForm(StyledMixin, forms.ModelForm):
             student=student, status__in=["pending", "approved"]
         ).values_list("offering_id", flat=True)
         excluded = set(enrolled_pks) | set(pending_pks)
+
+        qs = CourseOffering.objects.filter(is_active=True).exclude(pk__in=excluded)
+
+        try:
+            profile = student.academic_profile
+            if profile.program and profile.current_level:
+                qs = qs.filter(
+                    departments=profile.program.department,
+                    level_name=profile.current_level.name,
+                )
+        except ObjectDoesNotExist:
+            pass
+
+        # ── Retake: include offerings for courses the student has failed ──────
+        from teachers.models import StudentResult
+        failed_course_ids = (
+            StudentResult.objects
+            .filter(
+                enrolment__student=student,
+                grade="F",
+                enrolment__is_active=True,
+            )
+            .values_list("enrolment__offering__course_id", flat=True)
+            .distinct()
+        )
+        if failed_course_ids:
+            retake_offerings = CourseOffering.objects.filter(
+                is_active=True,
+                course_id__in=failed_course_ids,
+                level_name__in=["100", "200", "300", "400"],
+            ).exclude(pk__in=enrolled_pks | set(pending_pks))
+            qs = qs | retake_offerings
+
         self.fields["offering"].queryset = (
-            CourseOffering.objects.filter(is_active=True)
-            .exclude(pk__in=excluded)
-            .select_related("course", "semester__session", "level__program")
+            qs.select_related("course", "semester__session", "level__program")
             .order_by("-semester__session__start_date", "course__code")
         )
         self.fields["offering"].label = "Course Offering"

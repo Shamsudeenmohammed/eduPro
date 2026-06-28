@@ -55,7 +55,7 @@
       <div class="card-header"><div class="card-title">Document Requests</div></div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>Document</th><th>Status</th><th>Requested</th><th></th></tr></thead>
+          <thead><tr><th>Document </th><th>Status </th><th>Requested </th><th> Upload</th></tr></thead>
           <tbody>
             {% for dr in doc_requests %}
             <tr>
@@ -63,6 +63,15 @@
               <td>{% if dr.status == 'fulfilled' %}<span class="s-pill pill-green">Fulfilled</span>{% else %}<span class="s-pill pill-amber">Pending</span>{% endif %}</td>
               <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ dr.requested_at|date:"M j, Y" }}</td>
               <td style="text-align:right">{% if dr.status != 'fulfilled' %}<form method="post" action="{% url 'portal:document_request_fulfill' dr.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Mark Fulfilled</button></form>{% endif %}</td>
+              {% if dr.status == 'fulfilled' and dr.uploaded_file %}
+              <td style="text-align:right"><a href="{{ dr.uploaded_file.url }}" target="_blank" class="btn btn-sm btn-secondary">View</a></td>
+              {% endif %}
+              {% if dr.status == 'fulfilled' and not dr.uploaded_file %}
+              <td style="text-align:right;color:var(--rose);font-size:11px">No file uploaded</td>
+              {% endif %}
+              {% if dr.status != 'fulfilled' %}
+              <td style="text-align:right;color:var(--tx3);font-size:11px">Awaiting fulfillment</td>
+              {% endif %}
             </tr>
             {% endfor %}
           </tbody>

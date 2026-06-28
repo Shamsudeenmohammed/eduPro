@@ -38,6 +38,9 @@ urlpatterns = [
     path("admin/contacts/",     views.admin_contacts,   name="admin_contacts"),
     path("admin/admissions/",   views.admin_admissions, name="admin_admissions"),
 
+    # ── New: portal login (email-only, applicant-facing) ─────────────────────
+    path("login/",                             views.portal_login,           name="portal_login"),
+
     # ── New: controlled admission workflow ───────────────────────────────────
     path("apply/",                             views.application_form,       name="apply"),
     path("apply/confirmed/<str:ref>/",         views.application_confirmed,  name="application_confirmed"),

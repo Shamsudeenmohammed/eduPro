@@ -1,19 +1,259 @@
-{% extends base_template %}{% block title %}Hostel & Accommodation{% endblock %}
+{% extends base_template %}
+{% block extra_head %}
+<style>
+  .hc-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    overflow: hidden; margin-bottom: 1.25rem;
+  }
+  .hc-card .hc-head {
+    background: #f8fafc; padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .hc-card .hc-head h3 { margin: 0; color:black; font-size: 1.05rem; font-weight: 700; }
+  .hc-card .hc-body { padding: 1rem 1.25rem; }
+  .hc-meta { font-size: .82rem; color: #6b7280; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+
+  .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; margin-top: .75rem; }
+  .room-chip {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .65rem 1rem; border-radius: 10px; border: 1px solid #e5e7eb;
+    background: #fafafa; font-size: .85rem;
+  }
+  .room-chip.available { border-color: #bbf7d0; background: #f0fdf4; }
+  .room-chip.full { border-color: #fecaca; background: #fef2f2; }
+  .room-chip .rn { font-weight: 600; }
+  .room-chip .rb { font-size: .78rem; color: #6b7280; }
+  .room-chip .badge-available { font-size: .68rem; font-weight: 700; padding: .15rem .55rem; border-radius: 99px; background: #dcfce7; color: #15803d; }
+  .room-chip .badge-full { font-size: .68rem; font-weight: 700; padding: .15rem .55rem; border-radius: 99px; background: #fee2e2; color: #dc2626; }
+
+  .status-card {
+    border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .status-card.approved { background: linear-gradient(135deg, #065f46 0%, #059669 100%); color: #fff; }
+  .status-card.pending  { background: linear-gradient(135deg, #92400e 0%, #d97706 100%); color: #fff; }
+  .status-card.rejected { background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); color: #fff; }
+  .status-card.confirmed { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: #fff; }
+  .status-card .sc-left { display: flex; align-items: center; gap: 1rem; }
+  .status-card .sc-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+  .status-card .sc-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; opacity: .75; }
+  .status-card .sc-value { font-size: 1.05rem; font-weight: 700; margin-top: .15rem; }
+  .status-card .sc-meta { font-size: .8rem; opacity: .7; margin-top: .2rem; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db; margin-bottom: 1rem; }
+
+  .apply-section { margin-bottom: 1.5rem; }
+  .apply-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.25rem 1.5rem; }
+  .apply-card h4 { margin: 0 0 1rem; font-size: 1rem; font-weight: 700; }
+
+  .progress-bar-wrap { height: 6px; border-radius: 3px; background: #e5e7eb; overflow: hidden; width: 100%; max-width: 180px; }
+  .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #4f46e5, #7c3aed); }
+
+  @media (max-width: 640px) {
+    .room-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-{% if my_allocation %}
-<div class="card" style="margin-bottom:1rem">
-  <div class="card-body">Your room: <strong>{{ my_allocation.room }}</strong> — <span class="badge badge-success">Allocated</span></div>
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.4rem; font-weight: 800; margin: 0;">🏠 Hostel & Accommodation</h1>
+  <p style="margin: .25rem 0 0; color: #6b7280; font-size: .88rem;">
+    Browse available hostels and apply for room allocation.
+  </p>
 </div>
-{% endif %}
-<div class="card">
-  <div class="card-header"><h3>🏠 Hostels</h3></div>
-  <div class="card-body">
-    {% for h in hostels %}
-      <div style="padding:.75rem 0;{% if not forloop.last %}border-bottom:1px solid var(--border, #eee){% endif %}">
-        <h4 style="margin:0">{{ h.name }}</h4>
-        <p style="margin:.25rem 0 0;color:var(--text-muted, #666)">{{ h.location }} — Capacity: {{ h.capacity }}</p>
+
+{% if my_allocation %}
+<div class="status-card confirmed">
+  <div class="sc-left">
+    <div class="sc-icon">🏠</div>
+    <div>
+      <div class="sc-title">Your Current Allocation</div>
+      <div class="sc-value">{{ my_allocation.room.hostel.name }} — Room {{ my_allocation.room.room_number }}</div>
+      <div class="sc-meta">
+        {% if my_allocation.days_left > 0 %}
+          Expires {{ my_allocation.expires_at|date:"M d, Y" }} · {{ my_allocation.days_left }} day{{ my_allocation.days_left|pluralize }} remaining
+        {% else %}
+          Expired {{ my_allocation.expires_at|date:"M d, Y" }}
+        {% endif %}
       </div>
-    {% empty %}<p class="text-muted">No hostels available.</p>{% endfor %}
+    </div>
+  </div>
+  <div style="display: flex; gap: .5rem; flex-wrap: wrap;">
+    {% if can_renew %}
+    <form method="post" action="{% url 'operations:hostel_renew_allocation' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-light btn-sm" style="font-weight:700;" onclick="return confirm('Renew your allocation for another year?')">Renew</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'operations:hostel_vacate' %}" onsubmit="return confirm('Are you sure you want to vacate {{ my_allocation.room }}?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm">Vacate Room</button>
+    </form>
   </div>
 </div>
+
+{% elif my_application %}
+  {% if my_application.status == "pending" %}
+  <div class="status-card pending">
+    <div class="sc-left">
+      <div class="sc-icon">⏳</div>
+      <div>
+        <div class="sc-title">Application Pending</div>
+        <div class="sc-value">{{ my_application.room.hostel.name }} — Room {{ my_application.room.room_number }}</div>
+        <div class="sc-meta">Submitted {{ my_application.created_at|date:"M d, Y" }} · Awaiting admin review</div>
+      </div>
+    </div>
+  </div>
+  {% elif my_application.status == "approved" %}
+  <div class="status-card approved">
+    <div class="sc-left">
+      <div class="sc-icon">✅</div>
+      <div>
+        <div class="sc-title">Application Approved</div>
+        <div class="sc-value">{{ my_application.room.hostel.name }} — Room {{ my_application.room.room_number }}</div>
+        <div class="sc-meta">Approved {{ my_application.reviewed_at|date:"M d, Y" }} · Complete payment to confirm your room</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'operations:hostel_confirm_payment' my_application.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-light btn-sm" style="font-weight:700;">Pay & Confirm</button>
+    </form>
+  </div>
+  {% elif my_application.status == "rejected" %}
+  <div class="status-card rejected">
+    <div class="sc-left">
+      <div class="sc-icon">❌</div>
+      <div>
+        <div class="sc-title">Application Rejected</div>
+        <div class="sc-value">{{ my_application.room.hostel.name }} — Room {{ my_application.room.room_number }}</div>
+        {% if my_application.admin_remark %}
+        <div class="sc-meta">Reason: {{ my_application.admin_remark }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+{% elif form %}
+<div class="apply-section">
+  <div class="apply-card">
+    <h4>📋 Apply for Hostel Accommodation</h4>
+    <p style="font-size: .85rem; color: #6b7280; margin-bottom: 1rem;">
+      Submit an application for admin review. Once approved, you can complete payment to confirm your room.
+    </p>
+    <form method="post" action="{% url 'operations:hostel_apply' %}" id="hostelApplyForm">
+      {% csrf_token %}
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 180px;">
+          <label style="display: block; font-size: .82rem; font-weight: 600; margin-bottom: .35rem; color: #374151;">Select Hostel</label>
+          <select name="hostel" id="id_hostel" class="form-control" required>
+            <option value="">— Select Hostel —</option>
+            {% for hd in hostel_data %}
+            <option value="{{ hd.hostel.pk }}" {% if hd.available_beds <= 0 %}disabled{% endif %}>
+              {{ hd.hostel.name }}{% if hd.available_beds > 0 %} ({{ hd.available_beds }} bed{{ hd.available_beds|pluralize }} available){% else %} (Full){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label style="display: block; font-size: .82rem; font-weight: 600; margin-bottom: .35rem; color: #374151;">Select Room</label>
+          <select name="room" id="id_room" class="form-control" required>
+            <option value="">— Select Hostel First —</option>
+          </select>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">Submit Application</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if hostel_data %}
+  {% for hd in hostel_data %}
+  <div class="hc-card">
+    <div class="hc-head">
+      <div>
+        <h3>{{ hd.hostel.name }}</h3>
+        <div class="hc-meta">
+          <span>📍 {{ hd.hostel.location|default:"No location set" }}</span>
+          <span>🛏️ {{ hd.occupied_beds }} / {{ hd.total_beds }} beds filled</span>
+          {% if hd.pending_approvals %}
+          <span>⏳ {{ hd.pending_approvals }} pending approval</span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="text-align: right; flex-shrink: 0;">
+        <div style="font-size: 1.25rem; font-weight: 800; color: {% if hd.available_beds > 0 %}#15803d{% else %}#dc2626{% endif %};">
+          {{ hd.available_beds }}
+        </div>
+        <div style="font-size: .72rem; color: #6b7280;">available</div>
+        <div class="progress-bar-wrap" style="margin-top: .35rem; margin-left: auto;">
+          <div class="progress-bar-fill" style="width: {% widthratio hd.occupied_beds hd.total_beds 100 %}%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hc-body">
+      {% if hd.rooms %}
+      <div class="room-grid">
+        {% for room in hd.rooms %}
+        <div class="room-chip available">
+          <div>
+            <div class="rn">Room {{ room.room_number }}</div>
+            <div class="rb">{{ room.capacity }} bed{{ room.capacity|pluralize }}</div>
+          </div>
+          <span class="badge-available">Available</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="text-align: center; padding: 1.5rem 0; color: #9ca3af; font-size: .85rem;">
+        No rooms currently available in this hostel.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="empty-state">
+  <div style="font-size: 3rem; margin-bottom: .75rem;">🏠</div>
+  <h5 style="font-weight: 700;">No Hostels Available</h5>
+  <p style="color: #6b7280; font-size: .88rem;">There are no active hostels at the moment. Please check back later.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if form %}
+<script>
+document.getElementById('id_hostel').addEventListener('change', function() {
+  var hostelId = this.value;
+  var roomSelect = document.getElementById('id_room');
+  roomSelect.innerHTML = '<option value="">Loading…</option>';
+
+  if (!hostelId) {
+    roomSelect.innerHTML = '<option value="">— Select Hostel First —</option>';
+    return;
+  }
+
+  fetch('/operations/api/hostel-rooms/?hostel=' + hostelId)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      roomSelect.innerHTML = '<option value="">— Select Room —</option>';
+      data.rooms.forEach(function(room) {
+        var opt = document.createElement('option');
+        opt.value = room.id;
+        opt.textContent = 'Room ' + room.room_number + ' (' + room.capacity + ' bed' + (room.capacity > 1 ? 's' : '') + ')';
+        roomSelect.appendChild(opt);
+      });
+    })
+    .catch(function() {
+      roomSelect.innerHTML = '<option value="">— Error loading rooms —</option>';
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -523,7 +523,8 @@ def course_edit(request, pk):
 def offering_list(request):
     qs = (
         CourseOffering.all_objects
-        .select_related("course__department", "semester__session", "level__program")
+        .select_related("course__department", "semester__session")
+        .prefetch_related("departments")
         .order_by("-semester__session__start_date", "course__code")
     )
     paginator = Paginator(qs, 30)
@@ -536,8 +537,9 @@ def offering_list(request):
 def offering_detail(request, pk):
     offering = get_object_or_404(
         CourseOffering.all_objects
-        .select_related("course__department", "semester__session", "level__program")
+        .select_related("course__department", "semester__session")
         .prefetch_related(
+            "departments",
             "allocations__teacher",
             "enrolments__student",
         ),
@@ -572,9 +574,6 @@ def offering_edit(request, pk):
     })
 
 
-@login_required
-@admin_required
-@require_http_methods(["GET", "POST"])
 def offering_create(request):
     form = CourseOfferingForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -584,7 +583,8 @@ def offering_create(request):
         except IntegrityError:
             messages.error(request, "This offering already exists.")
     return render(request, "academics/generic_form.html", {
-        "page_title": "Add Course Offering", "form": form, "cancel_url": "academics:offering_list",
+        "page_title": "Add Course Offering", "form": form,
+        "cancel_url": "academics:offering_list",
     })
 
 

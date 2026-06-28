@@ -59,6 +59,7 @@
     <tr><td>Program of Study</td><td><strong>{{ application.program_applied.name|default:"—" }}</strong></td></tr>
     <tr><td>Academic Year</td><td><strong>{{ application.cycle.academic_year|default:"—" }}</strong></td></tr>
     <tr><td>Application Type</td><td>{{ application.get_application_type_display|default:"—" }}</td></tr>
+    <tr><td>Student ID</td><td><strong>{{ student_id|default:"—" }}</strong></td></tr>
     <tr><td>Approved On</td><td>{{ application.approved_at|date:"F j, Y" }}</td></tr>
     <tr><td>Approved By</td><td>{{ application.approved_by.get_full_name|default:"Admissions Office" }}</td></tr>
   </table>
@@ -71,7 +72,9 @@
 <div class="next-steps">
   <p><strong>Next Steps:</strong></p>
   <ol>
-    <li>Log in to the Student Portal using your email and the password you created during application.</li>
+    <li>Log in to the Student Portal using your <strong>Student ID: {{ student_id|default:"—" }}</strong> with your default password: <strong>{{ default_password }}</strong>.</li>
+    <li>Your institutional email is: <strong>{{ institutional_email|default:"—" }}</strong>.</li>
+    <li>After first login, change your password immediately for security.</li>
     <li>Update your personal profile and contact information.</li>
     <li>Proceed with course registration for the current semester.</li>
     <li>Review the fee schedule and complete payment before the deadline.</li>

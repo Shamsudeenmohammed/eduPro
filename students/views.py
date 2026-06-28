@@ -199,7 +199,10 @@ def course_home(request, offering_pk):
         offering=offering, is_published=True, is_active=True
     ).order_by("start_datetime")
 
-    result = StudentResult.objects.filter(enrolment=enrolment).first()
+    result = StudentResult.objects.filter(
+        enrolment=enrolment,
+        result_sheet__status="approved",
+    ).first()
 
     context = {
         "page_title":  f"{offering.course.code} — Course",
@@ -221,17 +224,43 @@ def course_home(request, offering_pk):
 @approved_student_required
 def course_registration(request):
     """Student self-service course registration request."""
+    from finance.models import has_minimum_fee, has_outstanding_overdue
+
+    fee_ok = has_minimum_fee(request.user)
+
     if request.method == "POST":
+        if not fee_ok:
+            has_overdue = has_outstanding_overdue(request.user)
+            messages.warning(
+                request,
+                "You need to have paid at least 60% of your fees and clear any "
+                "outstanding overdue balances before you can register for courses. "
+                "Please visit the finance office or check your fee statement."
+                if not has_overdue
+                else "You have outstanding overdue fees. Please clear them "
+                     "before registering for courses.",
+            )
+            return redirect("students:course_registration")
+
         form = CourseRegistrationForm(request.user, request.POST)
         if form.is_valid():
             reg = form.save(commit=False)
             reg.student = request.user
+            from teachers.models import StudentResult
+            has_failed = StudentResult.objects.filter(
+                enrolment__student=request.user,
+                enrolment__offering__course=reg.offering.course,
+                result_sheet__status="approved",
+                grade="F",
+            ).exists()
+            if has_failed:
+                reg.is_retake = True
             try:
                 reg.save()
                 messages.success(
                     request,
                     f"Registration request submitted for {reg.offering.course.code}. "
-                    f"Awaiting approval.",
+                    f"{'Retake' if has_failed else ''} Awaiting approval.",
                 )
                 return redirect("students:registration_list")
             except IntegrityError:
@@ -242,6 +271,7 @@ def course_registration(request):
     return render(request, "students/course_registration.html", {
         "page_title": "Register for a Course",
         "form":       form,
+        "fee_ok":     fee_ok,
     })
 
 
@@ -560,6 +590,8 @@ def quiz_result(request, attempt_pk):
 @approved_student_required
 def results_list(request):
     """All approved results across all of the student's enrolments."""
+    from finance.models import can_view_semester_results
+
     results = (
         StudentResult.objects
         .filter(
@@ -574,15 +606,31 @@ def results_list(request):
         .order_by("-result_sheet__offering__semester__session__start_date")
     )
 
+    visible_results = []
+    has_withheld = False
+    for r in results:
+        sem_name = r.result_sheet.offering.semester.name
+        if can_view_semester_results(request.user, sem_name):
+            visible_results.append(r)
+        else:
+            has_withheld = True
+
+    if has_withheld:
+        messages.warning(
+            request,
+            "Some second semester results are withheld until you clear your "
+            "outstanding fee balance."
+        )
+
     # GPA per semester grouping
     sessions = {}
-    for r in results:
+    for r in visible_results:
         session_name = r.result_sheet.offering.semester.session.name
         sessions.setdefault(session_name, []).append(r)
 
     return render(request, "students/results_list.html", {
         "page_title": "My Results",
-        "results":    results,
+        "results":    visible_results,
         "sessions":   sessions,
     })
 
@@ -591,8 +639,16 @@ def results_list(request):
 @approved_student_required
 def result_detail(request, offering_pk):
     """Single course result detail view."""
+    from finance.models import can_view_semester_results
 
     offering = get_object_or_404(CourseOffering, pk=offering_pk)
+    if not can_view_semester_results(request.user, offering.semester.name):
+        messages.warning(
+            request,
+            "This result is withheld. Please clear your outstanding fee balance "
+            "to view second semester results."
+        )
+        return redirect("students:dashboard")
 
     enrolment = get_object_or_404(
         Enrolment,
@@ -778,10 +834,18 @@ def student_profile(request):
         student=request.user, is_active=True
     ).select_related("offering__course", "offering__semester__session")
 
-    return render(request, "accounts/profile.html", {
+    from .forms import StudentProfileEditForm
+    form = StudentProfileEditForm(request.POST or None, instance=request.user)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Profile updated successfully.")
+        return redirect("students:profile")
+
+    return render(request, "students/profile_edit.html", {
         "page_title": "Academic Profile",
         "profile":    profile,
         "enrolments": enrolments,
+        "form":       form,
     })
 
 

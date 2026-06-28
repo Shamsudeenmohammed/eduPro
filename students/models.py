@@ -96,6 +96,7 @@ class CourseRegistrationRequest(TimeStampedModel):
         choices=RegistrationStatus.choices,
         default=RegistrationStatus.PENDING,
     )
+    is_retake = models.BooleanField(_("retake"), default=False)
     reason    = models.TextField(
         blank=True,
         help_text=_("Optional reason / note from student."),

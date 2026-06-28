@@ -1,0 +1,175 @@
+{% extends "academics/base.html" %}
+{% block extra_head %}
+<style>
+  .upload-wrap {
+    max-width: 900px; margin: 0 auto;
+  }
+  .upload-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 2rem; margin-bottom: 1.5rem;
+  }
+  .upload-card h2 {
+    font-size: 1.15rem; font-weight: 700; margin: 0 0 .25rem;
+  }
+  .upload-card p {
+    color: #6b7280; font-size: .88rem; margin: 0 0 1.25rem;
+  }
+  .upload-card label {
+    display: block; font-size: .84rem; font-weight: 600;
+    color: #374151; margin-bottom: .45rem;
+  }
+  .upload-card .help-text {
+    font-size: .8rem; color: #6b7280; margin-top: .4rem;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .6rem 1.25rem; border-radius: 8px; font-size: .88rem;
+    font-weight: 600; border: none; cursor: pointer;
+    transition: all .15s; text-decoration: none;
+  }
+  .btn-primary {
+    background: #4f46e5; color: #fff;
+  }
+  .btn-primary:hover { background: #3730a3; }
+  .btn-outline {
+    background: transparent; color: #374151; border: 1.5px solid #e5e7eb;
+  }
+  .btn-outline:hover { border-color: #4f46e5; color: #4f46e5; }
+
+  .result-section { margin-top: 1.5rem; }
+  .result-card {
+    border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: .75rem;
+  }
+  .result-card.success { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .result-card.warning { background: #fffbeb; border: 1px solid #fde68a; }
+  .result-card.error   { background: #fef2f2; border: 1px solid #fecaca; }
+  .result-card h3 {
+    font-size: .9rem; font-weight: 700; margin: 0 0 .5rem;
+  }
+  .result-card ul {
+    margin: 0; padding-left: 1.25rem; font-size: .84rem;
+  }
+  .result-card li { margin: .2rem 0; }
+  .sample-csv {
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    border-radius: 8px; padding: .75rem 1rem; font-size: .8rem;
+    font-family: monospace; overflow-x: auto; margin-top: .75rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+  <div class="admin-hero" style="background:linear-gradient(135deg,#1c1917 0%,#292524 60%,#44403c 100%);border-radius:16px;padding:2rem 2.5rem;margin-bottom:2rem;color:#fff;">
+    <div>
+      <h1 style="font-size:1.5rem;font-weight:800;margin:0 0 .25rem;">Bulk Student Upload</h1>
+      <p style="margin:0;opacity:.7;font-size:.9rem;">Upload multiple students from a CSV file</p>
+    </div>
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline" style="background:#fff;color:#1c1917;">&larr; Back to Users</a>
+  </div>
+
+  <div class="upload-card">
+    <h2>Upload CSV</h2>
+    <p>Upload a CSV file with student records. Each row will create a student account with:<br>
+    <strong>Default password:</strong> <code>0123456789</code> &nbsp;|&nbsp;
+    <strong>Auto-generated:</strong> Student ID, Institutional Email</p>
+
+    <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+        <div>
+          <h3 style="font-size:.85rem;font-weight:700;margin:0 0 .35rem;">CSV Sample</h3>
+          <p style="font-size:.78rem;color:#6b7280;margin:0;">
+            Required: <code>first_name</code>, <code>last_name</code>.
+            Optional: <code>email</code>, <code>program_code</code>.
+          </p>
+        </div>
+        <a href="{% url 'accounts:download_sample_csv' %}" class="btn btn-outline" style="font-size:.8rem;padding:.45rem .9rem;white-space:nowrap;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Sample CSV
+        </a>
+      </div>
+      {% if programs %}
+      <p style="font-size:.78rem;color:#6b7280;margin:0 0 .5rem;">
+        Available program codes:
+        {% for code, name, dept in programs %}
+          <code>{{ code }}</code>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </p>
+      {% endif %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div>
+        <label for="id_csv_file">CSV File</label>
+        {{ form.csv_file }}
+        <div class="help-text">{{ form.csv_file.help_text }}</div>
+        {% if form.csv_file.errors %}
+          <div class="field-error" style="color:#ef4444;font-size:.8rem;margin-top:.4rem;">
+            {{ form.csv_file.errors|join:", " }}
+          </div>
+        {% endif %}
+      </div>
+      <div style="margin-top: 1.25rem;">
+        <button type="submit" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload &amp; Create Students
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% if results %}
+  <div class="result-section">
+    <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:1rem;">
+      <span style="font-weight:700;font-size:1rem;">Results</span>
+      <span style="font-size:.82rem;color:#6b7280;">{{ results.total }} row(s) processed</span>
+    </div>
+
+    {% if results.created %}
+    <div class="result-card success">
+      <h3>&checkmark; {{ results.created|length }} student(s) created</h3>
+      <ul>
+        {% for item in results.created %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if results.auto_enrolled %}
+    <div class="result-card success" style="border-color:#a7f3d0;background:#ecfdf5;">
+      <h3>&#9889; {{ results.auto_enrolled|length }} student(s) auto-enrolled</h3>
+      <ul>
+        {% for item in results.auto_enrolled %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if results.skipped %}
+    <div class="result-card warning">
+      <h3>&#9888; {{ results.skipped|length }} skipped</h3>
+      <ul>
+        {% for item in results.skipped %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if results.errors %}
+    <div class="result-card error">
+      <h3>&#10007; {{ results.errors|length }} error(s)</h3>
+      <ul>
+        {% for item in results.errors %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

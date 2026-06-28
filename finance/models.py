@@ -1,5 +1,7 @@
 """Finance — school fees and payroll basics."""
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -111,3 +113,55 @@ class PayrollRecord(TimeStampedModel):
     def save(self, *args, **kwargs):
         self.net_pay = self.basic_salary + self.allowances - self.deductions
         super().save(*args, **kwargs)
+
+
+# ── Fee helper utilities ──────────────────────────────────────────────────
+
+
+def student_total_fees(student):
+    """Return (total_due, total_paid) across all active StudentFee records."""
+    qs = StudentFee.objects.filter(student=student)
+    aggregates = qs.aggregate(
+        total_due=models.Sum("amount_due"),
+        total_paid=models.Sum("amount_paid"),
+    )
+    total_due = aggregates["total_due"] or Decimal("0")
+    total_paid = aggregates["total_paid"] or Decimal("0")
+    return total_due, total_paid
+
+
+def has_outstanding_overdue(student):
+    """True if the student has any fee record with OVERDUE status."""
+    return StudentFee.objects.filter(student=student, status=FeeStatus.OVERDUE).exists()
+
+
+def has_minimum_fee(student, threshold=Decimal("0.6")):
+    """
+    True when the student's total paid is at least `threshold` of total due
+    AND there are no outstanding overdue fees.
+    """
+    from decimal import Decimal as D
+    total_due, total_paid = student_total_fees(student)
+    if total_due == D("0"):
+        return True  # no fees assigned → no barrier
+    return (total_paid / total_due) >= threshold and not has_outstanding_overdue(student)
+
+
+def is_fully_cleared(student):
+    """True when the student's total paid covers total due."""
+    total_due, total_paid = student_total_fees(student)
+    if total_due == Decimal("0"):
+        return True
+    return total_paid >= total_due
+
+
+def can_view_semester_results(student, semester_name):
+    """
+    Check if a student can view results for a given semester.
+
+    First semester results are accessible with minimum fee (60% paid).
+    Second/Summer semester results require full fee clearance.
+    """
+    if semester_name == "first":
+        return has_minimum_fee(student)
+    return is_fully_cleared(student)

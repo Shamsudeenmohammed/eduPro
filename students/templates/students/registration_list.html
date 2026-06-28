@@ -23,7 +23,9 @@
         {% for req in requests %}
         <tr>
           <td>
-            <div style="font-weight:600;color:var(--text)">{{ req.offering.course.code }}</div>
+            <div style="font-weight:600;color:var(--text)">{{ req.offering.course.code }}
+              {% if req.is_retake %}<span class="pill pill-red" style="font-size:.7rem;margin-left:4px;">Retake</span>{% endif %}
+            </div>
             <div style="font-size:.78rem;color:var(--muted)">{{ req.offering.course.title|truncatechars:38 }}</div>
           </td>
           <td style="color:var(--muted);font-size:.875rem">{{ req.offering.semester }}</td>

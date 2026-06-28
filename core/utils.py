@@ -15,6 +15,7 @@ def calculate_semester_gpa(student, semester):
     results = StudentResult.objects.filter(
         enrolment__student=student,
         enrolment__offering__semester=semester,
+        result_sheet__status="approved",
         grade_point__isnull=False,
     ).select_related("enrolment__offering__course")
 
@@ -34,6 +35,7 @@ def calculate_cgpa(student):
     """Cumulative GPA across all completed enrolments."""
     results = StudentResult.objects.filter(
         enrolment__student=student,
+        result_sheet__status="approved",
         grade_point__isnull=False,
     ).select_related("enrolment__offering__course")
 
@@ -108,6 +110,7 @@ def render_transcript_pdf(student):
     profile = getattr(student, "academic_profile", None)
     results = StudentResult.objects.filter(
         enrolment__student=student,
+        result_sheet__status="approved",
     ).select_related(
         "result_sheet__offering__course",
         "result_sheet__offering__semester__session",

@@ -14,6 +14,10 @@
     <div class="card-header"><div class="card-title">Assign Student Fee</div></div>
     <form method="post" style="padding:16px;display:flex;flex-direction:column;gap:12px">
       {% csrf_token %}
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Search Student</label>
+        <input type="text" id="student-search" placeholder="Type student name or ID…" style="width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
+      </div>
       {% for field in form %}
       <div>
         <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">{{ field.label }}</label>
@@ -23,14 +27,46 @@
       {% endfor %}
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Assign Fee</button>
     </form>
+    <div style="padding:0 16px 16px;border-top:1px solid var(--border);margin-top:8px;padding-top:12px">
+      <button onclick="document.getElementById('bulk-form').style.display=document.getElementById('bulk-form').style.display==='none'?'flex':'none'" class="btn btn-ghost" style="width:100%;justify-content:center;font-size:11px">⚡ Bulk Assign to All Students</button>
+      <form method="post" id="bulk-form" style="display:none;flex-direction:column;gap:12px;margin-top:12px">
+        {% csrf_token %}
+        <input type="hidden" name="bulk_assign" value="1" />
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Fee Structure</label>
+          <select name="bulk_fee_structure" required style="width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px">
+            <option value="">Select fee structure…</option>
+            {% for fs in fee_structures %}
+            <option value="{{ fs.pk }}" data-amount="{{ fs.amount }}" data-due="{{ fs.due_date|date:'Y-m-d' }}">{{ fs.name }} — {{ fs.amount }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Amount Due</label>
+          <input type="number" step="0.01" name="bulk_amount_due" id="bulk-amount" required style="width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
+        </div>
+        <div>
+          <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:0.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Due Date</label>
+          <input type="date" name="bulk_due_date" id="bulk-due" style="width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;background:var(--teal);color:#0b0d11;font-weight:700">Assign to All Students</button>
+      </form>
+    </div>
   </div>
   <div class="card">
     <div class="card-header">
       <div class="card-title">Assigned Student Fees</div>
-      {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+      <div style="display:flex;gap:8px;align-items:center">
+        <form method="get" style="display:flex;gap:6px;align-items:center">
+          <input type="text" name="q" placeholder="Search student…" value="{{ search_query }}" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-family:var(--font);font-size:12px;width:200px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
+          <button type="submit" class="btn btn-ghost" style="font-size:11px;padding:6px 12px">Search</button>
+          {% if search_query %}<a href="?page=1" class="btn btn-ghost" style="font-size:11px;padding:6px 12px">Clear</a>{% endif %}
+        </form>
+        {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+      </div>
     </div>
     <div style="overflow-x:auto">
-      <table class="data-table">
+      <table class="data-table" id="fee-table">
         <thead><tr><th>Student</th><th>Fee Structure</th><th>Due</th><th>Paid</th><th>Status</th><th></th></tr></thead>
         <tbody>
           {% for f in page_obj %}
@@ -51,13 +87,44 @@
     {% if page_obj.paginator.num_pages > 1 %}
     <div style="padding:12px 18px;border-top:1px solid var(--border)">
       <div class="pagination" style="margin:0">
-        {% if page_obj.has_previous %}<a href="?page=1" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>{% endif %}
+        {% if page_obj.has_previous %}<a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">‹</a>{% endif %}
         <span class="page-link current">{{ page_obj.number }}</span>
-        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>{% endif %}
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">&raquo;</a>{% endif %}
       </div>
     </div>
     {% endif %}
   </div>
 </div>
 <style>.body-grid select,.body-grid input,.body-grid textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;transition:border-color .15s}.body-grid select:focus,.body-grid input:focus,.body-grid textarea:focus{outline:none;border-color:var(--ochre)}</style>
+<script>
+(function(){
+  var searchInput = document.getElementById('student-search');
+  var studentSelect = document.querySelector('#id_student');
+  if (searchInput && studentSelect) {
+    var options = Array.from(studentSelect.options);
+    searchInput.addEventListener('input', function() {
+      var q = searchInput.value.toLowerCase();
+      studentSelect.innerHTML = '';
+      options.forEach(function(opt) {
+        if (!q || opt.text.toLowerCase().includes(q)) {
+          studentSelect.appendChild(opt.cloneNode(true));
+        }
+      });
+    });
+  }
+
+  var fsSelect = document.querySelector('select[name="bulk_fee_structure"]');
+  if (fsSelect) {
+    fsSelect.addEventListener('change', function() {
+      var opt = fsSelect.selectedOptions[0];
+      if (opt && opt.dataset.amount) {
+        document.getElementById('bulk-amount').value = opt.dataset.amount;
+      }
+      if (opt && opt.dataset.due) {
+        document.getElementById('bulk-due').value = opt.dataset.due;
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

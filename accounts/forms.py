@@ -40,15 +40,15 @@ class StyledFieldsMixin:
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 class LoginForm(StyledFieldsMixin, forms.Form):
-    """Authenticates a user by email + password. Rejects inactive accounts."""
+    """Authenticates a user by student ID, staff ID, or email + password."""
 
-    email = forms.EmailField(
-        label=_("Email address"),
+    identifier = forms.CharField(
+        label=_("Student ID / Staff ID"),
         max_length=254,
-        widget=forms.EmailInput(attrs={
+        widget=forms.TextInput(attrs={
             "autofocus": True,
-            "placeholder": "you@example.com",
-            "autocomplete": "email",
+            "placeholder": "Student ID or Staff ID",
+            "autocomplete": "username",
         }),
     )
     password = forms.CharField(
@@ -76,14 +76,14 @@ class LoginForm(StyledFieldsMixin, forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        email    = cleaned.get("email", "").lower().strip()
-        password = cleaned.get("password", "")
+        identifier = cleaned.get("identifier", "").strip()
+        password   = cleaned.get("password", "")
 
-        if email and password:
-            self._user_cache = authenticate(self.request, username=email, password=password)
+        if identifier and password:
+            self._user_cache = authenticate(self.request, username=identifier, password=password)
             if self._user_cache is None:
                 raise forms.ValidationError(
-                    _("Invalid email or password. Please try again."),
+                    _("Invalid credentials. Please try again."),
                     code="invalid_login",
                 )
             if not self._user_cache.is_active:
@@ -207,6 +207,51 @@ class UserInfoForm(StyledFieldsMixin, forms.ModelForm):
                 _("Another account is already using this email address.")
             )
         return email
+
+
+# ── Bulk Student Upload ───────────────────────────────────────────────────────
+
+class BulkStudentUploadForm(forms.Form):
+    csv_file = forms.FileField(
+        label=_("CSV File"),
+        help_text=_("Upload a CSV file with columns: first_name, last_name, email (optional), program_code (optional)."),
+        widget=forms.ClearableFileInput(attrs={
+            "accept": ".csv",
+            "class": (
+                "block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 "
+                "file:rounded-lg file:border-0 file:text-sm file:font-semibold "
+                "file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+            ),
+        }),
+    )
+
+    def clean_csv_file(self):
+        f = self.cleaned_data["csv_file"]
+        if not f.name.endswith(".csv"):
+            raise forms.ValidationError(_("Only CSV files are supported."))
+        import csv, io
+        decoded = f.read().decode("utf-8-sig")
+        reader = csv.DictReader(io.StringIO(decoded))
+        rows = list(reader)
+        if not rows:
+            raise forms.ValidationError(_("CSV file is empty."))
+        required = {"first_name", "last_name"}
+        missing = required - set(reader.fieldnames or [])
+        if missing:
+            raise forms.ValidationError(
+                _("Missing required columns: %(cols)s.") % {"cols": ", ".join(missing)}
+            )
+        self._rows = rows
+        self._fieldnames = reader.fieldnames
+        return f
+
+    @property
+    def rows(self):
+        return getattr(self, "_rows", [])
+
+    @property
+    def fieldnames(self):
+        return getattr(self, "_fieldnames", [])
 
 
 # ── Staff Role Assignment ─────────────────────────────────────────────────────

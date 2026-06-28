@@ -115,7 +115,15 @@ class CourseForm(StyledFieldsMixin, forms.ModelForm):
 class CourseOfferingForm(StyledFieldsMixin, forms.ModelForm):
     class Meta:
         model  = CourseOffering
-        fields = ["course", "semester", "level", "venue", "max_students", "is_active"]
+        fields = ["course", "semester", "level_name", "departments", "venue", "max_students", "is_active"]
+        widgets = {
+            "departments": forms.CheckboxSelectMultiple(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["departments"].queryset = Department.objects.filter(is_active=True)
+        self.fields["departments"].label = "Offering Departments"
 
 
 class CourseAllocationForm(StyledFieldsMixin, forms.ModelForm):

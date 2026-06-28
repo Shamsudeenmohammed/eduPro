@@ -464,6 +464,42 @@
                   </div>
                   {% endif %}
 
+                  {% with stu=target_user|default:request.user %}
+                  {% if stu.is_approved_student %}
+                  {% with sp=student_profile|default:stu.academic_profile %}
+                  {% if sp.student_number %}
+                  <div style="margin-bottom:1.25rem;padding:.9rem 1.1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                    <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+                      <div>
+                        <div style="font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Student ID</div>
+                        <div style="font-size:1.1rem;font-weight:700;color:#0f172a;margin-top:.1rem;font-family:monospace">{{ sp.student_number }}</div>
+                      </div>
+                      <div>
+                        <div style="font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Institutional Email</div>
+                        <div style="font-size:.9rem;font-weight:600;color:#0f172a;margin-top:.1rem">{{ stu.institutional_email }}</div>
+                      </div>
+                      <div>
+                        <div style="font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Program</div>
+                        <div style="font-size:.9rem;font-weight:600;color:#0f172a;margin-top:.1rem">{% if sp.program %}{{ sp.program.name|default:sp.program.code }}{% else %}—{% endif %}</div>
+                      </div>
+                    </div>
+                    {% if target_user %}
+                    <div style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid #e2e8f0;">
+                      <form method="post" action="{% url 'accounts:user_detail' target_user.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="reset_password" value="1">
+                        <button type="submit" class="btn btn-outline" style="padding:.5rem 1rem;font-size:.82rem;border:1.5px solid #fecaca;background:#fef2f2;color:#b91c1c;border-radius:6px;cursor:pointer;font-weight:600;">
+                          Reset Password to Default (0-9)
+                        </button>
+                      </form>
+                    </div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                  {% endwith %}
+                  {% endif %}
+                  {% endwith %}
+
                   <div class="form-section">
                     <div class="section-title">Personal Details</div>
                     <div class="field-grid-2">

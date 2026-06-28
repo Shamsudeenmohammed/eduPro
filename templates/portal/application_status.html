@@ -52,11 +52,24 @@
       {% if application.user_id and application.status == 'approved' %}
       <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
         <p style="font-weight:600;color:var(--success);margin-bottom:.25rem">✅ Application Approved</p>
-        <p style="font-size:.85rem;color:var(--text-muted)">Congratulations! Your application has been approved. You can log in to the student portal using your email and the password you created during application.</p>
+        {% with sp=application.user.academic_profile %}
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">
+          Congratulations! Your application has been approved.
+        </p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.85rem;padding:.5rem 0">
+          <span style="font-weight:600;color:var(--text-muted)">Student ID:</span>
+          <span style="font-family:monospace;font-weight:700;color:var(--text)">{{ sp.student_number }}</span>
+          <span style="font-weight:600;color:var(--text-muted)">Default Password:</span>
+          <span style="font-family:monospace;font-weight:700;color:var(--text)">0123456789</span>
+        </div>
+        <p style="font-size:.82rem;color:var(--text-muted)">
+          Sign in at <strong>/accounts/login/</strong> using your <strong>Student ID</strong> and the default password above.
+        </p>
+        {% endwith %}
         <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
           <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn" style="background:var(--surface2);color:var(--text);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px">📄 Application Letter</a>
           <a href="{% url 'portal:admission_letter_pdf' application.reference_number %}" class="btn" style="background:var(--success);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">🎓 Admission Letter</a>
-          <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
+          <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In →</a>
         </div>
       </div>
       {% elif application.status == 'approved' or application.status == 'accepted' %}

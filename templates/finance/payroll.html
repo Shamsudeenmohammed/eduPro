@@ -29,7 +29,14 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">Payroll Records</div>
-      {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+      <div style="display:flex;gap:8px;align-items:center">
+        <form method="get" style="display:flex;gap:6px;align-items:center">
+          <input type="text" name="q" placeholder="Search employee…" value="{{ search_query }}" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-family:var(--font);font-size:12px;width:200px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
+          <button type="submit" class="btn btn-ghost" style="font-size:11px;padding:6px 12px">Search</button>
+          {% if search_query %}<a href="?page=1" class="btn btn-ghost" style="font-size:11px;padding:6px 12px">Clear</a>{% endif %}
+        </form>
+        {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table class="data-table">
@@ -54,9 +61,9 @@
     {% if page_obj.paginator.num_pages > 1 %}
     <div style="padding:12px 18px;border-top:1px solid var(--border)">
       <div class="pagination" style="margin:0">
-        {% if page_obj.has_previous %}<a href="?page=1" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>{% endif %}
+        {% if page_obj.has_previous %}<a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">&laquo;</a><a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">‹</a>{% endif %}
         <span class="page-link current">{{ page_obj.number }}</span>
-        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>{% endif %}
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">›</a><a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">&raquo;</a>{% endif %}
       </div>
     </div>
     {% endif %}

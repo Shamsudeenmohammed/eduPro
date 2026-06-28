@@ -1,5 +1,6 @@
 from django import forms
-from .models import Announcement, CalendarEvent, SupportTicket, TimetableSlot
+from django.utils import timezone
+from .models import Announcement, CalendarEvent, Hostel, HostelAllocation, HostelRoom, SupportTicket, TimetableSlot
 
 
 class AnnouncementForm(forms.ModelForm):
@@ -36,3 +37,32 @@ class SupportTicketForm(forms.ModelForm):
     class Meta:
         model = SupportTicket
         fields = ["subject", "description", "category"]
+
+
+class HostelApplyForm(forms.Form):
+    """Student applies for a room in a selected hostel."""
+
+    hostel = forms.ModelChoiceField(
+        queryset=Hostel.objects.filter(is_active=True),
+        empty_label="Select Hostel",
+        widget=forms.Select(attrs={"class": "form-control", "id": "id_hostel"}),
+    )
+    room = forms.ModelChoiceField(
+        queryset=HostelRoom.objects.none(),
+        empty_label="Select Room",
+        widget=forms.Select(attrs={"class": "form-control", "id": "id_room"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "hostel" in self.data:
+            try:
+                hostel_id = int(self.data.get("hostel"))
+                occupied_ids = HostelAllocation.objects.filter(
+                    room__hostel_id=hostel_id, is_active=True
+                ).values_list("room_id", flat=True)
+                self.fields["room"].queryset = HostelRoom.objects.filter(
+                    hostel_id=hostel_id, is_available=True
+                ).exclude(pk__in=occupied_ids)
+            except (ValueError, TypeError):
+                pass

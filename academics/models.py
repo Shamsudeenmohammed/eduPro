@@ -187,6 +187,13 @@ class Program(TimeStampedModel):
     def institution(self):
         return self.department.institution
 
+    def get_starting_level(self):
+        """
+        Return the first (lowest) active Level for this program.
+        For undergraduate programs this is typically "100".
+        """
+        return self.levels.filter(is_active=True).order_by("order").first()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ACADEMIC SESSION  (unchanged)
@@ -342,6 +349,13 @@ class Course(TimeStampedModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class CourseOffering(TimeStampedModel):
+    LEVEL_CHOICES = [
+        ("100", "100"),
+        ("200", "200"),
+        ("300", "300"),
+        ("400", "400"),
+    ]
+
     course      = models.ForeignKey(
         Course, on_delete=models.CASCADE,
         related_name="offerings", verbose_name=_("course"),
@@ -351,8 +365,17 @@ class CourseOffering(TimeStampedModel):
         related_name="offerings", verbose_name=_("semester"),
     )
     level       = models.ForeignKey(
-        Level, on_delete=models.CASCADE,
+        Level, on_delete=models.SET_NULL,
+        null=True, blank=True,
         related_name="offerings", verbose_name=_("level"),
+    )
+    level_name  = models.CharField(
+        _("level"), max_length=3, choices=LEVEL_CHOICES,
+        default="100",
+    )
+    departments = models.ManyToManyField(
+        Department, related_name="offerings",
+        verbose_name=_("departments"),
     )
     venue       = models.CharField(_("venue / room"), max_length=100, blank=True)
     max_students = models.PositiveSmallIntegerField(_("max enrolment"), default=50)
@@ -365,10 +388,10 @@ class CourseOffering(TimeStampedModel):
         verbose_name        = _("course offering")
         verbose_name_plural = _("course offerings")
         ordering = ["-semester__session__start_date", "course__code"]
-        unique_together = [("course", "semester", "level")]
+        unique_together = [("course", "semester", "level_name")]
 
     def __str__(self):
-        return f"{self.course.code} | {self.level} | {self.semester}"
+        return f"{self.course.code} | Level {self.level_name} | {self.semester}"
 
     @property
     def session(self):
@@ -452,6 +475,13 @@ class Enrolment(TimeStampedModel):
     )
     enrolled_at = models.DateTimeField(_("enrolled at"), default=timezone.now)
     is_active   = models.BooleanField(_("active"), default=True)
+    is_retake   = models.BooleanField(_("retake"), default=False)
+    original_enrolment = models.ForeignKey(
+        "self", on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="retake_enrolments",
+        verbose_name=_("original enrolment"),
+    )
 
     objects     = ActiveManager()
     all_objects = models.Manager()
@@ -513,6 +543,59 @@ class StudentProfile(TimeStampedModel):
             f"[{self.student_number or 'No ID'}] "
             f"— {self.program.code if self.program else 'Unassigned'}"
         )
+
+    def check_graduation_eligibility(self):
+        """
+        Check whether this student can graduate based on outstanding failed courses.
+
+        A student is eligible if every course they failed (grade F, I, or W) has
+        been successfully retaken (retake enrolment with a non-failing grade).
+
+        Returns a dict:
+            eligible                     – bool
+            failed_without_retake        – list of enrolments (failed, no retake found)
+            failed_with_passed_retake    – list of (original, retake) pairs
+            failed_with_failed_retake    – list of (original, retake) pairs
+        """
+        failed_originals = self.student.enrolments.filter(
+            is_active=True,
+            is_retake=False,
+            result__grade__in=("F", "I", "W"),
+        ).select_related("offering__course", "result")
+
+        failed_no_retake = []
+        passed_retake = []
+        failed_retake = []
+
+        for enr in failed_originals:
+            retakes = enr.retake_enrolments.filter(
+                student=self.student,
+                is_active=True,
+            ).select_related("result")
+
+            best = None  # ("passed", retake) | ("failed", retake) | None
+            for r in retakes:
+                if not hasattr(r, "result") or not r.result:
+                    continue
+                if r.result.grade not in ("F", "I", "W"):
+                    best = ("passed", r)
+                    break
+                if best is None:
+                    best = ("failed", r)
+
+            if best is None:
+                failed_no_retake.append(enr)
+            elif best[0] == "passed":
+                passed_retake.append((enr, best[1]))
+            else:
+                failed_retake.append((enr, best[1]))
+
+        return {
+            "eligible": not failed_no_retake and not failed_retake,
+            "failed_without_retake": failed_no_retake,
+            "failed_with_passed_retake": passed_retake,
+            "failed_with_failed_retake": failed_retake,
+        }
 
 
 # ─────────────────────────────────────────────────────────────────────────────

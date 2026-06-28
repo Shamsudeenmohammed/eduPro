@@ -197,9 +197,27 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
     @property
     def is_hod(self):
         from academics.models import Department
-        return Department.objects.filter(hod=self).exists()
+        if Department.objects.filter(hod=self).exists():
+            return True
+        return self.staff_roles.filter(
+            responsibility=StaffResponsibility.HOD, is_active=True
+        ).exists()
 
     # ── Multi-responsibility helpers ──────────────────────────────────────
+
+    @property
+    def institutional_email(self):
+        """Auto-generated institutional email for students."""
+        if self.role != Role.STUDENT:
+            return None
+        domain = getattr(settings, 'INSTITUTION_EMAIL_DOMAIN', 'schoolname.com')
+        first_initial = self.first_name[0].lower() if self.first_name else ''
+        last_name = self.last_name.lower().replace(' ', '') if self.last_name else ''
+        return f"{first_initial}{last_name}.stu@{domain}"
+
+    def set_default_password(self):
+        """Set the default password for new students."""
+        self.set_password("0123456789")
 
     def has_responsibility(self, responsibility: str) -> bool:
         """True if the user holds the given StaffResponsibility."""
@@ -209,6 +227,9 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
 
     def is_hod_of(self, department) -> bool:
         """True if user is HOD of the given Department instance."""
+        from academics.models import Department
+        if Department.objects.filter(pk=department.pk, hod=self).exists():
+            return True
         return self.staff_roles.filter(
             responsibility=StaffResponsibility.HOD,
             department=department,
@@ -218,11 +239,13 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
     def get_hod_departments(self):
         """QuerySet of Departments where this user is HOD."""
         from academics.models import Department
-        dept_ids = self.staff_roles.filter(
+        role_dept_ids = self.staff_roles.filter(
             responsibility=StaffResponsibility.HOD,
             is_active=True,
         ).values_list("department_id", flat=True)
-        return Department.objects.filter(pk__in=dept_ids)
+        return Department.objects.filter(
+            models.Q(pk__in=role_dept_ids) | models.Q(hod=self)
+        ).distinct()
 
     def get_active_responsibilities(self):
         """List of responsibility strings this user holds."""

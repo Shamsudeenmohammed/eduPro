@@ -99,6 +99,21 @@
     </div>
   </a>
 
+  <a href="{% url 'operations:hostel_applications_admin' %}" style="text-decoration:none">
+    <div class="kpi">
+      <div class="kpi-accent" style="background:#0891b2"></div>
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:rgba(8,145,178,0.1)">
+          <svg fill="none" viewBox="0 0 24 24" stroke="#0891b2" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div class="kpi-trend" style="background:rgba(8,145,178,0.1);color:#0891b2;font-size:9px">!! NEW</div>
+      </div>
+      <div class="kpi-val" style="color:#0891b2;animation-delay:0.45s">{{ pending_hostel_count|default:"0" }}</div>
+      <div class="kpi-label">Hostel Applications</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" id="kb-hostel" style="background:#0891b2" data-pct="30"></div></div>
+    </div>
+  </a>
+
 </div>
 
 <!-- Body Grid -->
@@ -135,6 +150,11 @@
           <div class="mt-ico" style="background:var(--rose-dim)">📋</div>
           <div class="mt-name">Registrations</div>
           <div class="mt-desc">Approve / reject requests</div>
+        </a>
+        <a href="{% url 'operations:hostel_applications_admin' %}" class="module-tile" style="border-top:2px solid #0891b2">
+          <div class="mt-ico" style="background:rgba(8,145,178,0.1)">🏠</div>
+          <div class="mt-name">Hostel</div>
+          <div class="mt-desc">Approve / grant applications</div>
         </a>
         <a href="{% url 'accounts:profile' %}" class="module-tile" style="border-top:2px solid #7c68ee">
           <div class="mt-ico" style="background:rgba(124,104,238,0.1)">🪪</div>

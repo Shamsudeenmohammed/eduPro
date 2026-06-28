@@ -24,7 +24,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from django.views.decorators.http import require_http_methods
 
-from accounts.decorators import admin_required
+from accounts.decorators import admin_required, anonymous_required
 
 # Original forms (kept for original views)
 from .forms import (
@@ -409,8 +409,10 @@ def application_approve(request, pk):
                 application.save(update_fields=["review_notes"])
             messages.success(
                 request,
-                f"✅ Application approved! {new_user.get_full_name()} can now log in "
-                f"at /accounts/login/ with the password they chose during application."
+                f"✅ Application approved! {new_user.get_full_name()}'s password has been reset "
+                f"to the default (0123456789). Their Student ID is "
+                f"{new_user.academic_profile.student_number}. "
+                f"Share these credentials with the applicant."
             )
         except ValidationError as e:
             messages.error(request, str(e.message))
@@ -564,6 +566,45 @@ def cycle_edit(request, pk):
     })
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PORTAL LOGIN — email + password for applicants
+# ─────────────────────────────────────────────────────────────────────────────
+
+from django.contrib.auth import login as auth_login  # noqa: E402
+
+
+@anonymous_required()
+@require_http_methods(["GET", "POST"])
+def portal_login(request):
+    from django.contrib.auth.forms import AuthenticationForm
+    from accounts.models import EduProUser
+
+    class _ApplicantAuthForm(AuthenticationForm):
+        def clean(self):
+            username = self.cleaned_data.get("username")
+            password = self.cleaned_data.get("password")
+            if username and password:
+                try:
+                    user = EduProUser.objects.get(email=username)
+                except EduProUser.DoesNotExist:
+                    raise self.get_invalid_login_error()
+                if not user.check_password(password) or not user.is_active:
+                    raise self.get_invalid_login_error()
+                self.user_cache = user
+            return self.cleaned_data
+
+    form = _ApplicantAuthForm(request=request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.get_user()
+        auth_login(request, user)
+        messages.info(request, f"Welcome, {user.get_short_name()}!")
+        return redirect("accounts:student_pending")
+    return render(request, "portal/login.html", {
+        "form": form,
+        "page_title": "Applicant Sign In",
+    })
+
+
 # ── Letter downloads (applicant-facing) ────────────────────────────────────
 
 from .utils import render_admission_letter, render_application_letter  # noqa: E402
@@ -591,4 +632,12 @@ def admission_letter_pdf(request, ref):
     if application.status not in (AdmissionStatus.APPROVED,):
         from django.http import HttpResponseNotFound
         return HttpResponseNotFound("Admission letter is only available after approval.")
-    return render_admission_letter(application)
+
+    from academics.models import StudentProfile
+    try:
+        student_profile = application.user.academic_profile
+        student_id = student_profile.student_number
+    except StudentProfile.DoesNotExist:
+        student_id = "—"
+
+    return render_admission_letter(application, student_id=student_id)

@@ -800,7 +800,7 @@ class ResultSheet(TimeStampedModel):
         if self.is_locked:
             return False
         tp = getattr(user, "teacher_profile", None)
-        if tp and not tp.can_submit_results:
+        if tp is not None and not tp.can_submit_results:
             return False
         from academics.models import CourseAllocation
         return CourseAllocation.objects.filter(

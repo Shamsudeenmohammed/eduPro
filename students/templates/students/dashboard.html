@@ -251,12 +251,16 @@
   <!-- Right column -->
   <div style="display:flex;flex-direction:column;gap:1.25rem">
 
-    <!-- CGPA + Quick Actions -->
+    <!-- CGPA + Student Info -->
     {% if profile %}
     <div class="cgpa-badge">
-      <div class="cgpa-lbl">Cumulative GPA</div>
-      <div class="cgpa-val">—</div>
-      <div style="font-size:.78rem;opacity:.75;margin-top:.25rem">{{ profile.program|default:"" }}</div>
+      <div class="cgpa-lbl">Student ID</div>
+      <div class="cgpa-val" style="font-size:1.1rem;letter-spacing:.02em">{{ profile.student_number|default:"—" }}</div>
+      <div style="font-size:.78rem;opacity:.75;margin-top:.25rem">
+        {{ profile.program|default:"" }}
+        {% if profile.program and profile.current_level %} &middot; {% endif %}
+        {{ profile.current_level.name|default:"" }}
+      </div>
     </div>
     {% endif %}
 

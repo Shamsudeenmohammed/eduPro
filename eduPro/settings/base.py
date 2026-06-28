@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = config("SECRET_KEY", default="unsafe-secret-key-change-in-production")
 
 # ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="127.0.0.1,localhost", cast=Csv())
-ALLOWED_HOSTS = ['10.251.24.126', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['10.251.24.126', 'localhost', '127.0.0.1','10.251.24.126']
 
 DJANGO_APPS = [
     "jazzmin",
@@ -81,6 +81,12 @@ TEMPLATES = [
 ]
 
 AUTH_USER_MODEL = "accounts.EduProUser"
+
+AUTHENTICATION_BACKENDS = [
+    "accounts.auth_backends.EduProAuthBackend",
+]
+
+INSTITUTION_EMAIL_DOMAIN = "edupro.edu.ng"
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:dashboard_redirect"
 LOGOUT_REDIRECT_URL = "accounts:login"

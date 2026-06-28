@@ -209,6 +209,8 @@ def hod_required(view_func):
             return _login_redirect(request)
         if request.user.is_superuser or request.user.role == Role.ADMIN:
             return view_func(request, *args, **kwargs)
+        if request.user.is_hod:
+            return view_func(request, *args, **kwargs)
         if request.user.has_responsibility(StaffResponsibility.HOD):
             return view_func(request, *args, **kwargs)
         return _deny(request, _("Head of Department access required."))
@@ -245,6 +247,8 @@ def hod_of_dept_required(dept_kwarg: str = "dept_pk"):
 
             department = get_object_or_404(Department, pk=dept_pk)
             if request.user.is_hod_of(department):
+                return view_func(request, *args, **kwargs)
+            if department.hod_id == request.user.pk:
                 return view_func(request, *args, **kwargs)
 
             return _deny(

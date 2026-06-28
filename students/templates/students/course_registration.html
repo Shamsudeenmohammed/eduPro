@@ -7,6 +7,11 @@
 
 <div style="max-width:520px" class="fade-up delay-1">
   <div class="card">
+    {% if fee_ok is False %}
+    <div style="padding:1rem;background:rgba(255,169,77,.1);border:1px solid rgba(255,169,77,.25);border-radius:8px;margin-bottom:18px;font-size:.85rem;color:var(--warning)">
+      You need to have paid at least <strong>60% of your fees</strong> and clear any overdue balances before registering. Visit <strong>My Fees</strong> to check your statement.
+    </div>
+    {% endif %}
     <p style="font-size:.875rem;color:var(--muted);margin-bottom:22px;line-height:1.6">
       Submit a registration request for a course offering. An administrator will review and approve your request. You will be notified once approved.
     </p>
@@ -16,13 +21,13 @@
       <div class="form-group">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
         {% if field.field.widget.input_type == 'select' %}
-        <select name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="form-control">
+        <select name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="form-control" {% if fee_ok is False %}disabled{% endif %}>
           {% for val, display in field.field.choices %}
           <option value="{{ val }}" {% if field.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ display }}</option>
           {% endfor %}
         </select>
         {% else %}
-        <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="form-control" value="{{ field.value|default:'' }}" />
+        <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" class="form-control" value="{{ field.value|default:'' }}" {% if fee_ok is False %}disabled{% endif %} />
         {% endif %}
         {% if field.errors %}
         <div class="form-errors">{% for e in field.errors %}{{ e }}{% endfor %}</div>
@@ -36,7 +41,7 @@
       <div class="form-errors" style="margin-bottom:14px">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
       {% endif %}
       <div style="display:flex;gap:10px;margin-top:8px">
-        <button type="submit" class="btn btn-primary">Submit Request</button>
+        <button type="submit" class="btn btn-primary" {% if fee_ok is False %}disabled style="opacity:.5;cursor:not-allowed"{% endif %}>Submit Request</button>
         <a href="{% url 'students:my_courses' %}" class="btn btn-secondary">Cancel</a>
       </div>
     </form>

@@ -44,16 +44,23 @@ class Command(BaseCommand):
                             "first_name": row["first_name"].strip(),
                             "last_name": row["last_name"].strip(),
                             "role": Role.STUDENT,
+                            "is_active": True,
                         },
                     )
                     if was_created:
                         user.set_password(row.get("password", "Student@123"))
+                        user.is_active = True
                         user.save()
                         created += 1
+                    elif not user.is_active:
+                        user.is_active = True
+                        user.save(update_fields=["is_active"])
 
                     profile, _ = StudentProfile.objects.get_or_create(student=user)
                     profile.student_number = row.get("student_number", "").strip() or profile.student_number
                     profile.program = program or profile.program
+                    if profile.program and not profile.current_level:
+                        profile.current_level = profile.program.get_starting_level()
                     profile.save()
 
                 except Exception as e:

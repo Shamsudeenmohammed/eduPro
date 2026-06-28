@@ -1,0 +1,95 @@
+{% extends "admin_base.html" %}
+{% block extra_head %}
+<style>
+  .filter-bar { display: flex; gap: .75rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .filter-bar a { padding: .35rem .85rem; border-radius: 8px; font-size: .82rem; font-weight: 600; text-decoration: none; background: var(--surface2); color: var(--text, #ccc); }
+  .filter-bar a.active { background: var(--ochre); color: #000; }
+  .app-row { display: flex; align-items: center; gap: 1rem; padding: .9rem 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .app-row:last-child { border-bottom: none; }
+  .app-student { flex: 1; min-width: 140px; }
+  .app-student .name { font-weight: 600; font-size: .9rem; color: var(--text, #eee); }
+  .app-student .email { font-size: .78rem; color: #888; }
+  .app-room { width: 200px; font-size: .85rem; color: var(--text, #eee); }
+  .app-date { width: 120px; font-size: .8rem; color: #888; }
+  .app-actions { display: flex; gap: .5rem; }
+
+  .status-badge { font-size: .72rem; font-weight: 700; padding: .2rem .65rem; border-radius: 99px; text-transform: uppercase; }
+  .sb-pending { background: #fef3c7; color: #92400e; }
+  .sb-approved { background: #dbeafe; color: #1e40af; }
+  .sb-rejected { background: #fee2e2; color: #991b1b; }
+  .sb-confirmed { background: #dcfce7; color: #166534; }
+
+  .remark-input { background: var(--surface3); border: 1px solid var(--border2); color: var(--text, #eee); padding: .4rem .7rem; border-radius: 6px; font-size: .8rem; width: 200px; }
+  .remark-input::placeholder { color: #666; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.3rem; font-weight: 800; margin: 0;">🏠 Hostel Applications</h1>
+  <p style="margin: .25rem 0 0; color: #888; font-size: .85rem;">
+    Review and manage student hostel applications.
+  </p>
+</div>
+
+<div class="filter-bar">
+  <a href="{% url 'operations:hostel_applications_admin' %}" class="{% if not current_status %}active{% endif %}">All</a>
+  {% for key, label in status_choices %}
+  <a href="{% url 'operations:hostel_applications_admin' %}?status={{ key }}"
+     class="{% if current_status == key %}active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if applications %}
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;">
+  {% for app in applications %}
+  <div class="app-row">
+    <div class="app-student">
+      <div class="name">{{ app.student.get_full_name|default:app.student.email }}</div>
+      <div class="email">{{ app.student.email }}</div>
+    </div>
+    <div class="app-room">
+      {{ app.room.hostel.name }} — Rm {{ app.room.room_number }}
+      <div style="font-size: .75rem; color: #888;">{{ app.room.capacity }} bed</div>
+    </div>
+    <div>
+      <span class="status-badge
+        {% if app.status == 'pending' %}sb-pending
+        {% elif app.status == 'approved' %}sb-approved
+        {% elif app.status == 'rejected' %}sb-rejected
+        {% elif app.status == 'confirmed' %}sb-confirmed
+        {% endif %}">
+        {{ app.get_status_display }}
+      </span>
+    </div>
+    <div class="app-date">{{ app.created_at|date:"M d, Y" }}</div>
+
+    {% if app.status == "pending" %}
+    <div class="app-actions">
+      <form method="post" action="{% url 'operations:hostel_application_approve' app.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="text" name="admin_remark" class="remark-input" placeholder="Remark (optional)">
+        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approve this application?')">Approve</button>
+      </form>
+      <form method="post" action="{% url 'operations:hostel_application_reject' app.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="text" name="admin_remark" class="remark-input" placeholder="Reason for rejection">
+        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this application?')">Reject</button>
+      </form>
+    </div>
+    {% elif app.admin_remark %}
+    <div style="font-size: .8rem; color: #888; max-width: 200px;">{{ app.admin_remark|truncatechars:40 }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 3rem 1rem; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border);">
+  <div style="font-size: 3rem; margin-bottom: .75rem;">📋</div>
+  <h5 style="font-weight: 700; color: var(--text, #eee);">No Applications</h5>
+  <p style="color: #888; font-size: .85rem; margin-top: .3rem;">
+    {% if current_status %}No {{ current_status }} applications found.{% else %}No applications have been submitted yet.{% endif %}
+  </p>
+</div>
+{% endif %}
+{% endblock %}

@@ -51,7 +51,15 @@
             <span style="font-size:12px;color:var(--muted);">{{ offering.course.title }}</span>
           </td>
           <td>{{ offering.semester }}</td>
-          <td>{{ offering.level.program.name }} — {{ offering.level.name }}</td>
+          <td>Level {{ offering.level_name }}
+            {% with depts=offering.departments.all %}
+              {% if depts %}
+                <br><span style="font-size:12px;color:var(--muted);">
+                {% for d in depts %}{{ d.code }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </span>
+              {% endif %}
+            {% endwith %}
+          </td>
           <td>
             {% if offering.is_active %}<span class="badge badge-active">Active</span>
             {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}

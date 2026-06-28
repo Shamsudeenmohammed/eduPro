@@ -1,0 +1,44 @@
+{% extends "base_public.html" %}
+{% block content %}
+<div style="min-height:70vh;display:flex;align-items:center;justify-content:center;padding:2rem">
+  <div style="width:100%;max-width:420px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:2.5rem">
+    <div style="text-align:center;margin-bottom:2rem">
+      <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 .25rem">Applicant Sign In</h1>
+      <p style="color:#6b7280;font-size:.85rem;margin:0">Use the email and password you provided during application.</p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.82rem;color:#b91c1c">
+        {% for e in form.non_field_errors %}<p style="margin:2px 0">{{ e }}</p>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div style="margin-bottom:1.25rem">
+        <label for="id_username" style="display:block;font-size:.84rem;font-weight:600;color:#374151;margin-bottom:.4rem">Email Address</label>
+        <input type="email" id="id_username" name="username" autofocus autocomplete="username" required
+               style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;background:#fafafa;outline:none;font-family:inherit;box-sizing:border-box"
+               placeholder="you@example.com">
+      </div>
+
+      <div style="margin-bottom:1.5rem">
+        <label for="id_password" style="display:block;font-size:.84rem;font-weight:600;color:#374151;margin-bottom:.4rem">Password</label>
+        <input type="password" id="id_password" name="password" autocomplete="current-password" required
+               style="width:100%;padding:.7rem 1rem;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.9rem;background:#fafafa;outline:none;font-family:inherit;box-sizing:border-box"
+               placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.75rem;font-size:.95rem">
+        Sign In
+      </button>
+    </form>
+
+    <div style="margin-top:1.5rem;text-align:center;font-size:.82rem;color:#6b7280">
+      <p style="margin:0 0 .5rem">Don't have an account?</p>
+      <a href="{% url 'portal:apply' %}" style="color:#4f46e5;font-weight:600;text-decoration:none">Apply for Admission</a>
+      <p class="signup-prompt">Applicant? <a href="{% url 'portal:portal_login' %}">Sign in with your email</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

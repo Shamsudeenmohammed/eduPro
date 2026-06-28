@@ -737,6 +737,12 @@ def result_sheet_setup(request, offering_pk):
         offering=offering,
         defaults={"submitted_by": request.user},
     )
+
+    # If sheet is already approved, redirect to read-only view
+    if sheet.is_locked:
+        messages.info(request, "This result sheet is already approved and locked. Viewing in read-only mode.")
+        return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+
     form = ResultSheetForm(request.POST or None, instance=sheet)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -768,7 +774,14 @@ def result_entry(request, sheet_pk):
         pk=sheet_pk,
     )
     if not sheet.can_edit(request.user) and not request.user.is_superuser:
-        messages.error(request, "This result sheet is locked or you lack permission.")
+        if sheet.is_locked:
+            messages.warning(request, "This result sheet has been approved and locked. View it in read-only mode.")
+            return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+        tp = getattr(request.user, "teacher_profile", None)
+        if tp and not tp.can_submit_results:
+            messages.error(request, "Your account does not have permission to submit results. Contact an administrator.")
+        else:
+            messages.error(request, "You are not allocated to this course offering.")
         return redirect("teachers:result_sheet_list")
 
     # Ensure a StudentResult exists for every active enrolment
@@ -821,7 +834,10 @@ def result_submit(request, sheet_pk):
     """Teacher submits the result sheet for HOD/Admin approval."""
     sheet = get_object_or_404(ResultSheet, pk=sheet_pk)
     if not sheet.can_edit(request.user) and not request.user.is_superuser:
-        messages.error(request, "Cannot submit this sheet.")
+        if sheet.is_locked:
+            messages.warning(request, "This result sheet is already approved and locked.")
+        else:
+            messages.error(request, "Cannot submit this sheet. You lack permission.")
         return redirect("teachers:result_sheet_list")
 
     sheet.status       = ResultSheet.SheetStatus.SUBMITTED
@@ -984,7 +1000,11 @@ def result_sheet_view(request, sheet_pk):
         messages.error(request, "Access denied.")
         return redirect("accounts:dashboard")
 
-    # Students only see their own result
+    # Students only see their own result, and only after HOD approval
+    if is_student and sheet.status != ResultSheet.SheetStatus.APPROVED:
+        messages.warning(request, "Results are not yet published. Please wait for HOD approval.")
+        return redirect("accounts:dashboard")
+
     results = sheet.student_results.select_related("enrolment__student").order_by(
         "enrolment__student__last_name"
     )

@@ -104,8 +104,22 @@ class Hostel(TimeStampedModel):
     capacity = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
+
+    @property
+    def total_rooms(self):
+        return self.rooms.count()
+
+    @property
+    def available_rooms(self):
+        occupied_room_ids = HostelAllocation.objects.filter(
+            room__hostel=self, is_active=True
+        ).values_list("room_id", flat=True)
+        return self.rooms.exclude(pk__in=occupied_room_ids).filter(is_available=True)
 
 
 class HostelRoom(TimeStampedModel):
@@ -120,6 +134,18 @@ class HostelRoom(TimeStampedModel):
     def __str__(self):
         return f"{self.hostel.name} — Room {self.room_number}"
 
+    @property
+    def occupied_beds(self):
+        return self.allocations.filter(is_active=True).count()
+
+    @property
+    def available_beds(self):
+        return self.capacity - self.occupied_beds
+
+    @property
+    def is_full(self):
+        return self.available_beds <= 0
+
 
 class HostelAllocation(TimeStampedModel):
     student = models.ForeignKey(
@@ -129,13 +155,70 @@ class HostelAllocation(TimeStampedModel):
     room = models.ForeignKey(HostelRoom, on_delete=models.CASCADE, related_name="allocations")
     check_in = models.DateField()
     check_out = models.DateField(null=True, blank=True)
+    expires_at = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["-check_in"]
 
+    def save(self, *args, **kwargs):
+        from datetime import timedelta
+        if not self.expires_at and self.check_in:
+            self.expires_at = self.check_in + timedelta(days=365)
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.student.get_full_name()} → {self.room}"
+        expiry = self.expires_at.strftime("%b %d, %Y") if self.expires_at else "no expiry"
+        return f"{self.student.get_full_name()} → {self.room} (expires {expiry})"
+
+    @property
+    def is_expired(self):
+        from datetime import date
+        return date.today() > self.expires_at if self.expires_at else False
+
+    @property
+    def days_left(self):
+        from datetime import date
+        if not self.expires_at:
+            return 0
+        delta = (self.expires_at - date.today()).days
+        return max(delta, 0)
+
+    def expire(self):
+        self.is_active = False
+        self.check_out = self.expires_at or date.today()
+        self.save(update_fields=["is_active", "check_out"])
+
+
+class HostelApplication(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Pending Review")
+        APPROVED = "approved", _("Approved — Payment Required")
+        REJECTED = "rejected", _("Rejected")
+        CONFIRMED = "confirmed", _("Confirmed — Allocated")
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="hostel_applications", limit_choices_to={"role": "student"},
+    )
+    room = models.ForeignKey(
+        HostelRoom, on_delete=models.CASCADE, related_name="applications",
+    )
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.PENDING,
+    )
+    admin_remark = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="hostel_reviews",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} → {self.room} ({self.get_status_display()})"
 
 
 class TicketStatus(models.TextChoices):

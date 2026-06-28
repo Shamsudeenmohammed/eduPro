@@ -1,5 +1,9 @@
 from django import forms
+from django.contrib.auth import get_user_model
+
 from .models import FeePayment, FeeStructure, PayrollRecord, StudentFee
+
+User = get_user_model()
 
 
 class FeeStructureForm(forms.ModelForm):
@@ -29,3 +33,9 @@ class PayrollForm(forms.ModelForm):
             "employee", "period_month", "period_year",
             "basic_salary", "allowances", "deductions", "status",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["employee"].queryset = User.objects.filter(
+            role__in=["admin", "teacher"]
+        )
