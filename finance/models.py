@@ -115,6 +115,91 @@ class PayrollRecord(TimeStampedModel):
         super().save(*args, **kwargs)
 
 
+# ── Retake / Resit Fee ─────────────────────────────────────────────────────
+
+
+class RetakeFeeSetting(TimeStampedModel):
+    """Defines the retake/resit fee amount for a given academic session."""
+    session  = models.ForeignKey(
+        "academics.AcademicSession", on_delete=models.CASCADE,
+        related_name="retake_fee_settings",
+    )
+    amount   = models.DecimalField(_("retake fee amount"), max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("retake fee setting")
+        verbose_name_plural = _("retake fee settings")
+        unique_together = [("session",)]
+
+    def __str__(self):
+        return f"Retake fee {self.amount} — {self.session}"
+
+
+class StudentRetakeFee(TimeStampedModel):
+    """Retake fee owed by a student for a failed course."""
+    student  = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="retake_fees", limit_choices_to={"role": "student"},
+    )
+    course   = models.ForeignKey(
+        "academics.Course", on_delete=models.CASCADE,
+        related_name="retake_fees",
+    )
+    session  = models.ForeignKey(
+        "academics.AcademicSession", on_delete=models.CASCADE,
+        related_name="student_retake_fees", null=True, blank=True,
+    )
+    amount   = models.DecimalField(_("amount due"), max_digits=10, decimal_places=2)
+    is_paid  = models.BooleanField(_("paid"), default=False)
+    paid_at  = models.DateTimeField(_("paid at"), null=True, blank=True)
+    paid_by  = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="retake_fee_collections",
+    )
+    notes    = models.TextField(_("notes"), blank=True)
+
+    class Meta:
+        verbose_name = _("student retake fee")
+        verbose_name_plural = _("student retake fees")
+        unique_together = [("student", "course", "session")]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        status = "Paid" if self.is_paid else "Unpaid"
+        return f"{self.student.get_full_name()} — {self.course.code} — {status}"
+
+    @property
+    def balance(self):
+        return Decimal("0") if self.is_paid else self.amount
+
+
+def get_retake_fee_amount(session=None):
+    """Return the active retake fee amount for the given session (or current session)."""
+    if session is None:
+        from academics.models import Semester
+        sem = Semester.objects.filter(is_current=True).first()
+        if sem:
+            session = sem.session
+    if session is None:
+        return Decimal("0")
+    setting = RetakeFeeSetting.objects.filter(session=session, is_active=True).first()
+    return setting.amount if setting else Decimal("0")
+
+
+def get_unpaid_retake_fees(student):
+    """Return QuerySet of unpaid StudentRetakeFee records for a student."""
+    return StudentRetakeFee.objects.filter(student=student, is_paid=False)
+
+
+def has_unpaid_retake_fees(student, course=None):
+    """Check if a student has any unpaid retake fees (optionally for a specific course)."""
+    qs = StudentRetakeFee.objects.filter(student=student, is_paid=False)
+    if course:
+        qs = qs.filter(course=course)
+    return qs.exists()
+
+
 # ── Fee helper utilities ──────────────────────────────────────────────────
 
 

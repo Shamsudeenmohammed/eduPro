@@ -8,6 +8,8 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import include, path
 
+from core import views as core_views
+
 
 def root_redirect(request):
     if request.user.is_authenticated:
@@ -17,6 +19,7 @@ def root_redirect(request):
 
 urlpatterns = [
     path("", root_redirect, name="root"),
+    path("admin/search/", admin.site.admin_view(core_views.admin_global_search), name="admin_global_search"),
     path("admin/", admin.site.urls),
 
     # Public portal

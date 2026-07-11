@@ -1,4 +1,4 @@
-{% load static %}
+{% load static role_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,82 +6,84 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>{% block title %}Admin Dashboard · eduPro{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0b0d11;
-  --surface:#13161c;
-  --surface2:#1a1e27;
-  --surface3:#222632;
-  --border:rgba(255,255,255,0.06);
-  --border2:rgba(255,255,255,0.11);
-  --ochre:#e8a84c;
-  --ochre2:#f5c97a;
-  --ochre-dim:rgba(232,168,76,0.12);
-  --teal:#3ecfb2;
-  --teal-dim:rgba(62,207,178,0.1);
-  --rose:#e05f75;
-  --rose-dim:rgba(224,95,117,0.1);
-  --blue:#5b9cf6;
-  --blue-dim:rgba(91,156,246,0.1);
-  --tx1:#edf0f5;
-  --tx2:#8a91a0;
+  --bg:#0d0f14;
+  --surface:#161920;
+  --surface2:#1e222d;
+  --muted:#7a8099;
+  --border:#2a2f3d;
+  --accent:#f59e0b;
+  --accent2:#a78bfa;
+  --success:#34d399;
+  --warning:#fbbf24;
+  --danger:#f87171;
+  --info:#60a5fa;
+  --text:#e8eaf0;
+  --font:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Sans',monospace;
+  --radius:10px;
+  --shadow:0 4px 24px rgba(0,0,0,.35);
+  --ochre:#f59e0b;
+  --ochre2:#d97706;
+  --ochre-dim:rgba(245,158,11,0.12);
+  --teal:#34d399;
+  --teal-dim:rgba(52,211,153,0.1);
+  --rose:#f87171;
+  --rose-dim:rgba(248,113,113,0.1);
+  --blue:#60a5fa;
+  --blue-dim:rgba(96,165,250,0.1);
+  --tx1:#e8eaf0;
+  --tx2:#7a8099;
   --tx3:#515970;
-  --font:'Instrument Sans',system-ui,sans-serif;
-  --mono:'IBM Plex Mono',monospace;
-  --r:8px;
+  --surface3:#222632;
+  --border2:rgba(255,255,255,0.11);
+  --r:10px;
   --r2:12px;
 }
 html,body{height:100%}
 body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;min-height:100vh;font-size:13px;line-height:1.5;overflow-x:hidden}
 
 /* ── SIDEBAR ── */
-.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto}
-@media(max-width:1024px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}}
-.logo-area{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-shrink:0}
-.logo-mark{width:28px;height:28px;border-radius:7px;background:var(--ochre);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-mark svg{width:16px;height:16px;color:#0b0d11}
-.logo-text{font-size:15px;font-weight:700;letter-spacing:-0.3px}
-.logo-text em{font-style:normal;color:var(--ochre)}
-.logo-tag{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:1px;letter-spacing:0.5px}
-.sb-section{padding:16px 0 4px}
-.sb-label{padding:0 14px 6px;font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx3);display:block}
-.sb-link{display:flex;align-items:center;gap:9px;padding:7px 14px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500;border-left:2px solid transparent;transition:all 0.15s}
-.sb-link:hover{color:var(--tx1);background:rgba(255,255,255,0.03)}
-.sb-link.active{color:var(--ochre);border-left-color:var(--ochre);background:var(--ochre-dim);font-weight:600}
-.sb-link svg{width:15px;height:15px;flex-shrink:0;opacity:0.7}
-.sb-link.active svg{opacity:1}
-.sb-badge{margin-left:auto;background:rgba(224,95,117,0.2);color:var(--rose);font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px}
-.sb-footer{margin-top:auto;padding:14px;border-top:1px solid var(--border);flex-shrink:0}
-.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px}
-.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3a3560,#5b4a87);color:#c4baff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;border:1px solid rgba(161,148,255,0.2)}
-.user-name{font-size:12px;font-weight:600;color:var(--tx1);line-height:1.2}
-.user-role{font-size:10px;color:var(--tx3);font-family:var(--mono)}
-.logout-form{margin:0}
-.logout-btn{display:flex;align-items:center;gap:6px;width:100%;padding:6px 10px;background:none;border:none;color:var(--tx3);font-family:var(--font);font-size:12px;border-radius:6px;transition:all 0.15s;cursor:pointer;text-align:left}
-.logout-btn:hover{color:var(--rose);background:var(--rose-dim)}
-.logout-btn svg{width:14px;height:14px;flex-shrink:0}
+.sidebar{width:230px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-logo{padding:22px 18px 18px;font-size:21px;font-weight:800;color:var(--accent);letter-spacing:-.5px;border-bottom:1px solid var(--border)}
+.sidebar-logo span{color:var(--accent2)}
+.sidebar-nav{padding:14px 0;flex:1}
+.nav-section{padding:8px 18px 3px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:500;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(245,158,11,.08)}
+.nav-icon{font-size:15px;width:17px;text-align:center}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sidebar-user{padding:14px 18px;border-top:1px solid var(--border);font-size:13px}
+.sidebar-user .name{font-weight:600;color:var(--text)}
+.role-badge-container{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.role-badge{display:inline-block;align-self:flex-start;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(245,158,11,.15);color:var(--accent)}
+.logout-link{display:block;margin-top:8px;color:var(--muted);font-size:13px;text-decoration:none}
+.logout-link:hover{color:var(--danger)}
+
+/* ── SIDEBAR OVERLAY (mobile) ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
+.sidebar-overlay.open{display:block}
+.hamburger{display:none;background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px}
 
 /* ── MAIN ── */
-.main-wrap{flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-@media(max-width:1024px){.main-wrap{margin-left:0}}
-.topbar{background:rgba(11,13,17,0.9);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.main-wrap{flex:1;margin-left:230px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+@media(max-width:768px){.main-wrap{margin-left:0}.sidebar{transform:translateX(-100%);transition:transform .25s ease;z-index:100}.sidebar.open{transform:translateX(0)}.hamburger{display:flex}.page-heading{font-size:16px}.topbar{padding:10px 14px}}
+@media(max-width:640px){.content{padding:12px 8px}.topbar{padding:10px 10px}.page-heading{font-size:14px}.btn{font-size:12px;padding:4px 9px}}
+@media(max-width:480px){.content{padding:8px 5px}.topbar{padding:6px 8px}.page-heading{font-size:12px}.btn{font-size:10.5px;padding:3px 6px}}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .topbar-left{display:flex;align-items:center;gap:12px}
-.hamburger{display:none;background:none;border:none;color:var(--tx2);cursor:pointer;padding:4px;line-height:1}
-@media(max-width:1024px){.hamburger{display:flex;align-items:center}}
-.breadcrumb{font-size:12px;color:var(--tx3);display:flex;align-items:center;gap:5px}
-.breadcrumb strong{color:var(--tx1);font-weight:600}
-.breadcrumb span{opacity:0.4}
+.page-heading{font-size:19px;font-weight:700;color:var(--text)}
 .topbar-right{display:flex;align-items:center;gap:8px}
-.tb-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0}
-.tb-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--teal);font-family:var(--mono)}
-.tb-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--tx2);font-size:11.5px;cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--font)}
-.tb-pill:hover{color:var(--tx1);border-color:rgba(255,255,255,0.18)}
+.tb-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--muted);font-size:12px;cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--font)}
+.tb-pill:hover{color:var(--text);border-color:var(--border);background:var(--border)}
 .tb-pill svg{width:13px;height:13px}
-.tb-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3a3560,#5b4a87);color:#c4baff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0}
-.content{flex:1;padding:24px 28px;overflow-y:auto}
-@media(max-width:640px){.content{padding:16px}}
+.tb-avatar{width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0}
+.content{flex:1;padding:24px 28px}
 
 /* ── MESSAGES ── */
 .messages-wrap{margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
@@ -90,6 +92,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
 .msg-error{background:rgba(224,95,117,0.07);border-color:rgba(224,95,117,0.2);color:var(--rose)}
 .msg-warning{background:rgba(232,168,76,0.07);border-color:rgba(232,168,76,0.2);color:var(--ochre)}
 .msg-info{background:rgba(91,156,246,0.07);border-color:rgba(91,156,246,0.2);color:var(--blue)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-amber{background:rgba(245,158,11,.15);color:var(--accent)}
+.badge-active{background:rgba(52,211,153,.15);color:var(--success)}
+.badge-inactive{background:rgba(248,113,113,.12);color:var(--danger)}
+.badge-purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+.badge-blue{background:rgba(96,165,250,.15);color:var(--info)}
 
 /* ── PAGE HEADER ── */
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
@@ -209,10 +219,6 @@ canvas.spark{display:block;width:100%;height:28px}
 .feed-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:2px;font-family:var(--mono);letter-spacing:0.3px}
 .feed-filter-btn{cursor:pointer;border:none;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;transition:all 0.15s}
 
-/* ── OVERLAY ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:150;backdrop-filter:blur(2px)}
-.overlay.open{display:block}
-
 /* ── UPTIME ── */
 #uptimeVal{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--tx1)}
 </style>
@@ -220,154 +226,122 @@ canvas.spark{display:block;width:100%;height:28px}
 </head>
 <body>
 
-<div class="overlay" id="overlay"></div>
+<aside class="sidebar">
+  <div class="sidebar-logo">edu<span>Pro</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="{% url 'accounts:dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Dashboard</span>
+    </a>
 
-<!-- ── SIDEBAR ── -->
-<nav class="sidebar" id="sidebar">
-  <div class="logo-area">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path stroke-linecap="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-      </svg>
+    <div class="nav-section">Users</div>
+    <a href="{% url 'accounts:user_list' %}" class="nav-item {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span>All Users</span>
+    </a>
+
+    <div class="nav-section">Academics</div>
+    <a href="{% url 'academics:course_list' %}" class="nav-item {% if 'course_list' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      <span>Courses</span>
+    </a>
+    <a href="{% url 'academics:enrolment_list' %}" class="nav-item {% if 'enrolment' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      <span>Enrolments</span>
+    </a>
+    <a href="{% url 'accounts:admin_registrations' %}" class="nav-item {% if 'registrations' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <span>Registrations</span>
+      {% if pending_registrations|default:0 %}<span class="badge badge-amber" style="margin-left:auto;">{{ pending_registrations }}</span>{% endif %}
+    </a>
+
+    <div class="nav-section">Enterprise</div>
+    <a href="{% url 'analytics:dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' and 'analytics' in request.resolver_match.namespace %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span>Analytics</span>
+    </a>
+    <a href="{% url 'finance:dashboard' %}" class="nav-item {% if 'finance' in request.resolver_match.namespace %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>Finance</span>
+    </a>
+    <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.url_name == 'announcements' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+      <span>Announcements</span>
+    </a>
+    <a href="{% url 'operations:timetable' %}" class="nav-item {% if request.resolver_match.url_name == 'timetable' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Timetable</span>
+    </a>
+    <a href="{% url 'operations:calendar' %}" class="nav-item {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><polyline points="3 10 21 10"/></svg>
+      <span>Calendar</span>
+    </a>
+    <a href="{% url 'operations:hostel' %}" class="nav-item {% if request.resolver_match.url_name == 'hostel' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Hostel</span>
+    </a>
+    <a href="{% url 'operations:hostel_applications_admin' %}" class="nav-item {% if 'hostel_applications' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Applications</span>
+    </a>
+    <a href="{% url 'operations:ticket_admin' %}" class="nav-item {% if 'ticket_admin' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 5H9a7 7 0 000 14h6a7 7 0 000-14z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Tickets</span>
+    </a>
+    <a href="{% url 'feedback:dashboard' %}" class="nav-item {% if 'feedback' in request.resolver_match.namespace %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      <span>Feedback</span>
+    </a>
+    <a href="{% url 'core:audit_logs' %}" class="nav-item {% if 'audit_log' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span>Audit Logs</span>
+    </a>
+    <a href="{% url 'portal:admissions_dashboard' %}" class="nav-item {% if 'admissions' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+      <span>Admissions</span>
+    </a>
+    <a href="{% url 'portal:application_list' %}" class="nav-item {% if 'application_list' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span>Applications</span>
+    </a>
+    <a href="{% url 'portal:cycle_list' %}" class="nav-item {% if 'cycle' in request.resolver_match.url_name %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><polyline points="3 10 21 10"/></svg>
+      <span>Cycles</span>
+    </a>
+    <a href="{% url 'api:root' %}" class="nav-item {% if 'api' in request.resolver_match.namespace %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+      <span>API</span>
+    </a>
+
+    <div class="nav-section">System</div>
+    <a href="{% url 'admin:index' %}" class="nav-item">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M19.07 4.93A10 10 0 104.93 19.07"/></svg>
+      <span>Django Admin</span>
+    </a>
+    <a href="{% url 'accounts:profile' %}" class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>My Profile</span>
+    </a>
+    <a href="{% url 'accounts:change_password' %}" class="nav-item {% if request.resolver_match.url_name == 'change_password' %}active{% endif %}">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path stroke-linecap="round" d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <span>Change Password</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="name">{{ request.user.get_full_name }}</div>
+    <div class="role-badge-container">
+      <span class="role-badge">Admin</span>
+      {% if user.is_hod or user|has_role:"HOD" %}
+        <span class="role-badge hod">HOD</span>
+      {% endif %}
     </div>
-    <div>
-      <div class="logo-text">edu<em>Pro</em></div>
-      <div class="logo-tag">ADMIN CONSOLE</div>
-    </div>
+    <a href="{% url 'accounts:logout' %}" class="logout-link">↩ Sign out</a>
   </div>
+</aside>
 
-  <div class="sb-section">
-    <span class="sb-label">Overview</span>
-    <a href="{% url 'accounts:dashboard' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
-    </a>
-  </div>
-
-  <div class="sb-section">
-    <span class="sb-label">Users</span>
-    <a href="{% url 'accounts:user_list' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      All Users
-    </a>
-  </div>
-
-  <div class="sb-section">
-    <span class="sb-label">Academics</span>
-    <a href="{% url 'academics:course_list' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-      Courses
-    </a>
-    <a href="{% url 'academics:enrolment_list' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-      Enrolments
-    </a>
-    <a href="{% url 'accounts:admin_registrations' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      Registrations
-      {% if pending_registrations|default:0 %}<span class="sb-badge">{{ pending_registrations }}</span>{% endif %}
-    </a>
-  </div>
-
-  <div class="sb-section">
-    <span class="sb-label">Enterprise</span>
-    <a href="{% url 'analytics:dashboard' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      Analytics
-    </a>
-    <a href="{% url 'finance:dashboard' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      Finance
-    </a>
-    <a href="{% url 'operations:announcements' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-      Announcements
-    </a>
-    <a href="{% url 'operations:timetable' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Timetable
-    </a>
-    <a href="{% url 'operations:calendar' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><polyline points="3 10 21 10"/></svg>
-      Calendar
-    </a>
-    <a href="{% url 'operations:hostel' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Hostel
-    </a>
-    <a href="{% url 'operations:hostel_applications_admin' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
-      Applications
-    </a>
-    <a href="{% url 'operations:ticket_admin' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M15 5H9a7 7 0 000 14h6a7 7 0 000-14z"/><circle cx="12" cy="12" r="3"/></svg>
-      Tickets
-    </a>
-    <a href="{% url 'operations:announcement_manage' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-      Manage Announcements
-    </a>
-    <a href="{% url 'feedback:dashboard' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      Feedback
-    </a>
-    <a href="{% url 'core:audit_logs' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Audit Logs
-    </a>
-    <a href="{% url 'portal:admissions_dashboard' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-      Admissions
-    </a>
-    <a href="{% url 'portal:application_list' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Applications
-    </a>
-    <a href="{% url 'portal:cycle_list' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><polyline points="3 10 21 10"/></svg>
-      Cycles
-    </a>
-    <a href="{% url 'api:root' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
-      API
-    </a>
-  </div>
-
-  <div class="sb-section">
-    <span class="sb-label">System</span>
-    <a href="{% url 'admin:index' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M19.07 4.93A10 10 0 104.93 19.07"/></svg>
-      Django Admin
-    </a>
-    <a href="{% url 'accounts:profile' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      My Profile
-    </a>
-    <a href="{% url 'accounts:change_password' %}" class="sb-link">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path stroke-linecap="round" d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      Change Password
-    </a>
-  </div>
-
-  <div class="sb-footer">
-    <div class="user-row">
-      <div class="user-avatar">
-        {% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.email|slice:":1"|upper }}{% endif %}
-      </div>
-      <div style="min-width:0">
-        <div class="user-name">{{ request.user.get_full_name }}</div>
-        <div class="user-role">ADMINISTRATOR</div>
-      </div>
-    </div>
-    <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">
-      {% csrf_token %}
-      <button type="submit" class="logout-btn">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        Sign out
-      </button>
-    </form>
-  </div>
-</nav>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- ── MAIN WRAP ── -->
 <div class="main-wrap">
@@ -375,23 +349,14 @@ canvas.spark{display:block;width:100%;height:28px}
   <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-left">
-      <button class="hamburger" id="hamburger" aria-label="Open menu">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <div class="breadcrumb">
-        <span>eduPro</span><span>›</span><strong>{% block breadcrumb %}Admin Dashboard{% endblock %}</strong>
-      </div>
+      <div class="page-heading">{% block breadcrumb %}Admin Dashboard{% endblock %}</div>
     </div>
     <div class="topbar-right">
-      <div class="tb-status"><div class="tb-dot"></div>SYSTEM OPERATIONAL</div>
-      <a href="{% url 'accounts:profile' %}" class="tb-pill">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-        Profile
-      </a>
-      <a href="{% url 'admin:index' %}" class="tb-pill">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M19.07 4.93A10 10 0 104.93 19.07"/></svg>
-        Admin
-      </a>
+      <a href="{% url 'accounts:profile' %}" class="tb-pill">Profile</a>
+      <a href="{% url 'admin:index' %}" class="tb-pill">Django Admin</a>
       <a href="{% url 'accounts:profile' %}" class="tb-avatar" title="{{ request.user.get_full_name }}">
         {% if request.user.first_name %}{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}{% else %}{{ request.user.email|slice:":1"|upper }}{% endif %}
       </a>
@@ -419,32 +384,6 @@ canvas.spark{display:block;width:100%;height:28px}
 
 <script>
 (function(){
-
-  /* ── Sidebar toggle ── */
-  const sidebar  = document.getElementById('sidebar');
-  const overlay  = document.getElementById('overlay');
-  const hamburger = document.getElementById('hamburger');
-
-  if(hamburger){
-    hamburger.addEventListener('click', function(){
-      sidebar.classList.add('open');
-      overlay.classList.add('open');
-    });
-  }
-  if(overlay){
-    overlay.addEventListener('click', function(){
-      sidebar.classList.remove('open');
-      overlay.classList.remove('open');
-    });
-  }
-
-  /* ── Active nav link ── */
-  document.querySelectorAll('.sb-link').forEach(function(link){
-    if(link.getAttribute('href') === window.location.pathname){
-      document.querySelectorAll('.sb-link').forEach(function(l){ l.classList.remove('active'); });
-      link.classList.add('active');
-    }
-  });
 
   /* ── KPI bar animations ── */
   setTimeout(function(){
@@ -539,6 +478,16 @@ canvas.spark{display:block;width:100%;height:28px}
     var emptyMsg = document.getElementById('feed-empty');
     if(emptyMsg) emptyMsg.style.display = (visible===0) ? '' : 'none';
   };
+
+  /* ── Mobile sidebar toggle ── */
+  var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay'),hb=document.getElementById('hamburger');
+  if(hb&&sb){
+    function openSb(){sb.classList.add('open');ov.classList.add('open');document.body.style.overflow='hidden';}
+    function closeSb(){sb.classList.remove('open');ov.classList.remove('open');document.body.style.overflow='';}
+    hb.addEventListener('click',openSb);
+    ov.addEventListener('click',closeSb);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSb();});
+  }
 
   /* ── Chart.js global helpers ── */
   window.eduPro = window.eduPro || {};

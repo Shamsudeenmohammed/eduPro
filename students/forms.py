@@ -54,6 +54,7 @@ class CourseRegistrationForm(StyledMixin, forms.ModelForm):
         }
 
     def __init__(self, student, *args, **kwargs):
+        self._student = student
         super().__init__(*args, **kwargs)
         from academics.models import Enrolment
 
@@ -77,7 +78,7 @@ class CourseRegistrationForm(StyledMixin, forms.ModelForm):
         except ObjectDoesNotExist:
             pass
 
-        # ── Retake: include offerings for courses the student has failed ──────
+        self.retake_course_ids = set()
         from teachers.models import StudentResult
         failed_course_ids = (
             StudentResult.objects
@@ -90,11 +91,13 @@ class CourseRegistrationForm(StyledMixin, forms.ModelForm):
             .distinct()
         )
         if failed_course_ids:
+            self.retake_course_ids = set(failed_course_ids)
+            from finance.models import has_unpaid_retake_fees
             retake_offerings = CourseOffering.objects.filter(
                 is_active=True,
                 course_id__in=failed_course_ids,
                 level_name__in=["100", "200", "300", "400"],
-            ).exclude(pk__in=enrolled_pks | set(pending_pks))
+            ).exclude(pk__in=excluded)
             qs = qs | retake_offerings
 
         self.fields["offering"].queryset = (
@@ -102,6 +105,18 @@ class CourseRegistrationForm(StyledMixin, forms.ModelForm):
             .order_by("-semester__session__start_date", "course__code")
         )
         self.fields["offering"].label = "Course Offering"
+
+    def clean_offering(self):
+        offering = self.cleaned_data["offering"]
+        if offering.course_id in getattr(self, "retake_course_ids", set()):
+            from finance.models import has_unpaid_retake_fees
+            if has_unpaid_retake_fees(self._student, course=offering.course):
+                raise forms.ValidationError(
+                    _("You have an unpaid retake fee for %(course)s. "
+                      "Please pay the retake fee before registering.")
+                    % {"course": offering.course.code}
+                )
+        return offering
 
 
 class AssignmentSubmitForm(StyledMixin, forms.ModelForm):

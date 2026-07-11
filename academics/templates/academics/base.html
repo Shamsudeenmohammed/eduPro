@@ -15,8 +15,12 @@
       --surface:  #161920;
       --surface2: #1e222d;
       --border:   #2a2f3d;
-      --accent:   #5b8af0;
+      --accent:   #f59e0b;
       --accent2:  #a78bfa;
+      --ochre:#f59e0b;--ochre-dim:rgba(245,158,11,0.12);
+      --teal:#34d399;--teal-dim:rgba(52,211,153,0.1);
+      --rose:#f87171;--rose-dim:rgba(248,113,113,0.1);
+      --blue:#60a5fa;--blue-dim:rgba(96,165,250,0.1);
       --success:  #34d399;
       --warning:  #fbbf24;
       --danger:   #f87171;
@@ -39,10 +43,7 @@
       display: flex;
     }
 
-    /* Hide the mobile sidebar controller checkbox */
-    #sidebar-toggle {
-      display: none;
-    }
+
 
     /* ── Sidebar ── */
     .sidebar {
@@ -85,7 +86,7 @@
       border-left: 3px solid transparent;
     }
     .nav-item:hover { color: var(--text); background: var(--surface2); }
-    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(91,138,240,0.08); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(245,158,11,0.08); }
     .nav-item svg {
       width: 18px;
       height: 18px;
@@ -106,7 +107,7 @@
       padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
       text-transform: capitalize;
     }
-    .badge-admin   { background: rgba(91,138,240,0.15); color: var(--accent); }
+    .badge-admin   { background: rgba(245,158,11,0.15); color: var(--accent); }
     .badge-teacher { background: rgba(167,139,250,0.15); color: var(--accent2); }
     .badge-student { background: rgba(52,211,153,0.15); color: var(--success); }
     .logout-link { display: block; margin-top: 10px; color: var(--muted); font-size: 13px; text-decoration: none; transition: color 0.15s; }
@@ -143,21 +144,6 @@
     }
     .topbar-actions { display: flex; gap: 10px; align-items: center; }
 
-    /* Mobile Menu Burger Trigger Button */
-    .menu-trigger {
-      display: none;
-      background: none;
-      border: none;
-      color: var(--text);
-      cursor: pointer;
-      padding: 4px;
-    }
-    .menu-trigger svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
     .content { padding: 32px; flex: 1; }
 
     /* ── Messages ── */
@@ -168,7 +154,7 @@
     }
     .message-success { background: rgba(52,211,153,0.12); color: var(--success); border: 1px solid rgba(52,211,153,0.25); }
     .message-error   { background: rgba(248,113,113,0.12); color: var(--danger);  border: 1px solid rgba(248,113,113,0.25); }
-    .message-info    { background: rgba(91,138,240,0.12);  color: var(--accent);  border: 1px solid rgba(91,138,240,0.25); }
+    .message-info    { background: rgba(245,158,11,0.12);  color: var(--accent);  border: 1px solid rgba(245,158,11,0.25); }
     .message-warning { background: rgba(251,191,36,0.12);  color: var(--warning); border: 1px solid rgba(251,191,36,0.25); }
 
     /* ── Buttons ── */
@@ -180,7 +166,7 @@
       transition: all 0.15s;
     }
     .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #4a79e0; }
+    .btn-primary:hover { background: #d97706; }
     .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-secondary:hover { background: var(--border); }
     .btn-danger { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.25); }
@@ -217,7 +203,7 @@
     }
     .stat-label { font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
     .stat-value { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--text); }
-    .stat-card.accent  { border-color: rgba(91,138,240,0.4); }
+    .stat-card.accent  { border-color: rgba(245,158,11,0.4); }
     .stat-card.accent  .stat-value { color: var(--accent); }
     .stat-card.purple  { border-color: rgba(167,139,250,0.4); }
     .stat-card.purple  .stat-value { color: var(--accent2); }
@@ -250,7 +236,7 @@
     }
     .badge-active   { background: rgba(52,211,153,0.15);  color: var(--success); }
     .badge-inactive { background: rgba(248,113,113,0.12); color: var(--danger); }
-    .badge-blue     { background: rgba(91,138,240,0.15);  color: var(--accent); }
+    .badge-blue     { background: rgba(245,158,11,0.15);  color: var(--accent); }
     .badge-purple   { background: rgba(167,139,250,0.15); color: var(--accent2); }
 
     /* ── Pagination ── */
@@ -291,26 +277,22 @@
     }
     .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--accent); }
 
-    .sidebar-overlay {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 999;
-    }
-
-    @media (max-width: 1024px) {
-      .sidebar { transform: translateX(-100%); }
-      .main { margin-left: 0; }
-      .topbar { padding: 16px 20px; }
-      .content { padding: 24px 20px; }
-      .menu-trigger { display: block; }
-      #sidebar-toggle:checked ~ .sidebar { transform: translateX(0); }
-      #sidebar-toggle:checked ~ .sidebar-overlay { display: block; }
-    }
+    /* ── SIDEBAR OVERLAY (mobile) ── */
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
+    .sidebar-overlay.open{display:block}
+    .hamburger{display:none;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px}
+    .hamburger svg{width:22px;height:22px}
 
     @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s ease; z-index:100; }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .topbar { padding: 14px 20px; }
+      .content { padding: 16px; }
       table thead { display: none; }
       table, table tbody, table tr, table td { display: block; width: 100%; }
-      table tbody tr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 12px; transition: transform 0.15s ease; }
-      table tbody tr:hover { background: var(--surface2); transform: translateY(-2px); }
+      table tbody tr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 12px; }
       table td { padding: 8px 0; border: none; display: flex; justify-content: space-between; align-items: center; font-size: 13px; text-align: right; border-bottom: 1px solid rgba(42, 47, 61, 0.4); }
       table td:last-child { border-bottom: none; }
       table td::before { content: attr(data-label); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); float: left; text-align: left; padding-right: 16px; }
@@ -326,9 +308,6 @@
 <body>
 
 {% load role_tags %}
-
-<input type="checkbox" id="sidebar-toggle" />
-<label for="sidebar-toggle" class="sidebar-overlay"></label>
 
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -426,12 +405,14 @@
   </div>
 </aside>
 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="main">
   <header class="topbar">
     <div class="topbar-left">
-      <label for="sidebar-toggle" class="menu-trigger">
-        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-      </label>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="page-heading">{{ page_title|default:"Academics" }}</div>
     </div>
     <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
@@ -450,5 +431,17 @@
   </div>
 </div>
 
+<script>
+(function(){
+  var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay'),hb=document.getElementById('hamburger');
+  if(hb&&sb){
+    function openSb(){sb.classList.add('open');ov.classList.add('open');document.body.style.overflow='hidden';}
+    function closeSb(){sb.classList.remove('open');ov.classList.remove('open');document.body.style.overflow='';}
+    hb.addEventListener('click',openSb);
+    ov.addEventListener('click',closeSb);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSb();});
+  }
+})();
+</script>
 </body>
 </html>

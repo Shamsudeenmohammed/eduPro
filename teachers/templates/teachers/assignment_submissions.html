@@ -12,7 +12,7 @@
 
 <div class="card" style="margin-bottom:16px;">
   <div class="card-header"><span class="card-title">Assignment Info</span></div>
-  <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+  <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
     <div><div class="detail-label">Title</div><div class="detail-value">{{ assignment.title }}</div></div>
     <div><div class="detail-label">Due Date</div><div class="detail-value">{{ assignment.due_date|date:"d M Y H:i" }}</div></div>
     <div><div class="detail-label">Total Marks</div><div class="detail-value">{{ assignment.total_marks }}</div></div>

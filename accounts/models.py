@@ -172,10 +172,11 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return self.first_name
 
-    # ── Primary-role helpers (backward-compat) ────────────────────────────
+    # ── Primary-role helpers ─────────────────────────────────────────────
 
     @property
     def is_admin(self):
+        """True for full system administrators only (not mere staff)."""
         return self.role == Role.ADMIN or self.is_superuser
 
     @property
@@ -254,6 +255,15 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
             .values_list("responsibility", flat=True)
             .distinct()
         )
+
+    def save(self, *args, **kwargs):
+        """Auto-sync is_staff when role changes."""
+        if self.role == Role.ADMIN:
+            self.is_staff = True
+        elif self.role == Role.STUDENT:
+            self.is_staff = False
+        # TEACHER: is_staff is managed via UserStaffRole (HOD responsibility)
+        super().save(*args, **kwargs)
 
     def get_dashboard_url(self):
         """Return the correct dashboard URL for this user."""

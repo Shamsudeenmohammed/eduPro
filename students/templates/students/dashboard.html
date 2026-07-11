@@ -233,7 +233,7 @@
       <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
         {% for r in recent_results %}
         <a href="{% url 'students:result_detail' offering_pk=r.result_sheet.offering.pk %}" class="result-row">
-          <div class="grade-circle gc-{{ r.letter_grade|first|default:'default' }}">{{ r.letter_grade|default:"–" }}</div>
+          <div class="grade-circle gc-{{ r.grade|first|default:'default' }}">{{ r.grade|default:"–" }}</div>
           <div class="rr-body">
             <div class="rr-course">{{ r.result_sheet.offering.course.code }} — {{ r.result_sheet.offering.course.title|truncatechars:35 }}</div>
             <div class="rr-meta">{{ r.result_sheet.offering.semester }} · {{ r.result_sheet.approved_at|date:"M d, Y" }}</div>

@@ -37,7 +37,9 @@
     padding: .85rem 1.1rem; font-size: .88rem;
     border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle;
   }
+  table.reg-table tbody tr { transition: none; }
   table.reg-table tr:last-child td { border-bottom: none; }
+  table.reg-table tbody tr:hover { background: transparent; }
   table.reg-table tbody tr:hover td { background: #f9fafb; }
 
   .student-name { font-weight: 700; color: #1e293b; }
@@ -152,6 +154,9 @@
         <td data-label="Course">
           <div class="course-code">{{ reg.offering.course.code }}</div>
           <div style="font-size:.82rem;color:#374151;">{{ reg.offering.course.title|truncatechars:35 }}</div>
+          {% if reg.is_retake %}
+            <span style="display:inline-block;margin-top:4px;font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.25)">RETAK</span>
+          {% endif %}
         </td>
         <td data-label="Semester">
           <div style="font-weight:600;font-size:.87rem;">{{ reg.offering.semester }}</div>
@@ -165,6 +170,9 @@
           <span class="status-badge s-{{ reg.status }}">{{ reg.status|capfirst }}</span>
           {% if reg.reviewed_by %}
             <div style="font-size:.73rem;color:#9ca3af;margin-top:.25rem;">by {{ reg.reviewed_by.get_full_name }}</div>
+          {% endif %}
+          {% if reg.is_retake and reg.status == 'pending' and reg.id in unpaid_reg_ids %}
+            <div style="font-size:.7rem;margin-top:4px;color:#ef4444;font-weight:600">Retake fee unpaid</div>
           {% endif %}
         </td>
         <td data-label="Actions">

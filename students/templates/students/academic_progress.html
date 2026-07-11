@@ -156,8 +156,8 @@
             <td>{{ r.result_sheet.offering.course.credit_units }}</td>
             <td>{{ r.total_score|default:"—" }}</td>
             <td>
-              {% if r.letter_grade %}
-                <span class="grade-pill grade-{{ r.letter_grade|first }}">{{ r.letter_grade }}</span>
+              {% if r.grade %}
+                <span class="grade-pill grade-{{ r.grade|first }}">{{ r.grade }}</span>
               {% else %}—{% endif %}
             </td>
             <td style="font-weight:700;">{{ r.grade_point|default:"—" }}</td>

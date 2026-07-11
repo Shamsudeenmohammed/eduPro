@@ -74,7 +74,7 @@
 
   <div class="rd-hero">
     <div class="rd-grade-circle">
-      {{ result.letter_grade|default:"–" }}
+      {{ result.grade|default:"–" }}
     </div>
     <div>
       <h1>{{ offering.course.code }} — {{ offering.course.title }}</h1>
@@ -130,8 +130,8 @@
     <div class="detail-row">
       <span class="dk">Letter Grade</span>
       <span class="dv">
-        {% if result.letter_grade %}
-          <span class="grade-pill grade-{{ result.letter_grade|first }}">{{ result.letter_grade }}</span>
+        {% if result.grade %}
+          <span class="grade-pill grade-{{ result.grade|first }}">{{ result.grade }}</span>
         {% else %}—{% endif %}
       </span>
     </div>

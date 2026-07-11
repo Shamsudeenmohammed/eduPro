@@ -5,13 +5,26 @@
   <a href="{% url 'students:registration_list' %}" class="btn btn-secondary">My Requests →</a>
 </div>
 
-<div style="max-width:520px" class="fade-up delay-1">
+<div style="max-width:560px" class="fade-up delay-1">
   <div class="card">
     {% if fee_ok is False %}
     <div style="padding:1rem;background:rgba(255,169,77,.1);border:1px solid rgba(255,169,77,.25);border-radius:8px;margin-bottom:18px;font-size:.85rem;color:var(--warning)">
       You need to have paid at least <strong>60% of your fees</strong> and clear any overdue balances before registering. Visit <strong>My Fees</strong> to check your statement.
     </div>
     {% endif %}
+
+    {% if unpaid_retake_fees %}
+    <div style="padding:1rem;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:8px;margin-bottom:18px;font-size:.85rem;color:var(--danger)">
+      <strong>Unpaid Retake Fee(s):</strong> You have retake fees that need to be paid before you can register for the following courses:
+      <ul style="margin-top:6px;margin-bottom:6px;padding-left:1.25rem">
+        {% for rf in unpaid_retake_fees %}
+        <li><strong>{{ rf.course.code }}</strong> — ₦{{ rf.amount }}</li>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'finance:my_fees' %}" style="color:var(--danger);text-decoration:underline">Pay retake fees →</a>
+    </div>
+    {% endif %}
+
     <p style="font-size:.875rem;color:var(--muted);margin-bottom:22px;line-height:1.6">
       Submit a registration request for a course offering. An administrator will review and approve your request. You will be notified once approved.
     </p>

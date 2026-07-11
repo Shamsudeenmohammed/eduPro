@@ -108,12 +108,12 @@ def role_required(*roles):
 
 
 def admin_required(view_func):
-    """Require ADMIN primary role (or superuser)."""
+    """Require admin-level access (admin role, staff status, or superuser)."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return _login_redirect(request)
-        if request.user.is_superuser or request.user.role == Role.ADMIN:
+        if request.user.is_admin:
             return view_func(request, *args, **kwargs)
         return _deny(request, _("Administrator access required."))
     return wrapper
@@ -125,7 +125,7 @@ def teacher_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return _login_redirect(request)
-        if request.user.is_superuser or request.user.role in (Role.TEACHER, Role.ADMIN):
+        if request.user.is_admin or request.user.role == Role.TEACHER:
             return view_func(request, *args, **kwargs)
         return _deny(request, _("Teacher access required."))
     return wrapper
@@ -182,7 +182,7 @@ def responsibility_required(*responsibilities):
         def wrapper(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 return _login_redirect(request)
-            if request.user.is_superuser or request.user.role == Role.ADMIN:
+            if request.user.is_admin:
                 return view_func(request, *args, **kwargs)
             user_resp = set(request.user.get_active_responsibilities())
             if user_resp.intersection(set(responsibilities)):
@@ -207,7 +207,7 @@ def hod_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return _login_redirect(request)
-        if request.user.is_superuser or request.user.role == Role.ADMIN:
+        if request.user.is_admin:
             return view_func(request, *args, **kwargs)
         if request.user.is_hod:
             return view_func(request, *args, **kwargs)
@@ -235,7 +235,7 @@ def hod_of_dept_required(dept_kwarg: str = "dept_pk"):
         def wrapper(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 return _login_redirect(request)
-            if request.user.is_superuser or request.user.role == Role.ADMIN:
+            if request.user.is_admin:
                 return view_func(request, *args, **kwargs)
 
             from academics.models import Department

@@ -127,6 +127,7 @@ class QuizAdmin(admin.ModelAdmin):
 class QuizQuestionAdmin(admin.ModelAdmin):
     list_display  = ("text_short", "quiz", "question_type", "marks", "order")
     list_filter   = ("question_type",)
+    search_fields = ("text", "quiz__title")
     inlines       = [QuizChoiceInline]
 
     def text_short(self, obj):

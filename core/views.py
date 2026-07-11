@@ -1,9 +1,12 @@
 """Core views — audit logs, ID cards, bulk utilities."""
 
+from django.contrib import admin as admin_site
+from django.contrib.admin.utils import quote
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import models
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 
 from accounts.decorators import admin_required
 from accounts.models import EduProUser
@@ -90,3 +93,48 @@ def id_card_pdf(request, user_pk=None):
             raise PermissionDenied
         target = get_object_or_404(EduProUser, pk=user_pk)
     return render_id_card_pdf(target)
+
+
+@login_required
+@admin_required
+def admin_global_search(request):
+    query = request.GET.get("q", "").strip()
+    results = []
+
+    if query:
+        for model_class, model_admin in admin_site.site._registry.items():
+            search_fields = getattr(model_admin, "search_fields", None)
+            if not search_fields:
+                continue
+            if not request.user.has_perm(f"{model_class._meta.app_label}.view_{model_class._meta.model_name}"):
+                continue
+
+            q_object = models.Q()
+            for field in search_fields:
+                q_object |= models.Q(**{f"{field}__icontains": query})
+
+            qs = model_class.objects.filter(q_object).distinct()[:10]
+
+            if qs:
+                opts = model_class._meta
+                for obj in qs:
+                    try:
+                        change_url = reverse(
+                            f"admin:{opts.app_label}_{opts.model_name}_change",
+                            args=(quote(obj.pk),),
+                        )
+                    except Exception:
+                        change_url = None
+                    results.append({
+                        "model_name": opts.verbose_name.title(),
+                        "app_label": opts.app_label.title(),
+                        "object": obj,
+                        "url": change_url,
+                    })
+
+    return render(request, "core/admin_global_search.html", {
+        "page_title": "Search Results",
+        "query": query,
+        "results": results,
+        "title": f"Search: {query}" if query else "Search",
+    })

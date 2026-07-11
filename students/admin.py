@@ -15,9 +15,11 @@ class StudentNotificationAdmin(admin.ModelAdmin):
 @admin.register(CourseRegistrationRequest)
 class CourseRegistrationRequestAdmin(admin.ModelAdmin):
     list_display  = ("student", "offering", "status", "created_at", "reviewed_by")
-    list_filter   = ("status",)
-    search_fields = ("student__email", "offering__course__code")
+    list_filter   = ("status", "offering__semester__session")
+    search_fields = ("student__email", "student__first_name", "student__last_name", "offering__course__code", "offering__course__title")
     readonly_fields = ("created_at", "reviewed_at")
+    autocomplete_fields = ("student", "offering", "reviewed_by")
+    list_select_related = ("student", "offering", "reviewed_by")
     actions = ["approve_requests", "reject_requests"]
 
     @admin.action(description="Approve selected requests")

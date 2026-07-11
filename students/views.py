@@ -268,10 +268,14 @@ def course_registration(request):
     else:
         form = CourseRegistrationForm(request.user)
 
+    from finance.models import get_unpaid_retake_fees
+    unpaid_retake_fees = get_unpaid_retake_fees(request.user)
+
     return render(request, "students/course_registration.html", {
-        "page_title": "Register for a Course",
-        "form":       form,
-        "fee_ok":     fee_ok,
+        "page_title":       "Register for a Course",
+        "form":             form,
+        "fee_ok":           fee_ok,
+        "unpaid_retake_fees": unpaid_retake_fees,
     })
 
 

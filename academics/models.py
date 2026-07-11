@@ -769,8 +769,7 @@ class ResultSheet(TimeStampedModel):
                 _("Only HOD_APPROVED sheets can be finalized. Current status: %(s)s.")
                 % {"s": self.get_status_display()}
             )
-        from accounts.models import Role
-        if not (actor.is_superuser or actor.role == Role.ADMIN):
+        if not actor.is_admin:
             raise ValidationError(_("Only administrators can finalize result sheets."))
         self.status       = self.Status.FINALIZED
         self.finalized_by = actor
@@ -790,8 +789,8 @@ class ResultSheet(TimeStampedModel):
                 _("Only SUBMITTED sheets can be reverted. Current status: %(s)s.")
                 % {"s": self.get_status_display()}
             )
-        from accounts.models import Role, StaffResponsibility
-        is_admin = actor.is_superuser or actor.role == Role.ADMIN
+        from accounts.models import StaffResponsibility
+        is_admin = actor.is_admin
         is_hod   = actor.is_hod_of(self.department)
         if not (is_admin or is_hod):
             raise ValidationError(

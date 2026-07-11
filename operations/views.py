@@ -21,7 +21,11 @@ from .models import (
 
 
 def _base_for_user(user):
-    return "students/base.html" if getattr(user, "is_student", False) else "admin_base.html"
+    if getattr(user, "is_student", False):
+        return "students/base.html"
+    if getattr(user, "is_admin", False):
+        return "admin_base.html"
+    return "teachers/base.html"
 
 
 @login_required

@@ -23,7 +23,12 @@ def submit_feedback(request):
         classify_feedback(fb)
         messages.success(request, "Thank you for your feedback!")
         return redirect("feedback:submit")
-    base = "students/base.html" if getattr(request.user, "is_student", False) else "admin_base.html"
+    if getattr(request.user, "is_student", False):
+        base = "students/base.html"
+    elif getattr(request.user, "is_admin", False):
+        base = "admin_base.html"
+    else:
+        base = "teachers/base.html"
     return render(request, "feedback/submit.html", {"form": form, "page_title": "Submit Feedback", "base_template": base})
 
 

@@ -703,9 +703,27 @@ def admin_registration_requests(request):
     )
     paginator = Paginator(requests, 30)
     page_obj  = paginator.get_page(request.GET.get("page"))
+
+    from finance.models import StudentRetakeFee
+    retake_student_courses = set()
+    for r in page_obj:
+        if r.is_retake:
+            retake_student_courses.add((r.student_id, r.offering.course_id))
+    unpaid_fees = {
+        (rf.student_id, rf.course_id)
+        for rf in StudentRetakeFee.objects.filter(
+            is_paid=False,
+        ).values("student_id", "course_id")
+    }
+    unpaid_reg_ids = set()
+    for r in page_obj:
+        if r.is_retake and (r.student_id, r.offering.course_id) in unpaid_fees:
+            unpaid_reg_ids.add(r.id)
+
     return render(request, "accounts/admin_registrations.html", {
         "page_title": "Course Registration Requests",
         "page_obj":   page_obj,
+        "unpaid_reg_ids": unpaid_reg_ids,
     })
 
 

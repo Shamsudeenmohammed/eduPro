@@ -3,12 +3,12 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from accounts.decorators import admin_required, student_required, teacher_required
 from .forms import FeePaymentForm, FeeStructureForm, PayrollForm, StudentFeeForm
-from .models import FeePayment, FeeStructure, PayrollRecord, StudentFee
+from .models import FeePayment, FeeStructure, PayrollRecord, StudentFee, StudentRetakeFee
 
 User = get_user_model()
 
@@ -123,7 +123,60 @@ def record_payment(request, fee_pk):
 @student_required
 def my_fees(request):
     fees = StudentFee.objects.filter(student=request.user).select_related("fee_structure")
-    return render(request, "students/my_fees.html", {"fees": fees, "page_title": "My Fees"})
+    retake_fees = StudentRetakeFee.objects.filter(student=request.user).select_related("course", "session")
+    return render(request, "students/my_fees.html", {
+        "fees": fees,
+        "retake_fees": retake_fees,
+        "page_title": "My Fees",
+    })
+
+
+# ── Retake Fee Management ─────────────────────────────────────────────────
+
+
+@login_required
+@admin_required
+def retake_fee_list(request):
+    qs = StudentRetakeFee.objects.select_related("student", "course", "session").order_by("-created_at")
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        qs = qs.filter(
+            Q(student__first_name__icontains=search_query) |
+            Q(student__last_name__icontains=search_query) |
+            Q(student__email__icontains=search_query) |
+            Q(course__code__icontains=search_query)
+        )
+    status = request.GET.get("status")
+    if status == "paid":
+        qs = qs.filter(is_paid=True)
+    elif status == "unpaid":
+        qs = qs.filter(is_paid=False)
+    paginator = Paginator(qs, 30)
+    return render(request, "finance/retake_fees.html", {
+        "page_obj": paginator.get_page(request.GET.get("page")),
+        "page_title": "Retake Fees",
+        "search_query": search_query,
+    })
+
+
+@login_required
+@admin_required
+@require_http_methods(["GET", "POST"])
+def retake_fee_pay(request, pk):
+    retake_fee = get_object_or_404(StudentRetakeFee, pk=pk, is_paid=False)
+    if request.method == "POST":
+        from django.utils import timezone
+        retake_fee.is_paid = True
+        retake_fee.paid_at = timezone.now()
+        retake_fee.paid_by = request.user
+        retake_fee.notes = request.POST.get("notes", "")
+        retake_fee.save()
+        messages.success(request, f"Retake fee marked as paid for {retake_fee.student.get_full_name()} — {retake_fee.course.code}.")
+        return redirect("finance:retake_fee_list")
+    return render(request, "finance/retake_fee_pay.html", {
+        "retake_fee": retake_fee,
+        "page_title": "Confirm Retake Fee Payment",
+    })
 
 
 @login_required

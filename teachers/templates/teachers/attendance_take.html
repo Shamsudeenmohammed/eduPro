@@ -16,7 +16,7 @@
   <!-- Session details -->
   <div class="card" style="margin-bottom:16px;">
     <div class="card-header"><span class="card-title">Session Details</span></div>
-    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+    <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
       <div class="field-group">
         <label class="field-label">Date <span style="color:var(--danger)">*</span></label>
         <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
