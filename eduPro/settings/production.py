@@ -53,6 +53,13 @@ if _DATABASE_URL:
         }
     }
 else:
+    _missing_db = [k for k in ("DB_NAME", "DB_USER", "DB_PASSWORD") if not config(k, default="")]
+    if _missing_db:
+        raise RuntimeError(
+            "No database configured. On Render, link a (free) Postgres instance "
+            "to this web service — it auto-injects DATABASE_URL. Otherwise set "
+            "these env vars on the service: " + ", ".join(_missing_db)
+        )
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
