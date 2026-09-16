@@ -1,0 +1,80 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}Entries · {{ schedule.name }} · eduPro{% endblock %}
+{% block breadcrumb %}Entries{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Entries — {{ schedule.name }}</h1>
+    <p>Add or manage weekly sessions for this schedule.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:schedule_detail' schedule.pk %}">← Back</a>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><span class="card-title">Add Session</span></div>
+  <div class="card-body" style="padding:16px 18px">
+    <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        {% for field in form %}
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:4px">{{ field.label }}</label>
+          {{ field }}
+          {% for err in field.errors %}<div style="color:var(--rose);font-size:11px;margin-top:2px">{{ err }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <div style="margin-top:14px">
+        <button type="submit" class="btn btn-primary" name="add" value="1">Add entry</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Sessions</span>
+    <span class="s-pill pill-muted">{{ entries|length }}</span>
+  </div>
+  <table class="reg-table">
+    <thead><tr><th>Day</th><th>Course</th><th>Time</th><th>Room</th><th>Lecturer</th><th>Type</th><th>Locked</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for e in entries %}
+      <tr>
+        <td>{{ e.get_day_display }}</td>
+        <td><span class="code-tag">{{ e.course.code }}</span> {{ e.course.title }}</td>
+        <td>{{ e.start_time|time:"H:i" }}–{{ e.end_time|time:"H:i" }}</td>
+        <td>{% firstof e.room_name e.room "—" %}</td>
+        <td>{% firstof e.lecturer_name e.lecturer "—" %}</td>
+        <td>{{ e.get_session_type_display }}</td>
+        <td>{% if e.is_locked %}<span class="s-pill pill-amber">Locked</span>{% else %}<span class="s-pill pill-green">Open</span>{% endif %}</td>
+        <td>
+          {% if e.is_locked %}
+          <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}" style="display:inline">
+            {% csrf_token %}<input type="hidden" name="unlock" value="{{ e.pk }}">
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px">Unlock</button>
+          </form>
+          {% else %}
+          <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}" style="display:inline">
+            {% csrf_token %}<input type="hidden" name="lock" value="{{ e.pk }}">
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px">Lock</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}" style="display:inline">
+            {% csrf_token %}<input type="hidden" name="delete" value="{{ e.pk }}">
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px;color:var(--rose)">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" style="color:var(--tx3)">No entries yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

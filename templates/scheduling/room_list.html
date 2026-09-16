@@ -1,0 +1,57 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}{{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Rooms</h1>
+    <p>{{ rooms.paginator.count }} room{{ rooms.paginator.count|pluralize }}</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-primary" href="{% url 'scheduling:room_create' %}">+ Room</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:building_create' %}">+ Building</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+<table class="reg-table">
+  <thead>
+    <tr><th>Room</th><th>Building</th><th>Type</th><th>Capacity</th><th>Exam capacity</th><th>Available</th><th>Usages</th></tr>
+  </thead>
+  <tbody>
+  {% for room in rooms %}
+    <tr>
+      <td><a href="{% url 'scheduling:room_detail' room.pk %}" style="text-decoration:none;color:inherit"><strong>{{ room.name }}</strong> <span class="code-tag">{{ room.code }}</span></a></td>
+      <td>{{ room.building.name }}</td>
+      <td>{{ room.get_room_type_display }}</td>
+      <td><span class="s-val">{{ room.capacity }}</span></td>
+      <td><span class="s-val">{{ room.exam_capacity }}</span></td>
+      <td>
+        <form method="post" action="{% url 'scheduling:room_toggle' room.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="badge {% if room.is_available %}badge-active{% else %}badge-inactive{% endif %}" style="background:none;border:none;cursor:pointer;margin:0">
+            {{ room.is_available|yesno:"Available,Unavailable" }}
+          </button>
+        </form>
+      </td>
+      <td><span class="code-tag">{{ room.usage|default:0 }}</span></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" style="color:var(--tx3)">No rooms yet. <a class="card-action" href="{% url 'scheduling:room_create' %}">Add one</a>.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if rooms.has_other_pages %}
+<div class="pagination">
+  {% if rooms.has_previous %}<a class="page-link" href="?page={{ rooms.previous_page_number }}">‹ Prev</a>{% endif %}
+  <span>Page {{ rooms.number }} of {{ rooms.paginator.num_pages }}</span>
+  {% if rooms.has_next %}<a class="page-link" href="?page={{ rooms.next_page_number }}">Next ›</a>{% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

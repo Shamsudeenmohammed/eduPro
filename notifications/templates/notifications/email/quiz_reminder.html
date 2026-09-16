@@ -1,0 +1,7 @@
+{% extends "notifications/email/email_shell.html" %}
+{% block email_body %}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+  <p>The quiz <strong>{{ context.quiz_title }}</strong> closes {{ context.end_datetime|date:"M d, H:i" }}.</p>
+  {% if link %}<p><a class="btn" href="{{ link }}" style="color:#000">Take Quiz</a></p>{% endif %}
+{% endblock %}

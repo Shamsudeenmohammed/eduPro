@@ -1,0 +1,41 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.3rem; font-weight: 800; margin: 0;">Hostel Policy & Settings</h1>
+  <p style="margin: .25rem 0 0; color: #888; font-size: .85rem;">
+    Global rules governing applications, reservations, check-in, transfers and finance gates.
+  </p>
+</div>
+
+{% if policy %}
+<div style="margin-bottom: 1rem; padding: .65rem 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; font-size: .82rem; color: #888;">
+  Editing the active policy created {{ policy.created_at|date:"M d, Y" }}. Reserve the single-active record if you need a new version.
+</div>
+{% endif %}
+
+<div style="max-width: 760px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem;">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div style="margin-bottom: 1rem; display: flex; flex-direction: column;">
+      <label style="display: block; font-size: .86rem; font-weight: 600; margin-bottom: .35rem; color: var(--text, #eee);">
+        {{ field.label }}{% if field.field.required %} <span style="color:#f87171;">*</span>{% endif %}
+      </label>
+      {% if field.field.widget.input_type == "checkbox" %}
+        <div style="display:flex; align-items:center; gap:.5rem; padding-top:.2rem;">
+          {{ field }} <span style="font-size:.8rem; color:#888;">{{ field.help_text }}</span>
+        </div>
+      {% else %}
+        {{ field }}
+        {% if field.help_text %}<small style="color: #888; font-size: .76rem; margin-top: .25rem;">{{ field.help_text }}</small>{% endif %}
+      {% endif %}
+      {% for error in field.errors %}
+        <small style="color:#f87171; font-size:.78rem;">{{ error }}</small>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="font-weight: 700;">Save Policy</button>
+    <a href="{% url 'hostel:dashboard' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+  </form>
+</div>
+{% endblock %}

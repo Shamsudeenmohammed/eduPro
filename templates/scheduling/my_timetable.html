@@ -1,0 +1,39 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}My Timetable · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>My Timetable</h1>
+    <p>{% if data.schedule %}{{ data.schedule.name }}{% else %}No published timetable yet.{% endif %}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Week View</span></div>
+  <div class="card-body" style="padding:14px">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
+      {% for d in data.days %}
+      <div style="min-width:0">
+        <div class="status-row" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--r)">
+          <span class="s-label" style="font-weight:700">{{ d.label }}</span>
+          <span class="s-val">{{ d.entries|length }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:6px 2px">
+          {% for e in d.entries %}
+            {% entry_block e %}
+          {% empty %}
+            <span style="font-size:11px;color:var(--tx3);text-align:center">—</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}
+      <div style="color:var(--tx3);font-size:12px">No timetable entries.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

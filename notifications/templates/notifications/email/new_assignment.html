@@ -1,0 +1,7 @@
+{% extends "notifications/email/email_shell.html" %}
+{% block email_body %}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+  <p>Assignment: <strong>{{ context.assignment_title }}</strong>. Due {{ context.due_date|date:"M d, H:i" }}.</p>
+  {% if link %}<p><a class="btn" href="{{ link }}" style="color:#000">Open Assignment</a></p>{% endif %}
+{% endblock %}

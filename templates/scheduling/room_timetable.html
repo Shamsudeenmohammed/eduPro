@@ -1,0 +1,40 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}Room Timetable · {{ room }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Room Timetable — {{ room }}</h1>
+    <p>{{ room.building }} · {{ room.get_room_type_display }} · Capacity {{ room.capacity }}
+      · <span class="s-pill pill-muted">{{ schedule.name|default:"No current schedule" }}</span></p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:room_detail' room.pk %}">← Back</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Week View</span></div>
+  <div class="card-body" style="padding:14px">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
+      {% for label in day_labels %}
+      <div style="min-width:0">
+        <div class="status-row" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--r)">
+          <span class="s-label" style="font-weight:700">{{ label }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:6px 2px">
+          {% for e in entries %}
+            {% if e.day == forloop.parentloop.counter0 %}
+              {% entry_block e %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

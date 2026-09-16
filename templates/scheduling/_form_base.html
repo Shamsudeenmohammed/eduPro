@@ -1,0 +1,46 @@
+{% extends base_template %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}{{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>{{ page_title }}</h1></div>
+  <div class="ph-right">
+    {% if cancel_url %}<a class="btn btn-ghost" href="{% if cancel_url.0 %}{% url cancel_url.0 cancel_url.1 %}{% else %}{% url cancel_url %}{% endif %}">← Back</a>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="max-width:720px">
+  <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+  <div class="card-body" style="padding:18px 20px">
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="msg-item msg-error" style="margin-bottom:12px">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+      <div class="field-row" style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:4px">{{ field.label }}</label>
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <div>{{ field }} <span style="font-size:12px;color:var(--tx2)">{{ field.help_text }}</span></div>
+        {% else %}
+          {{ field }}
+        {% endif %}
+        {% for err in field.errors %}
+          <div style="color:var(--rose);font-size:11px;margin-top:2px">{{ err }}</div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      <div style="margin-top:18px;display:flex;gap:8px">
+        <button type="submit" class="btn btn-primary">Save</button>
+        {% if cancel_url %}
+        <a class="btn btn-ghost" href="{% if cancel_url.0 %}{% url cancel_url.0 cancel_url.1 %}{% else %}{% url cancel_url %}{% endif %}">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -119,9 +119,9 @@ class FacultyAdmin(admin.ModelAdmin):
 class DepartmentAdmin(admin.ModelAdmin):
     list_display  = ("code", "name", "faculty", "hod", "is_active")
     list_filter   = ("faculty__institution", "faculty", "is_active")
-    search_fields = ("code", "name")
-    raw_id_fields = ("hod",)
-    inlines       = [ProgramInline]
+    search_fields       = ("code", "name")
+    autocomplete_fields = ("hod",)
+    inlines             = [ProgramInline]
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("faculty", "hod")

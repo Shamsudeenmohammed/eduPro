@@ -1,0 +1,173 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}Academic Command Center{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Academic Command Center</h1>
+    <p>{{ inst.name|default:"No institution configured" }} {% if current %}· {{ current }}{% endif %}</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-primary" href="{% url 'scheduling:schedule_create' %}">+ New Schedule</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:calendar' %}">Calendar</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:settings' %}">Settings</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--ochre)"></span>
+    <div class="kpi-val">{{ status_counts.published|default:0 }}</div>
+    <div class="kpi-label">Published Schedules</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--blue)"></span>
+    <div class="kpi-val">{{ status_counts.under_review|default:0 }}</div>
+    <div class="kpi-label">In HOD Review</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--teal)"></span>
+    <div class="kpi-val">{{ health.room_count|default:0 }}</div>
+    <div class="kpi-label">Active Rooms</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--rose)"></span>
+    <div class="kpi-val">{{ upcoming_events|length }}</div>
+    <div class="kpi-label">Upcoming Events</div>
+  </div>
+</div>
+
+{% if is_admin %}
+<div class="card" style="margin-bottom:18px">
+  <div class="card-header"><span class="card-title">Timetable Health</span>
+    <span class="badge {% if stats.hard_conflicts or stats.unplaced %}badge-inactive{% else %}badge-active{% endif %}">
+      {% if stats.hard_conflicts or stats.unplaced %}needs attention{% else %}healthy{% endif %}
+    </span>
+  </div>
+  <div class="dash-stats">
+    <div class="dash-stat"><strong>{{ stats.placed }}</strong><span>sessions placed</span></div>
+    <div class="dash-stat"><strong>{{ stats.offerings_covered }}</strong><span>offerings covered</span></div>
+    <div class="dash-stat"><strong>{{ stats.lecturers_teaching }}</strong><span>lecturers teaching</span></div>
+    <div class="dash-stat"><strong>{{ stats.rooms_in_use }}</strong><span>rooms in use</span></div>
+    <div class="dash-stat"><strong class="{% if stats.hard_conflicts %}txt-danger{% endif %}">{{ stats.hard_conflicts }}</strong><span>hard conflicts</span></div>
+    <div class="dash-stat"><strong class="{% if stats.unplaced %}txt-danger{% endif %}">{{ stats.unplaced }}</strong><span>unplaced sessions</span></div>
+    <div class="dash-stat"><strong>{{ stats.under_review }}</strong><span>in review</span></div>
+    <div class="dash-stat"><strong>{{ stats.correction_required }}</strong><span>needs revision</span></div>
+  </div>
+</div>
+{% endif %}
+
+{% if is_hod %}
+<div class="card" style="margin-bottom:18px">
+  <div class="card-header"><span class="card-title">My Department Approvals</span>
+    <a class="card-action" href="{% url 'scheduling:hod_dashboard' %}">HOD dashboard →</a>
+  </div>
+  <ul class="status-list">
+    {% for a in hod_approvals %}
+      <li class="status-row">
+        <span class="s-label">{{ a.schedule.name }} · {{ a.rows.0.department.name|default:"my department" }}</span>
+        <span class="s-val">{{ a.schedule.status }}</span>
+      </li>
+    {% empty %}
+      <li class="status-row"><span class="s-label">No schedules awaiting your sign-off.</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if not is_admin %}
+<div class="card" style="margin-bottom:18px">
+  <div class="card-header"><span class="card-title">Quick Actions</span></div>
+  <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px">
+    <a class="btn btn-primary" href="{% url 'scheduling:calendar' %}">Open Calendar</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:my_timetable' %}">My Timetable</a>
+    {% if is_hod %}<a class="btn btn-ghost" href="{% url 'scheduling:hod_approvals' %}">HOD Approvals</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Recent Schedules</span>
+      <a class="card-action" href="{% url 'scheduling:schedule_list' %}">View all →</a>
+    </div>
+    <table class="reg-table">
+      <thead><tr><th>Name</th><th>Semester</th><th>Type</th><th>Status</th><th>Conflicts</th><th></th></tr></thead>
+      <tbody>
+      {% for s in recent %}
+        <tr>
+          <td><strong>{{ s.name }}</strong></td>
+          <td>{{ s.semester }}</td>
+          <td>{{ s.get_schedule_type_display }}</td>
+          <td><span class="badge {% if s.is_published %}badge-active{% elif s.hard_conflicts or s.unplaced %}badge-inactive{% else %}badge-amber{% endif %}">{{ s.get_status_display }}</span></td>
+          <td>{% if s.is_published %}—{% else %}<span class="{% if s.hard_conflicts or s.unplaced %}pill-rose{% else %}pill-green{% endif %}">{{ s.hard_conflicts }} hard · {{ s.unplaced }} unplaced</span>{% endif %}</td>
+          <td><a class="card-action" href="{% url 'scheduling:schedule_detail' s.pk %}">Open</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" style="color:var(--tx3)">No schedules yet. Create one to begin.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Calendar Events</span>
+      <a class="card-action" href="{% url 'scheduling:calendar' %}">Calendar →</a>
+    </div>
+    <ul class="status-list">
+      {% for e in upcoming_events %}
+        <li class="status-row">
+          <span class="s-label">{{ e.title }}</span>
+          <span class="s-val">{{ e.start_date|date:"d M" }}</span>
+        </li>
+      {% empty %}
+        <li class="status-row"><span class="s-label">No public events.</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="bottom-grid">
+  <div class="card">
+    <div class="card-header"><span class="card-title">System Health</span></div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Current semester</span>
+        <span class="s-pill {% if health.current_semester %}pill-green{% else %}pill-rose{% endif %}">
+          {{ health.current_semester|default:"Not set" }}</span></li>
+      <li class="status-row"><span class="s-label">Config saved</span>
+        <span class="s-pill {% if health.has_config %}pill-green{% else %}pill-rose{% endif %}">
+          {{ health.has_config|yesno:"Yes,No" }}</span></li>
+      <li class="status-row"><span class="s-label">Default time slots</span>
+        <span class="s-val">{{ health.slots }}</span></li>
+      <li class="status-row"><span class="s-label">Unavailability windows</span>
+        <span class="s-val">{{ health.unavailability_windows }}</span></li>
+      <li class="status-row"><span class="s-label">Blocked-day events</span>
+        <span class="s-val">{{ health.blocked_days_events }}</span></li>
+    </ul>
+    <div class="card-body" style="padding:12px 18px">
+      {% if not health.ok %}
+        <span class="badge badge-inactive">Set a current semester, rooms and slots before generating.</span>
+      {% else %}
+        <span class="badge badge-active">Ready to schedule</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Schedules by Status</span></div>
+    <ul class="status-list">
+      {% for value, label in status_choices %}
+        <li class="status-row">
+          <span class="s-label">{{ label }}</span>
+          <span class="s-val">{{ status_counts|get_item:value|default:0 }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

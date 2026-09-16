@@ -1,0 +1,72 @@
+<div class="gen-modal">
+  <div class="gen-modal-head">
+    <div class="gen-modal-accent gen-accent-{{ entry.session_type }}" aria-hidden="true"></div>
+    <div class="gen-modal-titles">
+      <div class="gen-modal-badges">
+        <span class="g-badge g-badge-{{ entry.session_type }}">{{ entry.get_session_type_display }}</span>
+        <span class="g-badge g-badge-sched">{{ schedule.get_status_display }}</span>
+      </div>
+      <h3 class="gen-modal-title">{{ entry.course.code }}</h3>
+      <p class="gen-modal-scope">{{ entry.course.title }}</p>
+    </div>
+    <button type="button" class="gen-close" aria-label="Close" data-close-modal>×</button>
+  </div>
+
+  <div class="gen-rows">
+    <div class="gen-row">
+      <span class="gen-key">When</span>
+      <span class="gen-val">
+        {% if occ_date %}{{ occ_date|date:"D, d M Y" }} · {% endif %}{{ entry.get_day_display }}s
+        {{ entry.start_time|time:"H:i" }}–{{ entry.end_time|time:"H:i" }}
+      </span>
+    </div>
+    {% if entry.lecturer or entry.lecturer_name %}
+    <div class="gen-row">
+      <span class="gen-key">Lecturer</span>
+      <span class="gen-val">{{ entry.lecturer_name|default:entry.lecturer.get_full_name }}</span>
+    </div>
+    {% endif %}
+    {% if entry.room or entry.room_name %}
+    <div class="gen-row">
+      <span class="gen-key">Room</span>
+      <span class="gen-val">{{ entry.room_name|default:entry.room }}</span>
+    </div>
+    {% endif %}
+    {% if entry.offering.level %}
+    <div class="gen-row">
+      <span class="gen-key">Level</span>
+      <span class="gen-val">{{ entry.offering.level }}</span>
+    </div>
+    {% endif %}
+    {% if entry.offering.level.program %}
+    <div class="gen-row">
+      <span class="gen-key">Programme</span>
+      <span class="gen-val">{{ entry.offering.level.program }}</span>
+    </div>
+    {% endif %}
+    <div class="gen-row">
+      <span class="gen-key">Schedule</span>
+      <span class="gen-val">{{ schedule.name }}</span>
+    </div>
+    {% if schedule.semester %}
+    <div class="gen-row">
+      <span class="gen-key">Semester</span>
+      <span class="gen-val">{{ schedule.semester.get_name_display }} · {{ schedule.semester.session.name }}</span>
+    </div>
+    {% endif %}
+    {% if entry.is_locked %}
+    <div class="gen-row"><span class="gen-key">Status</span><span class="gen-val"><span class="g-badge g-badge-locked">Locked</span></span></div>
+    {% endif %}
+  </div>
+
+  {% if manage %}
+  <div class="gen-actions">
+    <a class="gen-btn" href="{% url 'scheduling:schedule_detail' schedule.pk %}">View Schedule</a>
+    <a class="gen-btn" href="{% url 'scheduling:schedule_entries' schedule.pk %}">Manage Entries</a>
+  </div>
+  {% elif is_hod %}
+  <div class="gen-actions">
+    <a class="gen-btn" href="{% url 'scheduling:schedule_detail' schedule.pk %}">View Schedule</a>
+  </div>
+  {% endif %}
+</div>

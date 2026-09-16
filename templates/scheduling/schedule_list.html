@@ -1,0 +1,77 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}{{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Schedules</h1>
+    <p>{{ schedules.paginator.count }} schedule{{ schedules.paginator.count|pluralize }}</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-primary" href="{% url 'scheduling:schedule_create' %}">+ New Schedule</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+{% if semesters %}
+<div class="card" style="margin-bottom:16px;padding:12px 18px">
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--tx3);margin-right:4px">Semester</span>
+    <a class="btn btn-ghost {% if not cur_semester %}btn-primary{% endif %}" style="padding:4px 10px;font-size:11.5px"
+       href="?{% if cur_status %}status={{ cur_status }}{% endif %}">All</a>
+    {% for s in semesters %}
+      <a class="btn btn-ghost {% if cur_semester == s.pk|stringformat:"s" %}btn-primary{% endif %}" style="padding:4px 10px;font-size:11.5px"
+         href="?semester={{ s.pk }}{% if cur_status %}&status={{ cur_status }}{% endif %}">{{ s }}</a>
+    {% endfor %}
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px">
+    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--tx3);margin-right:4px">Status</span>
+    <a class="btn btn-ghost {% if not cur_status %}btn-primary{% endif %}" style="padding:4px 10px;font-size:11.5px"
+       href="?{% if cur_semester %}semester={{ cur_semester }}{% endif %}">All</a>
+    {% for value, label in status_choices %}
+      <a class="btn btn-ghost {% if cur_status == value %}btn-primary{% endif %}" style="padding:4px 10px;font-size:11.5px"
+         href="?{% if cur_semester %}semester={{ cur_semester }}&{% endif %}status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+<table class="reg-table">
+  <thead>
+    <tr><th>Name</th><th>Semester</th><th>Type</th><th>Status</th><th>Hard Conflicts</th><th>Unplaced</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for s in schedules %}
+    <tr>
+      <td><a href="{% url 'scheduling:schedule_detail' s.pk %}" style="text-decoration:none;color:inherit"><strong>{{ s.name }}</strong></a></td>
+      <td>{{ s.semester }}</td>
+      <td>{{ s.get_schedule_type_display }}</td>
+      <td><span class="badge {% status_badge s.status %}">{{ s.get_status_display }}</span></td>
+      <td><span class="code-tag {% if s.hard_conflicts %}pill-rose{% else %}pill-green{% endif %}">{{ s.hard_conflicts }}</span></td>
+      <td><span class="code-tag {% if s.unplaced %}pill-rose{% else %}pill-green{% endif %}">{{ s.unplaced }}</span></td>
+      <td style="text-align:right"><a class="card-action" href="{% url 'scheduling:schedule_detail' s.pk %}">Open →</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" style="color:var(--tx3)">No schedules{% if cur_status or cur_semester %} match the current filter{% endif %}. <a class="card-action" href="{% url 'scheduling:schedule_create' %}">Create one</a>.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if schedules.has_other_pages %}
+<div class="pagination">
+  {% if schedules.has_previous %}
+  <a class="page-link" href="?page={{ schedules.previous_page_number }}{% if cur_semester %}&semester={{ cur_semester }}{% endif %}{% if cur_status %}&status={{ cur_status }}{% endif %}">‹ Prev</a>
+  {% endif %}
+  <span>Page {{ schedules.number }} of {{ schedules.paginator.num_pages }}</span>
+  {% if schedules.has_next %}
+  <a class="page-link" href="?page={{ schedules.next_page_number }}{% if cur_semester %}&semester={{ cur_semester }}{% endif %}{% if cur_status %}&status={{ cur_status }}{% endif %}">Next ›</a>
+  {% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

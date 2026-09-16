@@ -1,0 +1,73 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}HOD Approvals · eduPro{% endblock %}
+{% block breadcrumb %}HOD Approvals{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>HOD Approvals</h1>
+    <p>Sign off the timetables submitted for your department.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:hod_dashboard' %}">HOD Dashboard →</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:calendar' %}">Calendar</a>
+  </div>
+</div>
+
+{% if decisions %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><span class="card-title">{{ decisions|length }} schedule{{ decisions|length|pluralize }} awaiting your sign-off</span></div>
+</div>
+{% endif %}
+
+{% for item in decisions %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header">
+    <span class="card-title">{{ item.schedule.name }} — {{ item.schedule.semester }}</span>
+    <span class="badge badge-purple">{{ item.schedule.get_status_display }}</span>
+  </div>
+  <table class="reg-table">
+    <thead><tr><th>Department</th><th>HOD</th><th>Status</th><th>Comment</th><th>Decision</th></tr></thead>
+    <tbody>
+    {% for a in item.rows %}
+      <tr>
+        <td><span class="code-tag">{{ a.department.code }}</span> {{ a.department.name }}</td>
+        <td>{{ a.hod.get_full_name|default:a.hod|default:"—" }}</td>
+        <td>
+          {% if not a.approval %}
+            <span class="badge badge-amber">Pending</span>
+          {% elif a.approval.approved %}
+            <span class="badge badge-active">Approved</span>
+          {% else %}
+            <span class="badge badge-inactive">Rejected</span>
+          {% endif %}
+        </td>
+        <td style="font-size:11px;color:var(--tx2)">{{ a.approval.comment|default:"—" }}</td>
+        <td>
+          {% if not a.approval %}
+          <form method="post" action="{% url 'scheduling:hod_decide' item.schedule.pk %}" style="display:flex;gap:6px;align-items:center">
+            {% csrf_token %}
+            <input type="hidden" name="department" value="{{ a.department.pk }}">
+            <textarea name="comment" class="form-control" rows="2" placeholder="Comment (required to reject)" required style="min-width:180px;font-size:12px"></textarea>
+            <button class="btn" name="action" value="approve" formnovalidate style="background:var(--teal);color:#0b0d11">Approve</button>
+            <button class="btn" name="action" value="reject" style="background:var(--rose);color:#fff">Reject</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" style="color:var(--tx3)">No department rows for this schedule.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% empty %}
+<div class="card">
+  <div class="card-header"><span class="card-title">No approvals pending</span></div>
+  <div class="card-body" style="padding:18px;color:var(--tx3)">Nothing awaits your sign-off right now.</div>
+</div>
+{% endfor %}
+{% endblock %}

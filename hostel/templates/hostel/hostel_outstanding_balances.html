@@ -1,0 +1,44 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Outstanding Hostel Balances</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Active/reserved residents with unpaid or partially paid hostel charges (figures owned by the finance module)</p>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem;color:var(--text);">
+      <thead>
+        <tr style="background:var(--surface2);text-align:left;color:var(--text);opacity:.7;border-bottom:1px solid var(--border);">
+          <th style="padding:.7rem 1rem;">Student</th>
+          <th style="padding:.7rem 1rem;">Bed (Hierarchy)</th>
+          <th style="padding:.7rem 1rem;">Session</th>
+          <th style="padding:.7rem 1rem;">Paid</th>
+          <th style="padding:.7rem 1rem;">Due</th>
+          <th style="padding:.7rem 1rem;">Balance</th>
+          <th style="padding:.7rem 1rem;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:.7rem 1rem;font-weight:600;">{{ row.allocation.student.get_full_name|default:row.allocation.student.email }}</td>
+          <td style="padding:.7rem 1rem;">{{ row.allocation.hierarchy_display }}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{{ row.allocation.session.name }}</td>
+          <td style="padding:.7rem 1rem;">GHC {{ row.finance.amount_paid|floatformat:2 }}</td>
+          <td style="padding:.7rem 1rem;">GHC {{ row.finance.amount_due|floatformat:2 }}</td>
+          <td style="padding:.7rem 1rem;font-weight:700;color:#dc2626;">GHC {{ row.finance.balance|floatformat:2 }}</td>
+          <td style="padding:.7rem 1rem;">
+            <span style="font-size:.7rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;{% if row.finance.status == 'overdue' %}background:#dc2626;color:#fff;{% elif row.finance.status == 'unpaid' %}background:#d97706;color:#fff;{% else %}background:#2d5a87;color:#fff;{% endif %}">{{ row.finance.status|title }}</span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="padding:2rem 1rem;text-align:center;color:var(--text);opacity:.4;">No outstanding balances. All residents are settled.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock content %}

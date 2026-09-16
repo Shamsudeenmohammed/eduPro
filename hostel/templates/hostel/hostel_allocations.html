@@ -1,0 +1,90 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Hostel Allocations</h2>
+      <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Manage student bed allocations</p>
+    </div>
+    <a href="{% url 'hostel:allocation_create' %}" class="btn btn-success btn-sm">New Allocation</a>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;font-weight:600;">Status:</span>
+    <a href="{% url 'hostel:allocations' %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+      {% if not status_filter %}background:var(--ochre);color:#000;
+      {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">All</a>
+    {% for choice in status_choices %}
+      <a href="{% url 'hostel:allocations' %}?status={{ choice.0 }}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+        {% if status_filter == choice.0 %}background:var(--ochre);color:#000;
+        {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">{{ choice.1 }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- Allocations List -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0 1.25rem;">
+    {% for alloc in page_obj %}
+      <div style="border-bottom:1px solid var(--border);padding:1rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+        <div style="flex:2;min-width:0;">
+          <div style="color:var(--text);font-weight:600;font-size:.9rem;">
+            {{ alloc.student.get_full_name|default:alloc.student.email }}
+          </div>
+          <div style="color:var(--text);opacity:.5;font-size:.78rem;">{{ alloc.student.email }}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="color:var(--text);font-size:.85rem;">{{ alloc.bed.display_name|default:alloc.bed.label }}</div>
+          <div style="color:var(--text);opacity:.5;font-size:.78rem;">{{ alloc.bed.room|default:"" }}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="color:var(--text);font-size:.85rem;">{{ alloc.session.name }}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
+            {% if alloc.status == 'RESERVED' %}background:#2d5a87;color:#fff;
+            {% elif alloc.status == 'ACTIVE' %}background:#059669;color:#fff;
+            {% elif alloc.status == 'CHECKED_OUT' %}background:#6b7280;color:#fff;
+            {% elif alloc.status == 'CANCELLED' %}background:#dc2626;color:#fff;
+            {% elif alloc.status == 'EXPIRED' %}background:#d97706;color:#fff;
+            {% endif %}">{{ alloc.get_status_display }}</span>
+        </div>
+        <div style="flex:2;display:flex;gap:.4rem;justify-content:flex-end;">
+          {% if alloc.status == 'RESERVED' %}
+            <form method="post" action="{% url 'hostel:check_in' alloc.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success btn-sm">Check In</button>
+            </form>
+          {% elif alloc.status == 'ACTIVE' %}
+            <form method="post" action="{% url 'hostel:check_out' alloc.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success btn-sm">Check Out</button>
+            </form>
+          {% endif %}
+          <form method="post" action="{% url 'hostel:allocation_cancel' alloc.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:3rem 0;">No allocations found</div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:1rem;margin-top:1.5rem;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Previous</a>
+    {% endif %}
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">Next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock content %}

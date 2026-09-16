@@ -1,0 +1,25 @@
+{% if it.kind == 'event' %}
+<button type="button" class="cal-chip cal-chip-{{ it.event_type }}"
+        data-kind="event"
+        data-type="{{ it.event_type }}"
+        data-date="{{ it.date|date:'Y-m-d' }}"
+        data-open-url="{% url 'scheduling:calendar_event_detail' it.entry_id %}"
+        title="{{ it.title }}{% if it.time %} · {{ it.time }}{% endif %}{% if not it.is_public %} · internal{% endif %}"
+        aria-label="{{ it.title }}, {{ it.event_type_label }}{% if it.time %}, {{ it.time }}{% endif %}">
+  <span class="cal-chip-dot" aria-hidden="true"></span>
+  <span class="chip-label">{{ it.title|truncatechars:22 }}</span>
+  {% if it.time %}<span class="chip-time">{{ it.time }}</span>{% endif %}
+</button>
+{% elif it.kind == 'class' %}
+<button type="button" class="cal-chip cal-chip-{{ it.session_type_key }}"
+        data-kind="class"
+        data-type="{{ it.session_type_key }}"
+        data-date="{{ it.date|date:'Y-m-d' }}"
+        data-open-url="{% url 'scheduling:entry_detail' it.entry_id %}?date={{ it.date|date:'Y-m-d' }}"
+        title="{{ it.title }} · {{ it.session_type }}{% if it.time %} · {{ it.time }}{% endif %}{% if it.room %} · {{ it.room }}{% endif %}"
+        aria-label="{{ it.title }}, {{ it.session_type }}{% if it.time %}, {{ it.time }}{% endif %}">
+  <span class="cal-chip-dot" aria-hidden="true"></span>
+  <span class="chip-label">{{ it.title|truncatechars:22 }}</span>
+  {% if it.time %}<span class="chip-time">{{ it.time }}</span>{% endif %}
+</button>
+{% endif %}

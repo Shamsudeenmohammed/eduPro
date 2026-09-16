@@ -13,11 +13,17 @@ def global_context(request):
 
     unread_notifications = 0
     unread_messages = 0
+    unread_staff_notifications = 0
     if request.user.is_authenticated:
         if getattr(request.user, "is_student", False):
             from students.models import StudentNotification
             unread_notifications = StudentNotification.objects.filter(
                 student=request.user, is_read=False
+            ).count()
+        elif getattr(request.user, "is_teacher", False):
+            from notifications.models import Channel, NotificationRecord
+            unread_staff_notifications = NotificationRecord.objects.filter(
+                recipient=request.user, channel=Channel.APP, read_at__isnull=True
             ).count()
         try:
             from messaging.models import Message
@@ -33,5 +39,7 @@ def global_context(request):
         ),
         "institution": institution,
         "unread_notifications": unread_notifications,
+        "unread_count": unread_notifications,
         "unread_messages": unread_messages,
+        "unread_staff_notifications": unread_staff_notifications,
     }

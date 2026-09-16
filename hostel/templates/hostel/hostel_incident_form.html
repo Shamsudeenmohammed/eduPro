@@ -1,0 +1,248 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div style="max-width:720px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Report Incident</h2>
+      <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Record a hostel incident</p>
+    </div>
+    <a href="{% url 'hostel:incidents' %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Back to Incidents</a>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.75rem;">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div style="background:#dc2626;border:1px solid #dc2626;border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;">
+          {% for error in form.non_field_errors %}
+            <div style="color:#fff;font-size:.85rem;">{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="hostel-form">
+        {% for field in form %}
+          <div style="margin-bottom:1rem;">
+            <label for="{{ field.id_for_label }}" style="display:block;color:var(--text);font-size:.85rem;font-weight:600;margin-bottom:.35rem;">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div style="margin-top:.35rem;">
+                {% for error in field.errors %}
+                  <div style="color:#f87171;font-size:.78rem;font-weight:600;">{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if field.help_text %}
+              <div style="color:var(--text);opacity:.5;font-size:.75rem;margin-top:.25rem;">{{ field.help_text }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn-success btn-sm" style="padding:.5rem 1.5rem;">Submit Incident</button>
+    </form>
+  </div>
+
+</div>
+
+<style>
+  .hostel-form input, .hostel-form select, .hostel-form textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .55rem .8rem;
+    color: var(--text);
+    font-size: .9rem;
+  }
+  .hostel-form input:focus, .hostel-form select:focus, .hostel-form textarea:focus {
+    outline: none;
+    border-color: var(--ochre);
+  }
+
+  /* Searchable selects */
+  .ss { position: relative; }
+  .ss-input { width: 100%; padding-right: 26px; cursor: text; }
+  .ss-select { display: none !important; }
+  .ss-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+    max-height: 250px; overflow-y: auto;
+    box-shadow: 0 12px 32px rgba(0,0,0,.45);
+    padding: 4px;
+  }
+  .ss-opt {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: .5rem .6rem; border-radius: 7px;
+    color: var(--text); font-size: .85rem; font-family: inherit; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ss-opt:hover, .ss-opt.ss-sel { background: rgba(245,158,11,.14); color: var(--ochre); }
+  .ss-none { padding: .5rem .6rem; color: var(--text); opacity: .5; font-size: .8rem; }
+  .ss-key {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: .7rem; color: var(--text); opacity: .6; pointer-events: none;
+  }
+</style>
+
+{{ bed_room_map|json_script:"bedRoomMap" }}
+
+<script>
+(function () {
+  var selects = document.querySelectorAll('.hostel-form select');
+  for (var i = 0; i < selects.length; i++) {
+    makeSearchable(selects[i]);
+  }
+
+  var bedRoomMap = {};
+  try { bedRoomMap = JSON.parse(document.getElementById('bedRoomMap').textContent); } catch (e) {}
+  var roomSel = document.querySelector('select[name="room"]');
+  var bedSel  = document.querySelector('select[name="bed"]');
+
+  if (bedSel) {
+    for (var k = 0; k < bedSel.options.length; k++) {
+      var o = bedSel.options[k];
+      if (bedRoomMap[o.value]) o.setAttribute('data-room-id', bedRoomMap[o.value]);
+    }
+  }
+
+  if (roomSel && bedSel) {
+    roomSel.addEventListener('change', function () {
+      bedSel.value = '';
+      bedSel.dispatchEvent(new Event('change', { bubbles: true }));
+      bedSel.dispatchEvent(new Event('ss-refresh', { bubbles: true }));
+    });
+  }
+
+  function makeSearchable(select) {
+    var wrap = document.createElement('div');
+    wrap.className = 'ss';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'ss-input';
+    input.placeholder = 'Search…';
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-expanded', 'false');
+    input.id = select.id;
+    select.removeAttribute('id');
+
+    var caret = document.createElement('span');
+    caret.className = 'ss-key';
+    caret.textContent = '\u25BE';
+    caret.setAttribute('aria-hidden', 'true');
+
+    var list = document.createElement('div');
+    list.className = 'ss-list';
+    list.setAttribute('role', 'listbox');
+    list.hidden = true;
+
+    var parent = select.parentNode;
+    select.classList.add('ss-select');
+    parent.insertBefore(wrap, select);
+    wrap.appendChild(caret);
+    list.appendChild(renderOptions(''));
+    wrap.appendChild(input);
+    wrap.appendChild(list);
+    wrap.appendChild(select);
+    list.hidden = true;
+
+    document.addEventListener('click', function (ev) {
+      if (!wrap.contains(ev.target)) close();
+    }, true);
+
+    select.addEventListener('ss-refresh', function () {
+      input.value = '';
+      list.innerHTML = '';
+      list.appendChild(renderOptions(''));
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      var s = select.options[select.selectedIndex];
+      input.value = s ? s.text : '';
+      input.classList.toggle('ss-has', !!(s && s.value !== ''));
+    });
+
+    function renderOptions(filter) {
+      var frag = document.createDocumentFragment();
+      var q = (filter || '').toLowerCase();
+      var roomFilter = null;
+      if (select.name === 'bed' && roomSel) {
+        roomFilter = roomSel.value || null;
+      }
+      var shown = 0;
+      for (var j = 0; j < select.options.length; j++) {
+        var opt = select.options[j];
+        if (roomFilter && opt.getAttribute('data-room-id') !== roomFilter) continue;
+        if (q && opt.text.toLowerCase().indexOf(q) === -1) continue;
+        shown++;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ss-opt' + (opt.selected ? ' ss-sel' : '');
+        btn.setAttribute('role', 'option');
+        btn.textContent = opt.text;
+        btn.addEventListener('click', function () {
+          setValue(this.textContent, this.getAttribute('data-value'));
+        });
+        btn.setAttribute('data-value', opt.value);
+        frag.appendChild(btn);
+      }
+      if (!shown) {
+        var none = document.createElement('div');
+        none.className = 'ss-none';
+        none.textContent = 'No matches';
+        frag.appendChild(none);
+      }
+      return frag;
+    }
+
+    function setValue(label, value) {
+      select.value = value;
+      input.value = label;
+      input.classList.toggle('ss-has', value !== '');
+      close();
+      try { select.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+    }
+
+    function open() {
+      input.value = '';
+      list.innerHTML = '';
+      list.appendChild(renderOptions(''));
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      input.focus();
+    }
+
+    function close() {
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      var sel = select.options[select.selectedIndex];
+      input.value = sel ? sel.text : '';
+      input.classList.toggle('ss-has', !!(sel && sel.value !== ''));
+    }
+
+    input.addEventListener('focus', open);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key === 'Enter') {
+        var f = list.querySelector('.ss-opt');
+        if (f) { f.click(); e.preventDefault(); }
+      }
+    });
+    input.addEventListener('input', function () {
+      if (!list.hidden) {
+        list.innerHTML = '';
+        list.appendChild(renderOptions(input.value));
+      }
+    });
+
+    var sel = select.options[select.selectedIndex];
+    input.value = sel ? sel.text : '';
+    input.classList.toggle('ss-has', !!(sel && sel.value !== ''));
+  }
+})();
+</script>
+{% endblock content %}

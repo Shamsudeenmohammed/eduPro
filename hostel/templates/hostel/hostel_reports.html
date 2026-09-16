@@ -1,0 +1,69 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Hostel Reports</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Aggregated operational summaries</p>
+  </div>
+
+  <!-- Occupancy by hostel -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;">
+    <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;">Occupancy by Hostel</h3>
+    {% for row in occupancy %}
+    <div style="border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;align-items:center;gap:1rem;">
+      <div style="min-width:180px;font-weight:600;color:var(--text);font-size:.85rem;">{{ row.hostel.name }}</div>
+      <div style="flex:1;height:8px;border-radius:4px;background:var(--border);overflow:hidden;">
+        <div style="height:100%;border-radius:4px;background:linear-gradient(90deg,#4f46e5,#7c3aed);width:{{ row.occupancy_pct|floatformat:0|default:0 }}%;"></div>
+      </div>
+      <div style="min-width:150px;text-align:right;color:var(--text);opacity:.6;font-size:.8rem;">
+        {{ row.occupied }} / {{ row.total_beds }} beds &middot; {{ row.occupancy_pct }}%
+      </div>
+      <div style="min-width:220px;text-align:right;color:var(--text);opacity:.5;font-size:.75rem;">
+        {{ row.available }} avail &middot; {{ row.reserved }} res. &middot; {{ row.maintenance }} maint. &middot; {{ row.blocked }} blocked
+      </div>
+    </div>
+    {% empty %}
+    <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1rem 0;">No active hostels.</div>
+    {% endfor %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;">
+      <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;">Applications</h3>
+      {% for status, n in applications.items %}
+      <div style="border-bottom:1px solid var(--border);padding:.45rem 0;display:flex;justify-content:space-between;font-size:.85rem;color:var(--text);">
+        <span style="opacity:.6;">{{ status|title }}</span><span style="font-weight:700;">{{ n }}</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1rem 0;">No data</div>
+      {% endfor %}
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;">
+      <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;">Incidents</h3>
+      {% for status, n in incidents.items %}
+      <div style="border-bottom:1px solid var(--border);padding:.45rem 0;display:flex;justify-content:space-between;font-size:.85rem;color:var(--text);">
+        <span style="opacity:.6;">{{ status|title }}</span><span style="font-weight:700;">{{ n }}</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1rem 0;">No data</div>
+      {% endfor %}
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;">
+      <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;">Transfers</h3>
+      {% for status, n in transfers.items %}
+      <div style="border-bottom:1px solid var(--border);padding:.45rem 0;display:flex;justify-content:space-between;font-size:.85rem;color:var(--text);">
+        <span style="opacity:.6;">{{ status|title }}</span><span style="font-weight:700;">{{ n }}</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1rem 0;">No data</div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock content %}

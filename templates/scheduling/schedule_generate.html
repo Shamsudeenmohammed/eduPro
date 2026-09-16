@@ -1,0 +1,94 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}Generate · {{ schedule.name }} · eduPro{% endblock %}
+{% block breadcrumb %}Generate{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Generate — {{ schedule.name }}</h1>
+    <p>Pick a simulated plan below or tune the generator options.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:schedule_detail' schedule.pk %}">← Back</a>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--rose)"></span>
+    <div class="kpi-val">{{ schedule.hard_conflicts }}</div>
+    <div class="kpi-label">Hard Conflicts</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--blue)"></span>
+    <div class="kpi-val">{{ schedule.unplaced }}</div>
+    <div class="kpi-label">Unplaced</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--teal)"></span>
+    <div class="kpi-val">{{ schedule.score|floatformat:1 }}</div>
+    <div class="kpi-label">Score</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--ochre)"></span>
+    <div class="kpi-val">{{ schedule.generated_at|date:"d M"|default:"—" }}</div>
+    <div class="kpi-label">Last Generated</div>
+  </div>
+</div>
+
+<h2 style="margin:22px 0 10px;font-size:14px;color:var(--tx2)">Simulated options</h2>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+  {% for opt in simulated %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Seed {{ opt.seed }}</span>
+      <span class="s-pill {% if opt.unplaced %}pill-amber{% else %}pill-green{% endif %}">{{ opt.score|floatformat:1 }} score</span>
+    </div>
+    <div class="card-body" style="padding:14px 18px">
+      <ul class="status-list">
+        <li class="status-row"><span class="s-label">Placed</span><span class="s-val">{{ opt.placed }} / {{ opt.total }}</span></li>
+        <li class="status-row"><span class="s-label">Unplaced</span><span class="s-pill {% if opt.unplaced %}pill-rose{% else %}pill-green{% endif %}">{{ opt.unplaced }}</span></li>
+        <li class="status-row"><span class="s-label">Score</span><span class="s-val">{{ opt.score|floatformat:1 }}</span></li>
+      </ul>
+      <div style="padding:2px 16px 10px;font-size:11px;color:var(--tx3)">
+        {% for r in opt.reason_mix %}<span class="s-pill pill-amber" style="margin-right:4px">{{ r }}</span>{% empty %}No unplaced sessions.{% endfor %}
+      </div>
+      <form method="post" action="{% url 'scheduling:schedule_generate' schedule.pk %}" style="padding:0 16px 14px">
+        {% csrf_token %}
+        <input type="hidden" name="seed" value="{{ opt.seed }}">
+        <button class="btn btn-primary" style="width:100%">Use this option</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card"><div class="card-header"><span class="card-title">No options simulated</span></div></div>
+  {% endfor %}
+</div>
+
+<div class="card" style="max-width:720px;margin-top:22px">
+  <div class="card-header"><span class="card-title">Generation Options</span></div>
+  <div class="card-body" style="padding:18px 20px">
+    <form method="post" action="{% url 'scheduling:schedule_generate' schedule.pk %}">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="msg-item msg-error" style="margin-bottom:12px">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+      <div class="field-row" style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:4px">{{ field.label }}</label>
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <div>{{ field }} <span style="font-size:12px;color:var(--tx2)">{{ field.help_text }}</span></div>
+        {% else %}
+          {{ field }}
+        {% endif %}
+        {% for err in field.errors %}<div style="color:var(--rose);font-size:11px;margin-top:2px">{{ err }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Generate</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

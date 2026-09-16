@@ -1,0 +1,119 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Beds</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Manage bed availability and state</p>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;font-weight:600;">State:</span>
+    <a href="{% url 'hostel:beds' %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+      {% if not state_filter %}background:var(--ochre);color:#000;
+      {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">All</a>
+    {% for choice in state_choices %}
+      <a href="{% url 'hostel:beds' %}?state={{ choice.0 }}{% if hostel_filter %}&hostel={{ hostel_filter }}{% endif %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+        {% if state_filter == choice.0 %}background:var(--ochre);color:#000;
+        {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">{{ choice.1 }}</a>
+    {% endfor %}
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;font-weight:600;margin-left:1rem;">Hostel:</span>
+    <a href="{% url 'hostel:beds' %}{% if state_filter %}?state={{ state_filter }}{% endif %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+      {% if not hostel_filter %}background:var(--ochre);color:#000;
+      {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">All</a>
+    {% for hostel in hostels %}
+      <a href="{% url 'hostel:beds' %}?hostel={{ hostel.id }}{% if state_filter %}&state={{ state_filter }}{% endif %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+        {% if hostel_filter|stringformat:'s' == hostel.id|stringformat:'s' %}background:var(--ochre);color:#000;
+        {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">{{ hostel.name }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- Beds List -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0 1.25rem;">
+    {% for bed in page_obj %}
+      <div style="border-bottom:1px solid var(--border);padding:1rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+        <div style="flex:2;min-width:0;">
+          <div style="color:var(--text);font-weight:600;font-size:.9rem;">{{ bed.display_name }}</div>
+        </div>
+        <div style="flex:2;min-width:0;">
+          {% if bed.room %}
+            <a href="{% url 'hostel:beds' %}?hostel={{ bed.room.hostel_id }}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">{{ bed.room.name }}</a>
+          {% else %}
+            <span style="color:var(--text);opacity:.4;font-size:.85rem;">—</span>
+          {% endif %}
+        </div>
+        <div style="flex:2;min-width:0;">
+          <div style="color:var(--text);font-size:.85rem;">{{ bed.room.hostel.name|default:"—" }}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
+            {% if bed.state == 'AVAILABLE' %}background:#059669;color:#fff;
+            {% elif bed.state == 'RESERVED' %}background:#2d5a87;color:#fff;
+            {% elif bed.state == 'OCCUPIED' %}background:var(--ochre);color:#000;
+            {% elif bed.state == 'HELD' %}background:#d97706;color:#fff;
+            {% elif bed.state == 'MAINTENANCE' %}background:#d97706;color:#fff;
+            {% elif bed.state == 'BLOCKED' %}background:#dc2626;color:#fff;
+            {% endif %}">{{ bed.get_state_display }}</span>
+        </div>
+        <div style="flex:2;min-width:0;">
+          {% if bed.state == 'OCCUPIED' or bed.state == 'RESERVED' %}
+            {% for alloc in bed.allocations.all %}
+              {% if alloc.is_active %}
+                <div style="color:var(--text);font-size:.85rem;">{{ alloc.student.get_full_name|default:alloc.student.email }}</div>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <div style="color:var(--text);opacity:.4;font-size:.85rem;">No allocation</div>
+          {% endif %}
+        </div>
+        <div style="flex:3;display:flex;gap:.4rem;justify-content:flex-end;">
+          {% if bed.state == 'AVAILABLE' %}
+            <form method="post" action="{% url 'hostel:bed_action' bed.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="hold">
+              <button type="submit" class="btn btn-primary btn-sm">Hold</button>
+            </form>
+          {% elif bed.state == 'HELD' %}
+            <form method="post" action="{% url 'hostel:bed_action' bed.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="release">
+              <button type="submit" class="btn btn-primary btn-sm">Release Hold</button>
+            </form>
+          {% endif %}
+          {% if bed.state == 'AVAILABLE' or bed.state == 'HELD' or bed.state == 'MAINTENANCE' %}
+            <form method="post" action="{% url 'hostel:bed_action' bed.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="block">
+              <button type="submit" class="btn btn-danger btn-sm">Block</button>
+            </form>
+          {% elif bed.state == 'BLOCKED' %}
+            <form method="post" action="{% url 'hostel:bed_action' bed.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="unblock">
+              <button type="submit" class="btn btn-primary btn-sm">Unblock</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:3rem 0;">No beds found</div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:1rem;margin-top:1.5rem;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if state_filter %}&state={{ state_filter }}{% endif %}{% if hostel_filter %}&hostel={{ hostel_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Previous</a>
+    {% endif %}
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if state_filter %}&state={{ state_filter }}{% endif %}{% if hostel_filter %}&hostel={{ hostel_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">Next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock content %}

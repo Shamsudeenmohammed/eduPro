@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Check-ins</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Allocations recorded as checked in, most recent first</p>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem;color:var(--text);">
+      <thead>
+        <tr style="background:var(--surface2);text-align:left;color:var(--text);opacity:.7;border-bottom:1px solid var(--border);">
+          <th style="padding:.7rem 1rem;">Student</th>
+          <th style="padding:.7rem 1rem;">Bed (Hierarchy)</th>
+          <th style="padding:.7rem 1rem;">Session</th>
+          <th style="padding:.7rem 1rem;">Checked In</th>
+          <th style="padding:.7rem 1rem;">By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alloc in page_obj %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:.7rem 1rem;font-weight:600;">{{ alloc.student.get_full_name|default:alloc.student.email }}</td>
+          <td style="padding:.7rem 1rem;">{{ alloc.hierarchy_display }}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{{ alloc.session.name|default:"—" }}</td>
+          <td style="padding:.7rem 1rem;">{{ alloc.checked_in_at|date:"M d, Y H:i" }}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{{ alloc.checked_in_by.get_full_name|default:alloc.checked_in_by|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="padding:2rem 1rem;text-align:center;color:var(--text);opacity:.4;">No check-ins recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:1.25rem;">
+    {% if page_obj.has_other_pages %}
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Previous</a>{% endif %}
+      <span style="color:var(--text);opacity:.6;font-size:.85rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">Next &rarr;</a>{% endif %}
+    {% endif %}
+  </div>
+
+</div>
+{% endblock content %}

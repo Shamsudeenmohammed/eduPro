@@ -1,0 +1,201 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+<style>
+  /* Searchable selects */
+  .ss { position: relative; }
+  .ss-input { width: 100%; padding-right: 26px; cursor: text; }
+  .ss-select { display: none !important; }
+  .ss-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+    max-height: 250px; overflow-y: auto;
+    box-shadow: 0 12px 32px rgba(0,0,0,.45);
+    padding: 4px;
+  }
+  .ss-opt {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: .5rem .6rem; border-radius: 7px;
+    color: var(--tx1); font-size: .85rem; font-family: inherit; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ss-opt:hover, .ss-opt.ss-sel { background: rgba(245,158,11,.14); color: var(--ochre); }
+  .ss-none { padding: .5rem .6rem; color: var(--tx3); opacity: .7; font-size: .8rem; }
+  .ss-key {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: .7rem; color: var(--tx3); opacity: .7; pointer-events: none;
+  }
+  .label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .label-row + a { margin-top: -2px; }
+</style>
+{% endblock %}
+{% block breadcrumb %}{{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>{{ page_title }}</h1></div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:room_list' %}">← Back</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="max-width:720px">
+  <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+  <div class="card-body" style="padding:18px 20px">
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="msg-item msg-error" style="margin-bottom:12px">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+      <div class="field-row" style="margin-bottom:14px">
+        {% if field.name == 'building' %}
+        <div class="label-row">
+          <label style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:4px">{{ field.label }}{% if field.field.required %} <span style="color:var(--ochre)">*</span>{% endif %}</label>
+          <a href="{% url 'scheduling:building_create' %}" class="card-action" title="Add a new building">{{ field.label }}: Create New +</a>
+        </div>
+        {% else %}
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:4px">{{ field.label }}{% if field.field.required %} <span style="color:var(--ochre)">*</span>{% endif %}</label>
+        {% endif %}
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <div>{{ field }} <span style="font-size:12px;color:var(--tx2)">{{ field.help_text }}</span></div>
+        {% else %}
+          {{ field }}
+          {% if field.name == 'building' %}<div style="font-size:11px;color:var(--tx3);margin-top:3px">Can't find your building? <a class="card-action" href="{% url 'scheduling:building_create' %}">Create a new one</a>.</div>{% endif %}
+          {% if field.help_text %}<div style="font-size:11px;color:var(--tx3);margin-top:3px">{{ field.help_text }}</div>{% endif %}
+        {% endif %}
+        {% for err in field.errors %}
+          <div style="color:var(--rose);font-size:11px;margin-top:2px">{{ err }}</div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      <div style="margin-top:18px;display:flex;gap:8px">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn btn-ghost" href="{% url 'scheduling:room_list' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  var selects = document.querySelectorAll('.field-row select');
+  for (var i = 0; i < selects.length; i++) {
+    if (selects[i].options.length <= 2) continue; /* placeholder + empty list */
+    makeSearchable(selects[i]);
+  }
+
+  function makeSearchable(select) {
+    var wrap = document.createElement('div');
+    wrap.className = 'ss';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'ss-input';
+    input.placeholder = 'Search…';
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-expanded', 'false');
+    input.id = select.id;
+    select.removeAttribute('id');
+
+    var caret = document.createElement('span');
+    caret.className = 'ss-key';
+    caret.textContent = '\u25BE';
+    caret.setAttribute('aria-hidden', 'true');
+
+    var list = document.createElement('div');
+    list.className = 'ss-list';
+    list.setAttribute('role', 'listbox');
+    list.hidden = true;
+
+    var parent = select.parentNode;
+    select.classList.add('ss-select');
+    parent.insertBefore(wrap, select);
+    wrap.appendChild(caret);
+    list.appendChild(renderOptions(''));
+    wrap.appendChild(input);
+    wrap.appendChild(list);
+    wrap.appendChild(select);
+    list.hidden = true;
+
+    document.addEventListener('click', function (ev) {
+      if (!wrap.contains(ev.target)) close();
+    }, true);
+
+    function renderOptions(filter) {
+      var frag = document.createDocumentFragment();
+      var q = (filter || '').toLowerCase();
+      var shown = 0;
+      for (var j = 0; j < select.options.length; j++) {
+        var opt = select.options[j];
+        if (q && opt.text.toLowerCase().indexOf(q) === -1) continue;
+        shown++;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ss-opt' + (opt.selected ? ' ss-sel' : '');
+        btn.setAttribute('role', 'option');
+        btn.textContent = opt.text;
+        btn.addEventListener('click', function () {
+          setValue(this.textContent, this.getAttribute('data-value'));
+        });
+        btn.setAttribute('data-value', opt.value);
+        frag.appendChild(btn);
+      }
+      if (!shown) {
+        var none = document.createElement('div');
+        none.className = 'ss-none';
+        none.textContent = 'No matches';
+        frag.appendChild(none);
+      }
+      return frag;
+    }
+
+    function setValue(label, value) {
+      select.value = value;
+      input.value = label;
+      input.classList.toggle('ss-has', value !== '');
+      close();
+      try { select.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+    }
+
+    function open() {
+      input.value = '';
+      list.innerHTML = '';
+      list.appendChild(renderOptions(''));
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      input.focus();
+    }
+
+    function close() {
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      var sel = select.options[select.selectedIndex];
+      input.value = sel ? sel.text : '';
+      input.classList.toggle('ss-has', !!(sel && sel.value !== ''));
+    }
+
+    input.addEventListener('focus', open);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { close(); return; }
+      if (e.key === 'Enter') {
+        var f = list.querySelector('.ss-opt');
+        if (f) { f.click(); e.preventDefault(); }
+      }
+    });
+    input.addEventListener('input', function () {
+      if (!list.hidden) {
+        list.innerHTML = '';
+        list.appendChild(renderOptions(input.value));
+      }
+    });
+
+    var sel = select.options[select.selectedIndex];
+    input.value = sel ? sel.text : '';
+    input.classList.toggle('ss-has', !!(sel && sel.value !== ''));
+  }
+})();
+</script>
+{% endblock %}

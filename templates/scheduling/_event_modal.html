@@ -1,0 +1,64 @@
+<div class="gen-modal">
+  <div class="gen-modal-head">
+    <div class="gen-modal-accent gen-accent-{{ ev.event_type }}" aria-hidden="true"></div>
+    <div class="gen-modal-titles">
+      <div class="gen-modal-badges">
+        <span class="g-badge g-badge-{{ ev.event_type }}">{{ ev.get_event_type_display }}</span>
+        {% if not ev.is_public %}<span class="g-badge g-badge-muted">Internal</span>{% endif %}
+        {% if ev.affects_scheduling %}<span class="g-badge g-badge-sched">Affects scheduling</span>{% endif %}
+      </div>
+      <h3 class="gen-modal-title">{{ ev.title }}</h3>
+      {% if ev.scope %}<p class="gen-modal-scope">{{ ev.get_scope_display }}</p>{% endif %}
+    </div>
+    <button type="button" class="gen-close" aria-label="Close" data-close-modal>×</button>
+  </div>
+
+  {% if ev.description %}
+  <div class="gen-modal-desc">{{ ev.description }}</div>
+  {% endif %}
+
+  <div class="gen-rows">
+    <div class="gen-row">
+      <span class="gen-key">When</span>
+      <span class="gen-val">
+        {{ ev.start_date|date:"D, d M Y" }}{% if ev.end_date and ev.end_date != ev.start_date %} → {{ ev.end_date|date:"D, d M Y" }}{% endif %}
+        {% if ev.all_day %}<em class="gen-em">all day</em>{% elif ev.start_time %} · {{ ev.start_time|time:"H:i" }}{% if ev.end_time %}–{{ ev.end_time|time:"H:i" }}{% endif %}{% endif %}
+      </span>
+    </div>
+    {% if ev.offering %}
+    <div class="gen-row">
+      <span class="gen-key">Course</span>
+      <span class="gen-val">
+        <span class="g-code">{{ ev.offering.course.code }}</span> {{ ev.offering.course.title }}
+        {% if ev.offering.level %} · {{ ev.offering.level }}{% endif %}
+      </span>
+    </div>
+    {% endif %}
+    {% if ev.programme %}
+    <div class="gen-row"><span class="gen-key">Programme</span><span class="gen-val">{{ ev.programme }}</span></div>
+    {% endif %}
+    {% if ev.department %}
+    <div class="gen-row"><span class="gen-key">Department</span><span class="gen-val">{{ ev.department }}</span></div>
+    {% endif %}
+    {% if ev.level %}
+    <div class="gen-row"><span class="gen-key">Level</span><span class="gen-val">{{ ev.level }}</span></div>
+    {% endif %}
+    <div class="gen-row">
+      <span class="gen-key">Recurrence</span>
+      <span class="gen-val">{{ ev.get_recurrence_display }}</span>
+    </div>
+    {% if ev.created_by %}
+    <div class="gen-row"><span class="gen-key">Posted by</span><span class="gen-val">{{ ev.created_by.get_full_name|default:ev.created_by }}</span></div>
+    {% endif %}
+  </div>
+
+  {% if manage %}
+  <div class="gen-actions">
+    <a class="gen-btn" href="{% url 'scheduling:event_edit' ev.pk %}">Edit</a>
+    <form method="post" action="{% url 'scheduling:event_delete' ev.pk %}" data-confirm="Delete this event?" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" class="gen-btn gen-btn-danger">Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>

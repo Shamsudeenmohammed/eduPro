@@ -1,0 +1,133 @@
+{% extends base_template %}
+{% block extra_head %}
+<style>
+  .hd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
+  .hd-card .hd-head { background: var(--surface2); padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .hd-card .hd-head h3 { margin: 0; color: var(--text, #eee); font-size: 1.05rem; font-weight: 700; }
+  .hd-card .hd-body { padding: 1rem 1.25rem; }
+  .hd-meta { font-size: .82rem; color: #888; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .75rem; margin-top: .75rem; }
+  .room-chip { padding: .65rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2); font-size: .85rem; }
+  .room-chip .rn { font-weight: 600; }
+  .room-chip .rb { font-size: .78rem; color: #888; }
+  .badge-available { font-size: .68rem; font-weight: 700; padding: .15rem .55rem; border-radius: 99px; background: #dcfce7; color: #15803d; }
+  .badge-full { font-size: .68rem; font-weight: 700; padding: .15rem .55rem; border-radius: 99px; background: #fee2e2; color: #dc2626; }
+  .amenity-tag { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; padding: .25rem .6rem; border-radius: 99px; background: var(--surface2); border: 1px solid var(--border); color: var(--text, #eee); margin: 0 .35rem .35rem 0; }
+  .stat-box { text-align: center; padding: .75rem .5rem; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); }
+  .stat-box .sv { font-size: 1.3rem; font-weight: 800; }
+  .stat-box .sl { font-size: .72rem; color: #888; text-transform: uppercase; letter-spacing: .05em; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .75rem; margin-top: .75rem; }
+  @media (max-width: 640px) { .room-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <nav style="font-size: .8rem; color: #888; margin-bottom: .35rem;">
+    <a href="{% url 'hostel:hostel' %}" style="color: inherit;">Hostel &amp; Accommodation</a>
+    &nbsp;&rsaquo;&nbsp; <span style="color: var(--text, #eee);">{{ hostel.name }}</span>
+  </nav>
+  <h1 style="font-size: 1.4rem; font-weight: 800; margin: 0;">{{ hostel.name }}</h1>
+  <p style="margin: .25rem 0 0; color: #888; font-size: .9rem;">
+    {{ hostel.location|default:"No location on record" }}
+  </p>
+</div>
+
+{% if summary %}
+<div class="summary-grid">
+  <div class="stat-box">
+    <div class="sv" style="color: #15803d;">{{ summary.available }}</div>
+    <div class="sl">Available beds</div>
+  </div>
+  <div class="stat-box">
+    <div class="sv">{{ summary.reserved }}</div>
+    <div class="sl">Reserved</div>
+  </div>
+  <div class="stat-box">
+    <div class="sv">{{ summary.occupied }}</div>
+    <div class="sl">Occupied</div>
+  </div>
+  <div class="stat-box">
+    <div class="sv">{{ summary.maintenance }}</div>
+    <div class="sl">Maintenance</div>
+  </div>
+  <div class="stat-box">
+    <div class="sv">{{ summary.blocked }}</div>
+    <div class="sl">Blocked</div>
+  </div>
+  <div class="stat-box">
+    <div class="sv">{{ summary.total_beds }}</div>
+    <div class="sl">Total beds</div>
+  </div>
+</div>
+{% endif %}
+
+{% if hostel.description %}
+<div class="hd-card">
+  <div class="hd-head"><h3>About {{ hostel.name }}</h3></div>
+  <div class="hd-body" style="color: #ccc; font-size: .9rem; line-height: 1.6;">
+    {{ hostel.description|linebreaks }}
+  </div>
+</div>
+{% endif %}
+
+<div class="hd-card">
+  <div class="hd-head">
+    <h3>Rooms &amp; Availability</h3>
+    {% if fee_amount is not None %}
+    <div style="font-size: .85rem; color: #ccc;">
+      Hostel fee: <strong>GHC {{ fee_amount|floatformat:2 }}</strong>
+      {% if semester %}<span style="color: #888;">&middot; {{ semester }} ({{ semester.session.name }})</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="hd-body">
+    {% if summary and summary.rooms %}
+    <div class="room-grid">
+      {% for rc in summary.rooms %}
+      <div class="room-chip">
+        <div class="rn">Room {{ rc.room.room_number }}</div>
+        <div class="rb">{{ rc.available }}/{{ rc.room.capacity }} beds{% if rc.room.floor %} &middot; {{ rc.room.floor.block.name|default:"" }} / {{ rc.room.floor.name }}{% endif %}</div>
+        {% if rc.available > 0 %}<span class="badge-available">Available</span>{% else %}<span class="badge-full">Full</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 1.5rem 0; color: #888; font-size: .85rem;">
+      No rooms currently available in this hostel.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if amenities_enabled %}
+<div class="hd-card">
+  <div class="hd-head"><h3>Amenities</h3></div>
+  <div class="hd-body">
+    {% if amenities %}
+      {% for amenity in amenities %}
+      <span class="amenity-tag">
+        {% if amenity.icon %}{{ amenity.icon }} {% endif %}{{ amenity.name }}
+      </span>
+      {% endfor %}
+    {% else %}
+    <div style="text-align: center; padding: 1rem 0; color: #888; font-size: .85rem;">
+      No amenities listed for this hostel yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if user.is_student %}
+{% if summary.available > 0 %}
+<a href="{% url 'hostel:hostel_apply' %}?hostel={{ hostel.pk }}" class="btn btn-primary">Apply for accommodation</a>
+{% endif %}
+{% elif user.is_admin or user.is_staff %}
+<div style="display: flex; gap: .5rem; flex-wrap: wrap;">
+  <a href="{% url 'hostel:hostel_edit' hostel.pk %}" class="btn btn-light btn-sm">Edit Hostel</a>
+  <a href="{% url 'hostel:rooms' %}" class="btn btn-light btn-sm">Manage Rooms</a>
+  <a href="{% url 'hostel:fee_config_create' %}" class="btn btn-light btn-sm">Configure Fees</a>
+</div>
+{% endif %}
+{% endblock %}

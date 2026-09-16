@@ -1,0 +1,75 @@
+(function () {
+  var nav = document.getElementById('sidebarNav');
+  if (!nav) return;
+  var toggles = Array.prototype.slice.call(nav.querySelectorAll('.sidebar-menu-toggle'));
+  if (toggles.length === 0) return;
+  var role = nav.getAttribute('data-role') || 'app';
+  var KEY = 'eduPro_sidebar_' + role + '_open';
+
+  function submenu(btn) {
+    var id = btn.getAttribute('aria-controls');
+    return id ? document.getElementById(id) : null;
+  }
+  function sameGroup(a, b) {
+    return a.parentNode === b.parentNode;
+  }
+  function setState(btn, open, persistNow) {
+    if (btn.classList.contains('open') === open) return;
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var sub = submenu(btn);
+    if (sub) sub.classList.toggle('open', open);
+    if (persistNow) persist();
+  }
+  // Open a toggle while closing only its siblings — ancestors and
+  // unrelated branches stay untouched, so nested submenus stay intact.
+  function openExclusive(btn) {
+    toggles.forEach(function (other) {
+      if (other !== btn && sameGroup(other, btn)) setState(other, false, false);
+    });
+    setState(btn, true, true);
+  }
+  function persist() {
+    var map = {};
+    toggles.forEach(function (t) { map[t.dataset.menu] = t.classList.contains('open'); });
+    try { localStorage.setItem(KEY, JSON.stringify(map)); } catch (e) {}
+  }
+  function restore() {
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { map = {}; }
+    // Applied in DOM order: parents are always restored before their children,
+    // which keeps the nesting valid even if storage is inconsistent.
+    toggles.forEach(function (t) {
+      if (map[t.dataset.menu] === true) setState(t, true, false);
+    });
+  }
+
+  toggles.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.classList.contains('open')) { setState(btn, false, true); }
+      else { openExclusive(btn); }
+    });
+  });
+
+  // Auto-expand every ancestor group of the active link (supports nesting).
+  var active = nav.querySelector('.sidebar-submenu .nav-item.active');
+  if (active) {
+    var subs = [];
+    var cur = active.closest ? active.closest('.sidebar-submenu') : null;
+    while (cur) {
+      subs.unshift(cur);
+      var container = cur.parentNode;
+      cur = container && container.closest ? container.closest('.sidebar-submenu') : null;
+    }
+    subs.forEach(function (sub) {
+      for (var i = 0; i < toggles.length; i++) {
+        if (toggles[i].getAttribute('aria-controls') === sub.id) {
+          openExclusive(toggles[i]);
+          break;
+        }
+      }
+    });
+  } else {
+    restore();
+  }
+})();

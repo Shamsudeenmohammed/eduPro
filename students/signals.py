@@ -44,23 +44,13 @@ def notify_students_new_material(sender, instance, created, **kwargs):
     """Notify enrolled students when a new published material is added."""
     if not created or not instance.is_published:
         return
-    from academics.models import Enrolment
-    from students.models import StudentNotification
-    enrolments = Enrolment.objects.filter(
-        offering=instance.offering, is_active=True, status="active"
-    ).select_related("student")
-    notifications = [
-        StudentNotification(
-            student=e.student,
-            category="material",
-            title=f"New material: {instance.title}",
-            message=(
-                f"A new {instance.get_material_type_display()} has been uploaded "
-                f"for {instance.offering.course.code}."
-            ),
-            link=f"/students/courses/{instance.offering.pk}/materials/",
-        )
-        for e in enrolments
-    ]
-    if notifications:
-        StudentNotification.objects.bulk_create(notifications, ignore_conflicts=True)
+    from notifications.models import NotificationType
+    from notifications.services import NotificationService
+
+    NotificationService.send_to_students(
+        NotificationType.NEW_MATERIAL,
+        instance.offering,
+        context={"material_title": instance.title},
+        obj=instance,
+        link=f"/students/courses/{instance.offering.pk}/materials/",
+    )

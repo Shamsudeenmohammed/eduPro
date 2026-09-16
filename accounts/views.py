@@ -296,7 +296,7 @@ def admin_dashboard(request):
     )
 
     # Hostel applications
-    from operations.models import HostelApplication
+    from hostel.models import HostelApplication
     pending_hostel_count = HostelApplication.objects.filter(
         status=HostelApplication.Status.PENDING
     ).count()

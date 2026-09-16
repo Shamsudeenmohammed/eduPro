@@ -1,0 +1,80 @@
+{% extends "academics/base.html" %}
+
+{% block topbar_actions %}
+{% if cancel_url %}
+<a href="{% url cancel_url %}" class="btn btn-secondary btn-sm">← Cancel</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;">
+  <div class="breadcrumb">
+    <span>{{ page_title }}</span>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">{{ page_title }}</span>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div style="margin-bottom:18px;">
+          <label style="display:block;font-size:12px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">
+            {{ field.label }}{% if field.field.required %} <span style="color:var(--danger)">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.errors %}
+          <ul style="margin-top:5px;padding:0;list-style:none;">
+            {% for error in field.errors %}
+            <li style="font-size:12px;color:var(--danger);">⚠ {{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if field.help_text %}
+          <p style="margin-top:4px;font-size:12px;color:var(--muted);">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+        <div class="message message-error" style="margin-bottom:16px;">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:10px;margin-top:24px;">
+          <button type="submit" class="btn btn-primary">Create Result Sheet</button>
+          {% if cancel_url %}
+          <a href="{% url cancel_url %}" class="btn btn-secondary">Cancel</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card-body input[type=text],
+  .card-body textarea,
+  .card-body select {
+    width: 100%;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 13px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .card-body input:focus,
+  .card-body textarea:focus,
+  .card-body select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .card-body textarea { min-height: 100px; resize: vertical; }
+</style>
+{% endblock %}

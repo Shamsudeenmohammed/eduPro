@@ -189,6 +189,7 @@
       .page-link { width: 24px; height: 24px; font-size: 10px; }
       .badge { font-size: 9px; padding: 1px 5px; }
     }
+  {% include "components/sidebar_collapse.css.html" %}
   </style>
   {% load role_tags %}
   {% block extra_head %}{% endblock %}
@@ -197,51 +198,8 @@
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">edu<span>Pro</span></div>
-  <nav class="sidebar-nav">
-    <div class="nav-section">Teaching</div>
-    <a href="{% url 'teachers:dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-      <span class="nav-icon">⊞</span><span>Dashboard</span>
-    </a>
-    <a href="{% url 'teachers:my_courses' %}" class="nav-item {% if 'course' in request.resolver_match.url_name %}active{% endif %}">
-      <span class="nav-icon">📚</span><span>My Courses</span>
-    </a>
-    <a href="{% url 'teachers:result_sheet_list' %}" class="nav-item {% if 'result_sheet_list' in request.resolver_match.url_name and request.resolver_match.url_name != 'hod_result_sheets' %}active{% endif %}">
-      <span class="nav-icon">📊</span><span>Results</span>
-    </a>
-
-    {% if user.is_admin or user.is_superuser or user|has_role:"HOD" %}
-    <div class="nav-section">Department Management</div>
-    <a href="{% url 'teachers:hod_result_sheets' %}" class="nav-item {% if request.resolver_match.url_name == 'hod_result_sheets' %}active{% endif %}">
-      <span class="nav-icon">✅</span><span>HOD Approvals</span>
-    </a>
-    {% endif %}
-
-    <div class="nav-section">Finance</div>
-    <a href="{% url 'finance:my_payroll' %}" class="nav-item {% if request.resolver_match.url_name == 'my_payroll' %}active{% endif %}">
-      <span class="nav-icon">💰</span><span>My Payroll</span>
-    </a>
-
-    <div class="nav-section">Operations</div>
-    <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.url_name == 'announcements' %}active{% endif %}">
-      <span class="nav-icon">📢</span><span>Announcements</span>
-    </a>
-    <a href="{% url 'operations:calendar' %}" class="nav-item {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
-      <span class="nav-icon">📅</span><span>Calendar</span>
-    </a>
-    <a href="{% url 'operations:timetable' %}" class="nav-item {% if request.resolver_match.url_name == 'timetable' %}active{% endif %}">
-      <span class="nav-icon">📋</span><span>Timetable</span>
-    </a>
-    <a href="{% url 'operations:hostel' %}" class="nav-item {% if request.resolver_match.url_name == 'hostel' %}active{% endif %}">
-      <span class="nav-icon">🏠</span><span>Hostel</span>
-    </a>
-    <a href="{% url 'feedback:submit' %}" class="nav-item {% if request.resolver_match.url_name == 'submit' %}active{% endif %}">
-      <span class="nav-icon">💬</span><span>Feedback</span>
-    </a>
-
-    <div class="nav-section">Account</div>
-    <a href="{% url 'teachers:profile_edit' %}" class="nav-item {% if request.resolver_match.url_name == 'profile_edit' %}active{% endif %}">
-      <span class="nav-icon">👤</span><span>My Profile</span>
-    </a>
+  <nav class="sidebar-nav" id="sidebarNav" data-role="teacher">
+    {% include "components/sidebar_teacher.html" %}
   </nav>
   
   <div class="sidebar-user">
@@ -275,6 +233,11 @@
       {% if user.is_hod or user|has_role:"HOD" %}
       <a href="{% url 'admin:index' %}" class="btn btn-secondary btn-sm">⚙️ Admin</a>
       {% endif %}
+      <a href="{% url 'notifications:centre' %}" class="btn btn-secondary btn-sm" style="position:relative;text-decoration:none">
+        🔔 Notifications
+        {% if unread_staff_notifications %}<span class="badge badge-amber" style="position:absolute;top:-6px;right:-6px">{{ unread_staff_notifications }}</span>{% endif %}
+      </a>
+      <a href="{% url 'notifications:preferences' %}" class="btn btn-secondary btn-sm">⚙️ Notif Settings</a>
       {% block topbar_actions %}{% endblock %}
     </div>
   </header>
@@ -286,6 +249,7 @@
       {% endfor %}
     </div>
     {% endif %}
+    {% block page_header %}{% endblock %}
     {% block content %}{% endblock %}
   </div>
 </div>
@@ -302,5 +266,7 @@
   }
 })();
 </script>
+<script>{% include "components/sidebar_collapse.js.html" %}</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

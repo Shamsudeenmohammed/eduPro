@@ -1,0 +1,53 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}{{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Lecturer Availability</h1>
+    <p>{{ items.paginator.count }} unavailability window{{ items.paginator.count|pluralize }}</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-primary" href="{% url 'scheduling:availability_add' %}">+ Add Window</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+<table class="reg-table">
+  <thead>
+    <tr><th>Lecturer</th><th>Day</th><th>Time</th><th>Reason</th><th>Status</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td><strong>{{ item.lecturer.get_full_name|default:item.lecturer }}</strong></td>
+      <td>{{ item.get_day_display }}</td>
+      <td><span class="code-tag">{{ item.start_time|time:"H:i" }}–{{ item.end_time|time:"H:i" }}</span></td>
+      <td>{{ item.reason|default:"—" }}</td>
+      <td>{% if item.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+      <td style="text-align:right">
+        <form method="post" action="{% url 'scheduling:availability_delete' item.pk %}" style="display:inline" onsubmit="return confirm('Remove this unavailability window?')">
+          {% csrf_token %}
+          <button type="submit" class="card-action" style="color:var(--rose);background:none;border:none;cursor:pointer">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" style="color:var(--tx3)">No unavailability windows yet. <a class="card-action" href="{% url 'scheduling:availability_add' %}">Add one</a>.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if items.has_other_pages %}
+<div class="pagination">
+  {% if items.has_previous %}<a class="page-link" href="?page={{ items.previous_page_number }}">‹ Prev</a>{% endif %}
+  <span>Page {{ items.number }} of {{ items.paginator.num_pages }}</span>
+  {% if items.has_next %}<a class="page-link" href="?page={{ items.next_page_number }}">Next ›</a>{% endif %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

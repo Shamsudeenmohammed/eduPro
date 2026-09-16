@@ -1,0 +1,46 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}Compare Options · {{ schedule.name }} · eduPro{% endblock %}
+{% block breadcrumb %}Compare Options{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Compare Options — {{ schedule.name }}</h1>
+    <p>Three generated plans; pick the one you want to keep.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:schedule_detail' schedule.pk %}">← Back</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+  {% for opt in simulated %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Seed {{ opt.seed }}</span>
+      <span class="s-pill {% if opt.unplaced %}pill-amber{% else %}pill-green{% endif %}">{{ opt.score|floatformat:1 }} score</span>
+    </div>
+    <div class="card-body" style="padding:14px 18px">
+      <ul class="status-list">
+        <li class="status-row"><span class="s-label">Placed</span><span class="s-val">{{ opt.placed }} / {{ opt.total }}</span></li>
+        <li class="status-row"><span class="s-label">Unplaced</span><span class="s-pill {% if opt.unplaced %}pill-rose{% else %}pill-green{% endif %}">{{ opt.unplaced }}</span></li>
+        <li class="status-row"><span class="s-label">Score</span><span class="s-val">{{ opt.score|floatformat:1 }}</span></li>
+      </ul>
+      <div style="padding:2px 16px 10px;font-size:11px;color:var(--tx3)">
+        {% for r in opt.reason_mix %}<span class="s-pill pill-amber" style="margin-right:4px">{{ r }}</span>{% empty %}No unplaced sessions.{% endfor %}
+      </div>
+      <form method="post" action="{% url 'scheduling:schedule_options' schedule.pk %}" style="padding:0 16px 14px">
+        {% csrf_token %}
+        <input type="hidden" name="seed" value="{{ opt.seed }}">
+        <button class="btn btn-primary" style="width:100%">Select this option</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card"><div class="card-header"><span class="card-title">No options simulated</span></div></div>
+  {% endfor %}
+</div>
+{% endblock %}

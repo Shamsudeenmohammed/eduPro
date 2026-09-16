@@ -1,0 +1,87 @@
+{% extends "academics/base.html" %}
+
+{% block content %}
+<div class="breadcrumb">
+  <span>Result Sheets</span>
+  <span class="sep">/</span>
+  <span>All</span>
+</div>
+
+<form method="get" class="filter-bar">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">All statuses</option>
+    {% for value, label in status_choices %}
+    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <a href="{% url 'academics:result_sheet_admin_list' %}" class="btn btn-secondary btn-sm">Clear</a>
+</form>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ page_title }}</span>
+    <span style="font-size:13px;color:var(--muted);">{{ page_obj.paginator.count }} sheet{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if page_obj %}
+    <table>
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Semester</th>
+          <th>Department</th>
+          <th>Submitted by</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sheet in page_obj %}
+        <tr>
+          <td data-label="Course">
+            <strong>{{ sheet.offering.course.code }}</strong><br>
+            <span style="font-size:12px;color:var(--muted);">{{ sheet.offering.course.title }}</span>
+          </td>
+          <td data-label="Semester">{{ sheet.offering.semester }}</td>
+          <td data-label="Department">{{ sheet.department.name }}</td>
+          <td data-label="Submitted by">{{ sheet.submitted_by.get_full_name }}</td>
+          <td data-label="Status">
+            <span class="badge
+              {% if sheet.status == 'draft' %}badge-inactive
+              {% elif sheet.status == 'submitted' %}badge-blue
+              {% elif sheet.status == 'hod_approved' %}badge-purple
+              {% else %}badge-active{% endif %}">{{ sheet.get_status_display }}</span>
+          </td>
+          <td data-label="Actions">
+            <a href="{% url 'academics:result_sheet_detail' sheet.pk %}" class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <span class="icon">📊</span>No result sheets yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}
+  <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">‹</a>
+  {% endif %}
+  {% for num in page_obj.paginator.page_range %}
+    {% if num == page_obj.number %}
+    <span class="page-link current">{{ num }}</span>
+    {% else %}
+    <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}
+  <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">›</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -17,6 +17,9 @@ from accounts.decorators import role_required, teacher_required, hod_required
 from academics.models import CourseAllocation, CourseOffering, Enrolment, TeacherDepartment
 from students.models import StudentNotification
 
+from notifications.models import NotificationType
+from notifications.services import NotificationService
+
 from .forms import (
     AssignmentForm,
     AssignmentGradeForm,
@@ -293,8 +296,18 @@ def material_edit(request, pk):
         return redirect("teachers:my_courses")
 
     form = LectureMaterialForm(request.POST or None, request.FILES or None, instance=material)
+    was_published = material.is_published
     if request.method == "POST" and form.is_valid():
         form.save()
+        if material.is_published and not was_published:
+            NotificationService.send_to_students(
+                NotificationType.NEW_MATERIAL,
+                material.offering,
+                context={"material_title": material.title},
+                obj=material,
+                link=f"/students/courses/{material.offering.pk}/materials/",
+                idempotency_key=f"new_material:{material.pk}",
+            )
         messages.success(request, "Material updated.")
         return redirect("teachers:course_detail", offering_pk=material.offering.pk)
 
@@ -360,11 +373,17 @@ def assignment_create(request, offering_pk):
             assignment.offering    = offering
             assignment.created_by  = request.user
             assignment.save()
-            notify_students(
-                assignment.offering,
-                "New Assignment Posted",
-                f"{assignment.title} is now available"
-            )
+            if assignment.status == "published":
+                NotificationService.send_to_students(
+                    NotificationType.NEW_ASSIGNMENT,
+                    assignment.offering,
+                    context={
+                        "assignment_title": assignment.title,
+                        "due_date": assignment.due_date,
+                    },
+                    obj=assignment,
+                    idempotency_key=f"new_assignment:{assignment.pk}",
+                )
             messages.success(request, f"Assignment '{assignment.title}' created.")
             return redirect("teachers:assignment_list", offering_pk=offering_pk)
     else:
@@ -414,6 +433,18 @@ def grade_submission(request, pk):
         sub.graded_by = request.user
         sub.graded_at = timezone.now()
         sub.save()
+        NotificationService.send(
+            NotificationType.ASSIGNMENT_GRADED,
+            [submission.student],
+            context={
+                "offering": assignment.offering,
+                "assignment_title": assignment.title,
+                "score": sub.score,
+                "total": assignment.total_marks,
+            },
+            obj=assignment,
+            idempotency_key=f"assignment_graded:{assignment.pk}:{submission.student_id}",
+        )
         messages.success(request, "Grade saved.")
         return redirect("teachers:assignment_submissions", pk=assignment.pk)
 
@@ -458,23 +489,27 @@ def quiz_publish(request, pk):
     )
 
     quiz.status = "published"
-    quiz.save(update_fields=["status"])
+    quiz.is_published = True
+    quiz.save(update_fields=["status", "is_published", "updated_at"])
 
-    # Notify students
-    students = Enrolment.objects.filter(
-        offering=quiz.offering,
-        is_active=True
-    ).values_list("student", flat=True)
+    NotificationService.send_to_students(
+        NotificationType.NEW_QUIZ,
+        quiz.offering,
+        context={
+            "quiz_title": quiz.title,
+            "start_datetime": quiz.start_datetime,
+            "end_datetime": quiz.end_datetime,
+        },
+        obj=quiz,
+        idempotency_key=f"new_quiz:{quiz.pk}",
+    )
 
-    StudentNotification.objects.bulk_create([
-        StudentNotification(
-            student_id=s,
-            title="New Quiz Available",
-            message=f"Quiz '{quiz.title}' is now available in {quiz.offering.course.code}.",
-        )
-        for s in students
-    ])
-    
+    messages.success(request, "Quiz published successfully.")
+    return redirect(
+        "teachers:quiz_list",
+        offering_pk=quiz.offering.pk
+    )
+
 
 @login_required
 @teacher_required
@@ -487,16 +522,11 @@ def quiz_unpublish(request, pk):
     )
 
     quiz.status = "draft"
-    quiz.save(update_fields=["status"])
+    quiz.is_published = False
+    quiz.save(update_fields=["status", "is_published", "updated_at"])
 
     messages.success(request, "Quiz unpublished successfully.")
 
-    return redirect(
-        "teachers:quiz_list",
-        offering_pk=quiz.offering.pk
-    )
-
-    messages.success(request, "Quiz published successfully.")
     return redirect(
         "teachers:quiz_list",
         offering_pk=quiz.offering.pk
@@ -519,11 +549,17 @@ def quiz_create(request, offering_pk):
             quiz.offering   = offering
             quiz.created_by = request.user
             quiz.save()
-            notify_students(
-                quiz.offering,
-                "New Quiz Available",
-                f"{quiz.title} has been published for {quiz.offering.course.code}"
-            )
+            if quiz.is_published:
+                NotificationService.send_to_students(
+                    NotificationType.NEW_QUIZ,
+                    quiz.offering,
+                    context={
+                        "quiz_title": quiz.title,
+                        "end_datetime": quiz.end_datetime,
+                    },
+                    obj=quiz,
+                    idempotency_key=f"new_quiz:{quiz.pk}",
+                )
             messages.success(request, f"Quiz '{quiz.title}' created.")
             return redirect("teachers:quiz_questions", pk=quiz.pk)
     else:
@@ -1087,6 +1123,18 @@ def quiz_publish_toggle(request, pk):
 
     quiz.is_published = not quiz.is_published
     quiz.save(update_fields=["is_published", "updated_at"])
+    if quiz.is_published:
+        NotificationService.send_to_students(
+            NotificationType.NEW_QUIZ,
+            quiz.offering,
+            context={
+                "quiz_title": quiz.title,
+                "start_datetime": quiz.start_datetime,
+                "end_datetime": quiz.end_datetime,
+            },
+            obj=quiz,
+            idempotency_key=f"new_quiz:{quiz.pk}",
+        )
     state = "published" if quiz.is_published else "unpublished"
     messages.success(request, f"Quiz '{quiz.title}' {state}.")
     return redirect("teachers:quiz_list", offering_pk=quiz.offering.pk)
@@ -1109,6 +1157,16 @@ def assignment_publish_toggle(request, pk):
     if assignment.status == "draft":
         assignment.status = "published"
         msg = f"Assignment '{assignment.title}' published — students can now see it."
+        NotificationService.send_to_students(
+            NotificationType.NEW_ASSIGNMENT,
+            assignment.offering,
+            context={
+                "assignment_title": assignment.title,
+                "due_date": assignment.due_date,
+            },
+            obj=assignment,
+            idempotency_key=f"new_assignment:{assignment.pk}",
+        )
     elif assignment.status == "published":
         assignment.status = "draft"
         msg = f"Assignment '{assignment.title}' moved back to draft."
@@ -1166,6 +1224,18 @@ def quiz_attempt_detail(request, attempt_pk):
 
         attempt.score = round(total_awarded, 2)
         attempt.save(update_fields=["score"])
+        NotificationService.send(
+            NotificationType.QUIZ_RESULT_AVAILABLE,
+            [attempt.student],
+            context={
+                "offering": quiz.offering,
+                "quiz_title": quiz.title,
+                "score": round(total_awarded, 2),
+                "total": quiz.total_marks,
+            },
+            obj=quiz,
+            idempotency_key=f"quiz_result:{quiz.pk}:{attempt.student_id}",
+        )
         messages.success(request, f"Quiz attempt graded. Total: {attempt.score} / {quiz.total_marks}")
         return redirect("teachers:quiz_results", pk=quiz.pk)
 

@@ -1,0 +1,72 @@
+{% extends base_template %}
+{% block content %}
+<style>
+  .tc-card { background: var(--surface, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .tc-badge { font-size: .72rem; font-weight: 700; padding: .2rem .65rem; border-radius: 99px; }
+  .tb-pending { background: #fef3c7; color: #92400e; }
+  .tb-approved { background: #dbeafe; color: #1e40af; }
+  .tb-completed { background: #dcfce7; color: #166534; }
+  .tb-rejected { background: #fee2e2; color: #991b1b; }
+  .tb-cancelled { background: #f3f4f6; color: #374151; }
+</style>
+
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.4rem; font-weight: 800; margin: 0;">Request Room / Bed Transfer</h1>
+  <p style="margin: .25rem 0 0; color: #888; font-size: .88rem;">
+    Move to another bed within the hostel(s). Submitted requests are reviewed by hostel staff.
+  </p>
+</div>
+
+{% if my_allocation %}
+<div class="tc-card">
+  <div style="font-size: .82rem; color: #888; margin-bottom: .35rem;">Your current allocation</div>
+  <div style="font-size: 1.02rem; font-weight: 700; color: var(--text, #111);">{{ my_allocation.hierarchy_display }}</div>
+  <div style="font-size: .8rem; color: #888;">{{ my_allocation.get_status_display }} &middot; Session {{ my_allocation.session.name|default:"—" }}</div>
+</div>
+
+<div class="tc-card">
+  <h4 style="margin: 0 0 1rem; font-size: 1rem; font-weight: 700; color: var(--text, #111);">Request a Transfer</h4>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+    <div style="margin-bottom: 1rem;">
+      <label style="display: block; font-size: .86rem; font-weight: 600; margin-bottom: .35rem; color: var(--text, #111);">{{ field.label }}</label>
+      {{ field }}
+      {% for error in field.errors %}<small style="color:#dc2626; font-size:.78rem;">{{ error }}</small>{% endfor %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="font-weight: 700;">Submit Transfer Request</button>
+  </form>
+</div>
+{% else %}
+<div class="tc-card" style="text-align:center; padding:2.5rem 1rem;">
+  <div style="font-size: 2.6rem; margin-bottom: .75rem;">&#129092;</div>
+  <h5 style="font-weight: 700; color: var(--text, #111);">No Active Allocation</h5>
+  <p style="color: #888; font-size: .88rem;">You need an active hostel allocation before requesting a transfer.</p>
+  <a href="{% url 'hostel:hostel' %}" class="btn btn-primary btn-sm">View Hostel</a>
+</div>
+{% endif %}
+
+{% if pending_transfers %}
+<h3 style="font-size: 1.05rem; font-weight: 800; margin: 1.5rem 0 .75rem; color: var(--text, #111);">Your Transfer Requests</h3>
+<div style="background: var(--surface, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 14px; overflow: hidden;">
+  {% for transfer in pending_transfers %}
+  <div style="display:flex; align-items:center; gap:1rem; padding:.9rem 1.25rem; border-bottom:1px solid var(--border, #e5e7eb); flex-wrap:wrap;">
+    <div style="flex:1; min-width:160px; font-size:.85rem; color: var(--text, #111);">
+      <div style="font-weight:600;">{{ transfer.old_bed|default:"—" }} &rarr; {{ transfer.new_bed }}</div>
+      <div style="font-size:.75rem; color:#888;">Requested {{ transfer.requested_at|date:"M d, Y H:i" }}</div>
+    </div>
+    <span class="tc-badge {% if transfer.status == 'pending' %}tb-pending{% elif transfer.status == 'approved' %}tb-approved{% else %}tb-cancelled{% endif %}">
+      {{ transfer.get_status_display }}
+    </span>
+    {% if transfer.status == "pending" %}
+    <form method="post" action="{% url 'hostel:hostel_transfer_cancel' transfer.pk %}" style="margin:0;" onsubmit="return confirm('Cancel this transfer request?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Request</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

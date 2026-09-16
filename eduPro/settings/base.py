@@ -37,12 +37,15 @@ LOCAL_APPS = [
     "students.apps.StudentsConfig",
     "portal.apps.PortalConfig",
     "operations.apps.OperationsConfig",
+    "hostel.apps.HostelConfig",
     "finance.apps.FinanceConfig",
     "feedback.apps.FeedbackConfig",
     "analytics.apps.AnalyticsConfig",
     "elearning.apps.ElearningConfig",
     "messaging.apps.MessagingConfig",
     "api.apps.ApiConfig",
+    "scheduling.apps.SchedulingConfig",
+    "notifications.apps.NotificationsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -134,6 +137,35 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@edupro.com")
+
+# ── Paystack payment gateway ────────────────────────────────────────────────
+# Mode (test vs live) is selected by the secret key you supply per environment:
+#   * Test mode (development) — use your Paystack TEST secret key. Checkout is
+#     fully simulated, no real money moves. Safe for local / staging servers.
+#   * Live mode (production)  — use your Paystack LIVE secret key. Charges real
+#     money. Never commit live keys; set them as env vars on the production host.
+# Both modes share the same API base URL; only the key differs.
+PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="")
+PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY", default="")
+PAYSTACK_BASE_URL = config("PAYSTACK_BASE_URL", default="https://api.paystack.co")
+PAYSTACK_CURRENCY = config("PAYSTACK_CURRENCY", default="GHS")
+PAYSTACK_CALLBACK_URL = config("PAYSTACK_CALLBACK_URL", default="")
+
+# ── Sailup SMS / email notifications ────────────────────────────────────────
+SAILUP_ENABLED = config("SAILUP_ENABLED", default=False, cast=bool)
+SAILUP_API_KEY = config("SAILUP_API_KEY", default="")
+SAILUP_BASE_URL = config("SAILUP_BASE_URL", default="https://api.sailup.io/v1")
+SAILUP_SENDER_ID = config("SAILUP_SENDER_ID", default="eduPro")
+# Secret used to HMAC-verify Sailup delivery webhooks (header: X-Sailup-Signature).
+SAILUP_WEBHOOK_SECRET = config("SAILUP_WEBHOOK_SECRET", default="")
+
+# ── LMS notification reminders (window before a deadline) ───────────────────
+# Comma-separated days before an assignment due_date to fire reminders.
+LMS_ASSIGNMENT_REMINDER_DAYS = config("LMS_ASSIGNMENT_REMINDER_DAYS", default="7,3,1", cast=Csv(int))
+# Comma-separated hours before a quiz end_datetime to fire reminders.
+LMS_QUIZ_REMINDER_HOURS = config("LMS_QUIZ_REMINDER_HOURS", default="24,1", cast=Csv(int))
+# URL base for building absolute notification links (set to the site URL in prod).
+SITE_URL = config("SITE_URL", default="")
 
 MESSAGE_TAGS = {
     messages.DEBUG: "debug",
@@ -236,8 +268,11 @@ JAZZMIN_SETTINGS = {
         "finance.FeeStructure": "fas fa-money-bill-wave",
         "finance.StudentFee": "fas fa-wallet",
         "finance.StudentRetakeFee": "fas fa-redo-alt",
-        "operations.Hostel": "fas fa-hotel",
-        "operations.HostelRoom": "fas fa-door-open",
+        "hostel.Hostel": "fas fa-hotel",
+        "hostel.HostelRoom": "fas fa-door-open",
+        "hostel.HostelBed": "fas fa-bed",
+        "hostel.HostelApplication": "fas fa-file-signature",
+        "hostel.HostelAllocation": "fas fa-clipboard-check",
         "operations.Announcement": "fas fa-bullhorn",
         "operations.CalendarEvent": "fas fa-calendar-day",
         "operations.SupportTicket": "fas fa-ticket-alt",

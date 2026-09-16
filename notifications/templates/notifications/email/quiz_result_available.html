@@ -1,0 +1,7 @@
+{% extends "notifications/email/email_shell.html" %}
+{% block email_body %}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+  <p>Your score: <strong>{{ context.score }}/{{ context.total }}</strong> on <strong>{{ context.quiz_title }}</strong>.</p>
+  {% if link %}<p><a class="btn" href="{{ link }}" style="color:#000">View Result</a></p>{% endif %}
+{% endblock %}

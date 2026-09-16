@@ -302,6 +302,7 @@
       .detail-grid { grid-template-columns: 1fr; gap: 10px; }
       .topbar-actions { display: none; }
     }
+  {% include "components/sidebar_collapse.css.html" %}
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -313,89 +314,8 @@
   <div class="sidebar-logo">
     <div>edu<span>Pro</span></div>
   </div>
-  <nav class="sidebar-nav">
-
-    {% if user.is_admin or user.is_superuser %}
-    <div class="nav-section">Overview</div>
-    <a href="{% url 'academics:dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h10v4H10zm-6 6h4v10H4zm6 0h10v10H10z"/></svg>
-      <span>Dashboard</span>
-    </a>
-
-    <div class="nav-section">Structure</div>
-    <a href="{% url 'academics:institution_list' %}" class="nav-item {% if 'institution' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M12 2L2 7v2h20V7L12 2zM4 11v9h3v-9H4zm5 0v9h6v-9H9zm8 0v9h3v-9h-3zM2 22h20v-1H2v1z"/></svg>
-      <span>Institutions</span>
-    </a>
-    <a href="{% url 'academics:faculty_list' %}" class="nav-item {% if 'faculty' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.5 13.5V17l6.5 3.5 6.5-3.5v-3.5L12 17l-6.5-3.5z"/></svg>
-      <span>Faculties</span>
-    </a>
-    <a href="{% url 'academics:department_list' %}" class="nav-item {% if 'department' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0-2-.9-2-2V4c0-1.1-.9-2-2-2zm-7 18H5v-4h7v4zm0-6H5v-4h7v4zm0-6H5V4h7v4zm7 12h-5v-4h5v4zm0-6h-5v-4h5v4zm0-6h-5V4h5v4z"/></svg>
-      <span>Departments</span>
-    </a>
-    <a href="{% url 'academics:program_list' %}" class="nav-item {% if 'program' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-      <span>Programs</span>
-    </a>
-
-    <div class="nav-section">Calendar</div>
-    <a href="{% url 'academics:session_list' %}" class="nav-item {% if 'session' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
-      <span>Sessions</span>
-    </a>
-    <a href="{% url 'academics:semester_list' %}" class="nav-item {% if 'semester' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
-      <span>Semesters</span>
-    </a>
-
-    <div class="nav-section">Courses</div>
-    <a href="{% url 'academics:course_list' %}" class="nav-item {% if request.resolver_match.url_name in 'course_list,course_detail,course_create,course_edit' %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
-      <span>Catalogue</span>
-    </a>
-    <a href="{% url 'academics:offering_list' %}" class="nav-item {% if 'offering' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>
-      <span>Offerings</span>
-    </a>
-    <a href="{% url 'academics:allocation_list' %}" class="nav-item {% if 'allocation' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-      <span>Allocations</span>
-    </a>
-    <a href="{% url 'academics:enrolment_list' %}" class="nav-item {% if 'enrolment' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-      <span>Enrolments</span>
-    </a>
-    <a href="{% url 'academics:teacher_dept_list' %}" class="nav-item {% if 'teacher_dept' in request.resolver_match.url_name %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
-      <span>Teacher–Dept</span>
-    </a>
-
-    {% else %}
-    <div class="nav-section">Teaching</div>
-    <a href="{% url 'academics:dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h10v4H10zm-6 6h4v10H4zm6 0h10v10H10z"/></svg>
-      <span>Dashboard</span>
-    </a>
-    <a href="{% url 'academics:my_courses' %}" class="nav-item {% if request.resolver_match.url_name == 'my_courses' %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
-      <span>My Courses</span>
-    </a>
-    <a href="{% url 'academics:course_list' %}" class="nav-item {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-      <span>Catalogue</span>
-    </a>
-    {% endif %}
-
-    {% if user.is_admin or user.is_hod or user|has_role:"hod" %}
-    <div class="nav-section">Department Head</div>
-    <a href="{% url 'academics:result_sheet_list' %}" class="nav-item {% if request.resolver_match.url_name == 'result_sheet_list' %}active{% endif %}">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span>Department Results</span>
-    </a>
-    {% endif %}
-
+  <nav class="sidebar-nav" id="sidebarNav" data-role="academics">
+    {% include "components/sidebar_academics.html" %}
   </nav>
 
   <div class="sidebar-user">
@@ -443,5 +363,6 @@
   }
 })();
 </script>
+<script>{% include "components/sidebar_collapse.js.html" %}</script>
 </body>
 </html>

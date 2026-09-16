@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Settings — eduPro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background:#0e0f13; color:#e8e9ed; font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { background:#16181f; border:1px solid #2a2d38; border-radius:12px; padding:28px; width:100%; max-width:520px; }
+    h1 { font-size:20px; margin-bottom:6px; color:#fff; }
+    .sub { color:#7b7f8e; font-size:13px; margin-bottom:22px; }
+    .field { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; border-bottom:1px solid #2a2d38; }
+    .field:last-of-type { border-bottom:none; }
+    .field label { font-weight:600; font-size:14px; }
+    .field label span { display:block; color:#7b7f8e; font-weight:400; font-size:12.5px; margin-top:2px; }
+    .help { font-size:12px; color:#ffa94d; margin-top:2px; }
+    input[type=checkbox] { width:20px; height:20px; accent-color:#e8c547; }
+    .errors { color:#ff6b6b; font-size:13px; margin:10px 0; }
+    .actions { display:flex; gap:10px; margin-top:22px; }
+    .btn { flex:1; text-align:center; padding:11px 16px; border-radius:8px; font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; border:none; }
+    .btn-primary { background:#e8c547; color:#000; }
+    .btn-secondary { background:#1e2029; color:#e8e9ed; border:1px solid #2a2d38; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Notification Settings</h1>
+    <p class="sub">Choose how {{ request.user.get_full_name|default:request.user }} receives LMS updates, reminders and results.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="field">
+        <label>In-app (bell)
+          <span>Notifications inside your portal dashboard.</span>
+        </label>
+        {{ form.receive_app }}
+      </div>
+      <div class="field">
+        <label>Email
+          <span>Send to your registered email address.</span>
+        </label>
+        {{ form.receive_email }}
+      </div>
+      <div class="field">
+        <label>SMS
+          <span>Via your mobile number on file.</span>
+        </label>
+        {{ form.receive_sms }}
+      </div>
+      {% if form.receive_sms.errors %}<div class="errors">{{ form.receive_sms.errors }}</div>{% endif %}
+      {% if form.errors %}<div class="errors">{{ form.errors }}</div>{% endif %}
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">Save preferences</button>
+        <a class="btn btn-secondary" href="javascript:history.back()">Back</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

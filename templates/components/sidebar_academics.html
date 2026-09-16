@@ -1,0 +1,64 @@
+{% load role_tags %}
+{% comment %}Academics module sidebar nav — collapsible groups. Used by academics/templates/academics/base.html.{% endcomment %}
+<a href="{% url 'academics:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'academics' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+  <svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h10v4H10zm-6 6h4v10H4zm6 0h10v10H10z"/></svg>
+  <span>Dashboard</span>
+</a>
+
+{% if user.is_admin or user.is_superuser %}
+<button type="button" class="sidebar-menu-toggle" data-menu="structure" aria-expanded="false" aria-controls="sub-structure">
+  <svg viewBox="0 0 24 24"><path d="M12 2L2 7v2h20V7L12 2zM4 11v9h3v-9H4zm5 0v9h6v-9H9zm8 0v9h3v-9h-3zM2 22h20v-1H2v1z"/></svg>
+  <span class="menu-title">Structure</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-structure">
+  <a href="{% url 'academics:institution_list' %}" class="nav-item {% if 'institution' in request.resolver_match.url_name %}active{% endif %}"><span>Institutions</span></a>
+  <a href="{% url 'academics:faculty_list' %}" class="nav-item {% if 'faculty' in request.resolver_match.url_name %}active{% endif %}"><span>Faculties</span></a>
+  <a href="{% url 'academics:department_list' %}" class="nav-item {% if 'department' in request.resolver_match.url_name %}active{% endif %}"><span>Departments</span></a>
+  <a href="{% url 'academics:program_list' %}" class="nav-item {% if 'program' in request.resolver_match.url_name %}active{% endif %}"><span>Programs</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="calendar" aria-expanded="false" aria-controls="sub-calendar">
+  <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+  <span class="menu-title">Calendar</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-calendar">
+  <a href="{% url 'academics:session_list' %}" class="nav-item {% if 'session' in request.resolver_match.url_name %}active{% endif %}"><span>Sessions</span></a>
+  <a href="{% url 'academics:semester_list' %}" class="nav-item {% if 'semester' in request.resolver_match.url_name %}active{% endif %}"><span>Semesters</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="courses" aria-expanded="false" aria-controls="sub-courses">
+  <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+  <span class="menu-title">Courses</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-courses">
+  <a href="{% url 'academics:course_list' %}" class="nav-item {% if request.resolver_match.url_name in 'course_list,course_detail,course_create,course_edit' %}active{% endif %}"><span>Catalogue</span></a>
+  <a href="{% url 'academics:offering_list' %}" class="nav-item {% if 'offering' in request.resolver_match.url_name %}active{% endif %}"><span>Offerings</span></a>
+  <a href="{% url 'academics:allocation_list' %}" class="nav-item {% if 'allocation' in request.resolver_match.url_name %}active{% endif %}"><span>Allocations</span></a>
+  <a href="{% url 'academics:enrolment_list' %}" class="nav-item {% if 'enrolment' in request.resolver_match.url_name %}active{% endif %}"><span>Enrolments</span></a>
+  <a href="{% url 'academics:teacher_dept_list' %}" class="nav-item {% if 'teacher_dept' in request.resolver_match.url_name %}active{% endif %}"><span>Teacher–Dept</span></a>
+</div>
+{% else %}
+<button type="button" class="sidebar-menu-toggle" data-menu="teaching" aria-expanded="false" aria-controls="sub-teaching">
+  <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+  <span class="menu-title">Teaching</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-teaching">
+  <a href="{% url 'academics:my_courses' %}" class="nav-item {% if request.resolver_match.url_name == 'my_courses' %}active{% endif %}"><span>My Courses</span></a>
+  <a href="{% url 'academics:course_list' %}" class="nav-item {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}"><span>Catalogue</span></a>
+</div>
+{% endif %}
+
+{% if user.is_admin or user.is_hod or user|has_role:"hod" %}
+<button type="button" class="sidebar-menu-toggle" data-menu="depthead" aria-expanded="false" aria-controls="sub-depthead">
+  <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <span class="menu-title">Department Head</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-depthead">
+  <a href="{% url 'academics:result_sheet_list' %}" class="nav-item {% if request.resolver_match.url_name == 'result_sheet_list' %}active{% endif %}"><span>Department Results</span></a>
+</div>
+{% endif %}

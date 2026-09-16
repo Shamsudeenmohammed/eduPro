@@ -2,63 +2,64 @@
 {% block extra_head %}
 <style>
   .notif-hero {
-    background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%);
+    background: linear-gradient(135deg, #1a1c23 0%, #20242e 100%);
+    border: 1px solid var(--border, #2a2d38);
     border-radius: 16px; padding: 1.75rem 2.5rem; margin-bottom: 2rem;
-    color: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    color: var(--text, #e8e9ed); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
   }
   .notif-hero h1 { font-size: 1.4rem; font-weight: 800; margin: 0; }
-  .notif-hero p  { margin: .25rem 0 0; opacity: .75; font-size: .88rem; }
+  .notif-hero p  { margin: .25rem 0 0; opacity: .6; font-size: .88rem; }
 
   .mark-all-form button {
-    background: rgba(255,255,255,.15); color: #fff; border: 1.5px solid rgba(255,255,255,.3);
+    background: var(--surface2, #1e2029); color: var(--accent, #e8c547); border: 1.5px solid var(--border, #2a2d38);
     padding: .45rem 1.1rem; border-radius: 8px; font-size: .85rem; font-weight: 600;
-    cursor: pointer; transition: background .15s;
+    cursor: pointer; transition: border-color .15s;
   }
-  .mark-all-form button:hover { background: rgba(255,255,255,.25); }
+  .mark-all-form button:hover { border-color: var(--accent, #e8c547); }
 
   .filter-bar {
     display: flex; gap: .5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
   }
   .ftab {
     padding: .3rem .9rem; border-radius: 99px; font-size: .82rem; font-weight: 600;
-    border: 1.5px solid #e5e7eb; background: #fff; color: #374151; cursor: pointer;
-    transition: all .15s;
+    border: 1.5px solid var(--border, #2a2d38); background: var(--surface2, #1e2029);
+    color: var(--muted, #7b7f8e); cursor: pointer; transition: all .15s;
   }
-  .ftab.active, .ftab:hover { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+  .ftab.active, .ftab:hover { background: var(--accent, #e8c547); color: #0b0c10; border-color: var(--accent, #e8c547); }
 
   .notif-list { display: flex; flex-direction: column; gap: .6rem; }
 
   .notif-card {
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    background: var(--surface, #16181f); border: 1px solid var(--border, #2a2d38); border-radius: 12px;
     padding: 1.1rem 1.4rem; display: flex; align-items: flex-start; gap: 1rem;
-    transition: box-shadow .15s;
+    transition: border-color .15s;
   }
-  .notif-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
-  .notif-card.unread { border-left: 4px solid #6366f1; background: #f5f3ff; }
+  .notif-card:hover { border-color: rgba(232,197,71,.35); }
+  .notif-card.unread { border-left: 4px solid var(--accent, #e8c547); background: rgba(232,197,71,.05); }
 
   .notif-icon {
     width: 40px; height: 40px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem; flex-shrink: 0; background: #f3f4f6;
+    font-size: 1.2rem; flex-shrink: 0; background: var(--surface2, #1e2029);
   }
-  .notif-icon.info    { background: #dbeafe; }
-  .notif-icon.success { background: #dcfce7; }
-  .notif-icon.warning { background: #fef9c3; }
-  .notif-icon.error   { background: #fee2e2; }
+  .notif-icon.info    { background: rgba(78,205,196,.12);  }
+  .notif-icon.success { background: rgba(107,203,119,.12); }
+  .notif-icon.warning { background: rgba(255,169,77,.12);  }
+  .notif-icon.error   { background: rgba(255,107,107,.12); }
 
   .notif-body { flex: 1; min-width: 0; }
-  .notif-title { font-weight: 700; font-size: .93rem; margin-bottom: .2rem; color: #1e293b; }
-  .notif-msg   { font-size: .86rem; color: #374151; }
-  .notif-time  { font-size: .76rem; color: #9ca3af; margin-top: .3rem; }
+  .notif-title { font-weight: 700; font-size: .93rem; margin-bottom: .2rem; color: var(--text, #e8e9ed); }
+  .notif-msg   { font-size: .86rem; color: var(--muted, #7b7f8e); }
+  .notif-time  { font-size: .76rem; color: #555a66; margin-top: .3rem; }
 
   .unread-dot {
     width: 9px; height: 9px; border-radius: 50%;
-    background: #6366f1; flex-shrink: 0; margin-top: .4rem;
+    background: var(--accent, #e8c547); flex-shrink: 0; margin-top: .4rem;
   }
 
   .empty-state {
     text-align: center; padding: 4rem 1rem;
-    background: #f9fafb; border-radius: 12px; border: 1px dashed #d1d5db;
+    background: var(--surface, #16181f); border-radius: 12px; border: 1px dashed var(--border, #2a2d38);
   }
   .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
 </style>

@@ -1,6 +1,22 @@
 from django import forms
-from django.utils import timezone
-from .models import Announcement, CalendarEvent, Hostel, HostelAllocation, HostelRoom, SupportTicket, TimetableSlot
+
+from .models import (
+    Announcement,
+    CalendarEvent,
+    SupportTicket,
+    TimetableSlot,
+)
+
+
+class Widgets:
+    TEXT = forms.TextInput(attrs={"class": "form-control"})
+    TEXTAREA = forms.Textarea(attrs={"class": "form-control", "rows": 4})
+    SELECT = forms.Select(attrs={"class": "form-control"})
+    SELECT2 = forms.Select(attrs={"class": "form-control"})
+    DATE = forms.DateInput(attrs={"type": "date", "class": "form-control"})
+    DATETIME = forms.DateTimeInput(attrs={"type": "datetime-local", "class": "form-control"})
+    NUMBER = forms.NumberInput(attrs={"class": "form-control"})
+    CHECKBOX = forms.CheckboxInput(attrs={"class": "form-check-input"})
 
 
 class AnnouncementForm(forms.ModelForm):
@@ -8,8 +24,12 @@ class AnnouncementForm(forms.ModelForm):
         model = Announcement
         fields = ["title", "content", "priority", "target_roles", "expires_at", "is_pinned"]
         widgets = {
-            "expires_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
-            "content": forms.Textarea(attrs={"rows": 5}),
+            "title": Widgets.TEXT,
+            "expires_at": Widgets.DATETIME,
+            "content": Widgets.TEXTAREA,
+            "priority": Widgets.SELECT,
+            "target_roles": Widgets.TEXT,
+            "is_pinned": Widgets.CHECKBOX,
         }
 
 
@@ -18,8 +38,13 @@ class CalendarEventForm(forms.ModelForm):
         model = CalendarEvent
         fields = ["title", "description", "start_date", "end_date", "event_type", "location", "is_public"]
         widgets = {
-            "start_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
+            "title": Widgets.TEXT,
+            "description": Widgets.TEXTAREA,
+            "start_date": Widgets.DATE,
+            "end_date": Widgets.DATE,
+            "event_type": Widgets.TEXT,
+            "location": Widgets.TEXT,
+            "is_public": Widgets.CHECKBOX,
         }
 
 
@@ -28,8 +53,11 @@ class TimetableSlotForm(forms.ModelForm):
         model = TimetableSlot
         fields = ["offering", "day", "start_time", "end_time", "venue"]
         widgets = {
-            "start_time": forms.TimeInput(attrs={"type": "time"}),
-            "end_time": forms.TimeInput(attrs={"type": "time"}),
+            "offering": Widgets.SELECT2,
+            "day": Widgets.SELECT,
+            "start_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "end_time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "venue": Widgets.TEXT,
         }
 
 
@@ -37,32 +65,8 @@ class SupportTicketForm(forms.ModelForm):
     class Meta:
         model = SupportTicket
         fields = ["subject", "description", "category"]
-
-
-class HostelApplyForm(forms.Form):
-    """Student applies for a room in a selected hostel."""
-
-    hostel = forms.ModelChoiceField(
-        queryset=Hostel.objects.filter(is_active=True),
-        empty_label="Select Hostel",
-        widget=forms.Select(attrs={"class": "form-control", "id": "id_hostel"}),
-    )
-    room = forms.ModelChoiceField(
-        queryset=HostelRoom.objects.none(),
-        empty_label="Select Room",
-        widget=forms.Select(attrs={"class": "form-control", "id": "id_room"}),
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if "hostel" in self.data:
-            try:
-                hostel_id = int(self.data.get("hostel"))
-                occupied_ids = HostelAllocation.objects.filter(
-                    room__hostel_id=hostel_id, is_active=True
-                ).values_list("room_id", flat=True)
-                self.fields["room"].queryset = HostelRoom.objects.filter(
-                    hostel_id=hostel_id, is_available=True
-                ).exclude(pk__in=occupied_ids)
-            except (ValueError, TypeError):
-                pass
+        widgets = {
+            "subject": Widgets.TEXT,
+            "description": Widgets.TEXTAREA,
+            "category": Widgets.SELECT,
+        }

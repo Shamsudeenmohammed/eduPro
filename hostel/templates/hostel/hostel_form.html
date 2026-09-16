@@ -1,0 +1,31 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">{{ page_title }}</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Fields marked * are required.</p>
+  </div>
+
+  <div style="max-width:640px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div style="margin-bottom:1rem;">
+        <label for="{{ field.id_for_label }}" style="display:block;color:var(--text);font-size:.85rem;font-weight:600;margin-bottom:.35rem;">
+          {{ field.label }}{% if field.field.required %} *{% endif %}
+        </label>
+        {{ field }}
+        {% if field.help_text %}<div style="font-size:.78rem;color:var(--text);opacity:.5;margin-top:.25rem;">{{ field.help_text }}</div>{% endif %}
+        {% for error in field.errors %}<div style="font-size:.8rem;color:#dc2626;margin-top:.25rem;">{{ error }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:.6rem;margin-top:1.25rem;">
+        <button type="submit" class="btn btn-success btn-sm" style="font-weight:700;">Save</button>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock content %}

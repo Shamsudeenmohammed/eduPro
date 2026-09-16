@@ -1,0 +1,1 @@
+"""scheduling.engine — pure scheduling logic (no Django views)."""

@@ -1,0 +1,7 @@
+{% extends "notifications/email/email_shell.html" %}
+{% block email_body %}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+  <p>Your submission for <strong>{{ context.assignment_title }}</strong> has been recorded. You will be notified once it is graded.</p>
+  {% if link %}<p><a class="btn" href="{{ link }}" style="color:#000">View Assignment</a></p>{% endif %}
+{% endblock %}

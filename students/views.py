@@ -38,6 +38,9 @@ from teachers.models import (
     StudentResult,
 )
 
+from notifications.models import NotificationType
+from notifications.services import NotificationService
+
 from .forms import (
     AssignmentSubmitForm,
     CourseRegistrationForm,
@@ -416,6 +419,27 @@ def assignment_submit(request, pk):
             sub.is_late      = timezone.now() > assignment.due_date
             sub.is_active    = True
             sub.save()
+            NotificationService.send(
+                NotificationType.ASSIGNMENT_SUBMITTED,
+                [request.user],
+                context={
+                    "offering": assignment.offering,
+                    "assignment_title": assignment.title,
+                },
+                obj=assignment,
+                idempotency_key=f"assignment_submitted:{assignment.pk}:{request.user.pk}",
+            )
+            NotificationService.send_to_teachers(
+                NotificationType.ASSIGNMENT_SUBMITTED,
+                assignment.offering,
+                title=f"New submission: {assignment.title}",
+                message=(
+                    f"{request.user.get_full_name()} submitted '{assignment.title}' "
+                    f"in {assignment.offering.course.code}."
+                ),
+                obj=assignment,
+                idempotency_key=f"assignment_submitted_teacher:{assignment.pk}:{request.user.pk}",
+            )
             messages.success(request, "Assignment submitted successfully.")
             return redirect("students:assignment_list", offering_pk=assignment.offering.pk)
     else:
@@ -553,6 +577,31 @@ def quiz_take(request, attempt_pk):
         attempt.submitted_at = timezone.now()
         attempt.is_complete = True
         attempt.save()
+
+        if quiz.show_result_immediately:
+            NotificationService.send(
+                NotificationType.QUIZ_RESULT_AVAILABLE,
+                [request.user],
+                context={
+                    "offering": quiz.offering,
+                    "quiz_title": quiz.title,
+                    "score": total_score,
+                    "total": quiz.total_marks,
+                },
+                obj=quiz,
+                idempotency_key=f"quiz_result:{quiz.pk}:{request.user.pk}",
+            )
+        NotificationService.send_to_teachers(
+            NotificationType.QUIZ_RESULT_AVAILABLE,
+            quiz.offering,
+            title=f"Quiz submitted: {quiz.title}",
+            message=(
+                f"{request.user.get_full_name()} completed '{quiz.title}' "
+                f"in {quiz.offering.course.code} (score {total_score}/{quiz.total_marks})."
+            ),
+            obj=quiz,
+            idempotency_key=f"quiz_submitted_teacher:{quiz.pk}:{request.user.pk}",
+        )
 
         messages.success(request, f"Quiz submitted. Your score: {total_score}/{quiz.total_marks}")
         return redirect("students:quiz_result", attempt_pk=attempt.pk)

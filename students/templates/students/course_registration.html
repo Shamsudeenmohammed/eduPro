@@ -18,7 +18,7 @@
       <strong>Unpaid Retake Fee(s):</strong> You have retake fees that need to be paid before you can register for the following courses:
       <ul style="margin-top:6px;margin-bottom:6px;padding-left:1.25rem">
         {% for rf in unpaid_retake_fees %}
-        <li><strong>{{ rf.course.code }}</strong> — ₦{{ rf.amount }}</li>
+        <li><strong>{{ rf.course.code }}</strong> — GHC {{ rf.amount }}</li>
         {% endfor %}
       </ul>
       <a href="{% url 'finance:my_fees' %}" style="color:var(--danger);text-decoration:underline">Pay retake fees →</a>

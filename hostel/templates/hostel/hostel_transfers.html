@@ -1,0 +1,90 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Bed Transfers</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Approve and manage bed transfer requests</p>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;font-weight:600;">Status:</span>
+    <a href="{% url 'hostel:transfers' %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+      {% if not status_filter %}background:var(--ochre);color:#000;
+      {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">All</a>
+    {% for choice in status_choices %}
+      <a href="{% url 'hostel:transfers' %}?status={{ choice.0 }}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;
+        {% if status_filter == choice.0 %}background:var(--ochre);color:#000;
+        {% else %}background:var(--surface2);border:1px solid var(--border);color:var(--text);{% endif %}">{{ choice.1 }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- Transfer List -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0 1.25rem;">
+    {% for transfer in page_obj %}
+      <div style="border-bottom:1px solid var(--border);padding:1rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+        <div style="flex:2;min-width:0;">
+          <div style="color:var(--text);font-weight:600;font-size:.9rem;">
+            {{ transfer.student.get_full_name|default:transfer.student.email }}
+          </div>
+          <div style="color:var(--text);opacity:.5;font-size:.78rem;">{{ transfer.student.email }}</div>
+        </div>
+        <div style="flex:1.5;min-width:0;">
+          <div style="color:var(--text);font-size:.85rem;">{{ transfer.old_bed.display_name|default:transfer.old_bed.label }}</div>
+        </div>
+        <div style="flex:1.5;min-width:0;">
+          <div style="color:var(--text);font-size:.85rem;">{{ transfer.new_bed.display_name|default:transfer.new_bed.label }}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
+            {% if transfer.status == 'PENDING' %}background:#d97706;color:#fff;
+            {% elif transfer.status == 'APPROVED' %}background:#059669;color:#fff;
+            {% elif transfer.status == 'COMPLETED' %}background:#6b7280;color:#fff;
+            {% elif transfer.status == 'REJECTED' %}background:#dc2626;color:#fff;
+            {% endif %}">{{ transfer.status }}</span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="color:var(--text);opacity:.6;font-size:.78rem;">{{ transfer.requested_at|date:"M d, Y H:i" }}</div>
+        </div>
+        <div style="flex:2;display:flex;gap:.4rem;justify-content:flex-end;">
+          {% if transfer.status == 'PENDING' %}
+            <form method="post" action="{% url 'hostel:transfer_review' transfer.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="decision" value="approve">
+              <button type="submit" class="btn btn-success btn-sm">Approve</button>
+            </form>
+            <form method="post" action="{% url 'hostel:transfer_review' transfer.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="decision" value="reject">
+              <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+            </form>
+          {% elif transfer.status == 'APPROVED' %}
+            <form method="post" action="{% url 'hostel:transfer_complete' transfer.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success btn-sm">Complete</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:3rem 0;">No transfers found</div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:1rem;margin-top:1.5rem;">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Previous</a>
+    {% endif %}
+    <span style="color:var(--text);opacity:.6;font-size:.85rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">Next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock content %}

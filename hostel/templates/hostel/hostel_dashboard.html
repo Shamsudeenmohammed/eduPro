@@ -1,0 +1,149 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Hostel Dashboard</h2>
+    <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Overview of all hostel operations</p>
+  </div>
+
+  <!-- KPI Grid -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Total Beds</div>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--text);">{{ total_beds }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Available</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#059669;">{{ available }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Reserved</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#2d5a87;">{{ reserved }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Occupied</div>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--ochre);">{{ occupied }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Maintenance</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#d97706;">{{ maintenance }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Blocked</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#dc2626;">{{ blocked }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Pending Applications</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#d97706;">{{ pending_applications }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Active Allocations</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#059669;">{{ active_allocations }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Reserved Allocations</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#2d5a87;">{{ reserved_allocations }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Pending Transfers</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#d97706;">{{ pending_transfers }}</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;">
+      <div style="font-size:.75rem;color:var(--text);opacity:.6;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem;">Open Incidents</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#dc2626;">{{ open_incidents }}</div>
+    </div>
+
+  </div>
+
+  <!-- Recent Activity -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+
+    <!-- Recent Applications -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;">
+      <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;display:flex;justify-content:space-between;align-items:center;">
+        Recent Applications
+        <a href="{% url 'hostel:applications' %}" style="color:var(--ochre);font-size:.75rem;font-weight:600;text-decoration:none;">View All</a>
+      </h3>
+      {% for app in recent_applications %}
+        <div style="border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="color:var(--text);font-size:.85rem;font-weight:600;">{{ app.student.get_full_name|default:app.student.email }}</div>
+            <div style="color:var(--text);opacity:.5;font-size:.75rem;">{{ app.room.hostel.name }} &middot; {{ app.created_at|date:"M d, Y" }}</div>
+          </div>
+          <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
+            {% if app.status == 'pending' or app.status == 'under_review' %}background:#d97706;color:#fff;
+            {% elif app.status == 'approved' %}background:#059669;color:#fff;
+            {% elif app.status == 'rejected' %}background:#dc2626;color:#fff;
+            {% elif app.status == 'cancelled' or app.status == 'expired' %}background:#6b7280;color:#fff;
+            {% endif %}">{{ app.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1.5rem 0;">No recent applications</div>
+      {% endfor %}
+    </div>
+
+    <!-- Recent Allocations -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;">
+      <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;display:flex;justify-content:space-between;align-items:center;">
+        Recent Allocations
+        <a href="{% url 'hostel:allocations' %}" style="color:var(--ochre);font-size:.75rem;font-weight:600;text-decoration:none;">View All</a>
+      </h3>
+      {% for alloc in recent_allocations %}
+        <div style="border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="color:var(--text);font-size:.85rem;font-weight:600;">{{ alloc.student.get_full_name|default:alloc.student.email }}</div>
+            <div style="color:var(--text);opacity:.5;font-size:.75rem;">{{ alloc.bed.display_name }} &middot; {{ alloc.session.name }}</div>
+          </div>
+          <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
+            {% if alloc.status == 'reserved' %}background:#2d5a87;color:#fff;
+            {% elif alloc.status == 'active' %}background:#059669;color:#fff;
+            {% elif alloc.status == 'checked_out' or alloc.status == 'expired' %}background:#6b7280;color:#fff;
+            {% elif alloc.status == 'cancelled' %}background:#dc2626;color:#fff;
+            {% endif %}">{{ alloc.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1.5rem 0;">No recent allocations</div>
+      {% endfor %}
+    </div>
+
+    <!-- Recent Transfers -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;">
+      <h3 style="color:var(--text);font-size:.9rem;font-weight:700;margin:0 0 1rem 0;display:flex;justify-content:space-between;align-items:center;">
+        Recent Transfers
+        <a href="{% url 'hostel:transfers' %}" style="color:var(--ochre);font-size:.75rem;font-weight:600;text-decoration:none;">View All</a>
+      </h3>
+      {% for transfer in recent_transfers %}
+        <div style="border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="color:var(--text);font-size:.85rem;font-weight:600;">{{ transfer.student.get_full_name|default:transfer.student.email }}</div>
+            <div style="color:var(--text);opacity:.5;font-size:.75rem;">{{ transfer.old_bed.display_name }} → {{ transfer.new_bed.display_name }}</div>
+          </div>
+          <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
+            {% if transfer.status == 'pending' %}background:#d97706;color:#fff;
+            {% elif transfer.status == 'approved' %}background:#059669;color:#fff;
+            {% elif transfer.status == 'completed' %}background:#6b7280;color:#fff;
+            {% elif transfer.status == 'rejected' or transfer.status == 'cancelled' %}background:#dc2626;color:#fff;
+            {% endif %}">{{ transfer.get_status_display }}</span>
+        </div>
+      {% empty %}
+        <div style="color:var(--text);opacity:.4;font-size:.85rem;text-align:center;padding:1.5rem 0;">No recent transfers</div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock content %}

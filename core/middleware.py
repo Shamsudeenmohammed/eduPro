@@ -61,6 +61,7 @@ class AuditMiddleware(MiddlewareMixin):
         "/operations/",
         "/finance/",
         "/students/admin/",
+        "/scheduling/",
     )
 
     def process_response(self, request, response):

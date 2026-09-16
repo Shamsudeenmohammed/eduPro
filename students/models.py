@@ -25,6 +25,7 @@ class NotificationCategory(models.TextChoices):
     ATTENDANCE  = "attendance",  _("Attendance Alert")
     GENERAL     = "general",     _("General")
     DEADLINE    = "deadline",    _("Deadline Reminder")
+    HOSTEL      = "hostel",      _("Hostel Management")
 
 
 class StudentNotification(TimeStampedModel):

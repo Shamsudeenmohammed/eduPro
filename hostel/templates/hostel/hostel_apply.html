@@ -1,0 +1,75 @@
+{% extends base_template %}
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.4rem; font-weight: 800; margin: 0;">Apply for Hostel Accommodation</h1>
+  <p style="margin: .25rem 0 0; color: #888; font-size: .88rem;">
+    Select your preferred hostel and room below.
+  </p>
+</div>
+
+<div style="max-width: 640px; background: var(--surface, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;">
+  <form method="post" id="hostelApplyForm">
+    {% csrf_token %}
+    {% for field in form %}
+      {% if field.name == "hostel" %}
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: .86rem; font-weight: 700; margin-bottom: .4rem; color: var(--text, #111);">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </div>
+      {% elif field.name == "room" %}
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: .86rem; font-weight: 700; margin-bottom: .4rem; color: var(--text, #111);">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </div>
+      {% else %}
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: .86rem; font-weight: 700; margin-bottom: .4rem; color: var(--text, #111);">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </div>
+      {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 700;">Submit Application</button>
+  </form>
+</div>
+
+<div style="display: flex; gap: .6rem; font-size: .85rem; color: #888;">
+  <a href="{% url 'hostel:hostel' %}">&larr; Back to Hostel</a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  var hostelSelect = document.getElementById('id_hostel');
+  var roomSelect = document.getElementById('id_room');
+  if (!hostelSelect || !roomSelect) return;
+
+  function loadRooms() {
+    var hostelId = hostelSelect.value;
+    roomSelect.innerHTML = '<option value="">Loading…</option>';
+    if (!hostelId) {
+      roomSelect.innerHTML = '<option value="">— Select Hostel First —</option>';
+      return;
+    }
+    fetch('/hostel/api/rooms/?hostel=' + hostelId)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        roomSelect.innerHTML = '<option value="">— Select Room —</option>';
+        data.rooms.forEach(function(room) {
+          var opt = document.createElement('option');
+          opt.value = room.id;
+          opt.textContent = 'Room ' + room.room_number + ' (' + room.capacity + ' bed' + (room.capacity > 1 ? 's' : '') + ')';
+          roomSelect.appendChild(opt);
+        });
+      })
+      .catch(function() { roomSelect.innerHTML = '<option value="">— Error loading rooms —</option>'; });
+  }
+
+  hostelSelect.addEventListener('change', loadRooms);
+  if (hostelSelect.value) loadRooms();
+})();
+</script>
+{% endblock %}

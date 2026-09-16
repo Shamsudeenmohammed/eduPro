@@ -1,0 +1,60 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:1.5rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Rooms</h2>
+      <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Rooms gather beds — beds are the allocatable unit</p>
+    </div>
+    <a href="{% url 'hostel:room_create' %}" class="btn btn-primary btn-sm" style="font-weight:700;">Add Room</a>
+  </div>
+
+  <div style="margin-bottom:1rem;">
+    <a href="{% url 'hostel:rooms' %}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;{% if not hostel_filter %}background:var(--ochre);color:#fff;{% else %}background:var(--surface2);color:var(--text);{% endif %}">All</a>
+    {% for h in hostels %}
+      <a href="{% url 'hostel:rooms' %}?hostel={{ h.pk }}" style="font-size:.78rem;font-weight:600;padding:.3rem .85rem;border-radius:99px;text-decoration:none;margin-left:.35rem;{% if hostel_filter == h.pk|stringformat:'s' %}background:var(--ochre);color:#fff;{% else %}background:var(--surface2);color:var(--text);{% endif %}">{{ h.name }}</a>
+    {% endfor %}
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem;color:var(--text);">
+      <thead>
+        <tr style="background:var(--surface2);text-align:left;color:var(--text);opacity:.7;border-bottom:1px solid var(--border);">
+          <th style="padding:.7rem 1rem;">Room</th>
+          <th style="padding:.7rem 1rem;">Hostel</th>
+          <th style="padding:.7rem 1rem;">Block / Floor</th>
+          <th style="padding:.7rem 1rem;">Beds</th>
+          <th style="padding:.7rem 1rem;">Capacity</th>
+          <th style="padding:.7rem 1rem;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for room in page_obj %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:.7rem 1rem;font-weight:600;">Room {{ room.room_number }}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{{ room.hostel.name }}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{% if room.floor %}{{ room.floor.block.name }} / {{ room.floor.name }}{% else %}—{% endif %}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{{ room.beds.count }}</td>
+          <td style="padding:.7rem 1rem;color:var(--text);opacity:.6;">{{ room.capacity }}</td>
+          <td style="padding:.7rem 1rem;">
+            <span style="font-size:.7rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;{% if room.is_available %}background:#059669;color:#fff;{% else %}background:#6b7280;color:#fff;{% endif %}">{{ room.is_available|yesno:"Available,Unavailable" }}</span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="padding:2rem 1rem;text-align:center;color:var(--text);opacity:.4;">No rooms found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:1.25rem;">
+    {% if page_obj.has_other_pages %}
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if hostel_filter %}&hostel={{ hostel_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Previous</a>{% endif %}
+      <span style="color:var(--text);opacity:.6;font-size:.85rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if hostel_filter %}&hostel={{ hostel_filter }}{% endif %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">Next &rarr;</a>{% endif %}
+    {% endif %}
+  </div>
+
+</div>
+{% endblock content %}

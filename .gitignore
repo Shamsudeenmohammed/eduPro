@@ -1,0 +1,34 @@
+# Environment — never commit real secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+.venv/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Django generated / local data
+db.sqlite3
+*.sqlite3
+/staticfiles/
+/media/
+/logs/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

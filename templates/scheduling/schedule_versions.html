@@ -1,0 +1,67 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}Versions · {{ schedule.name }} · eduPro{% endblock %}
+{% block breadcrumb %}Versions{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Versions — {{ schedule.name }}</h1>
+    <p>Tick two versions in the Compare column, then press Compare selected.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:schedule_detail' schedule.pk %}">← Back</a>
+    <form id="compare-form" method="get" action="{% url 'scheduling:schedule_versions' schedule.pk %}" style="display:inline">
+      <button class="btn btn-primary">Compare selected</button>
+    </form>
+  </div>
+</div>
+
+{% if diff %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><span class="card-title">Diff — v{{ v1 }} vs v{{ v2 }}</span></div>
+  <ul class="status-list">
+    <li class="status-row"><span class="s-label">Only in first version</span><span class="s-val">{{ diff.only_in_first }}</span></li>
+    <li class="status-row"><span class="s-label">Only in second version</span><span class="s-val">{{ diff.only_in_second }}</span></li>
+    <li class="status-row"><span class="s-label">Total in first</span><span class="s-val">{{ diff.total_first }}</span></li>
+    <li class="status-row"><span class="s-label">Total in second</span><span class="s-val">{{ diff.total_second }}</span></li>
+  </ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Version History</span></div>
+  <table class="reg-table">
+    <thead><tr><th>Compare</th><th>Version</th><th>Created</th><th>By</th><th>Published</th><th>Snapshot</th><th>Reason</th><th>Restore</th></tr></thead>
+    <tbody>
+    {% for v in versions %}
+      <tr>
+        <td>
+          <input type="checkbox" name="v1" value="{{ v.pk }}" form="compare-form"
+                 title="Compare as first" {% if v1 == v.pk|stringformat:"s" %}checked{% endif %}>
+          <input type="checkbox" name="v2" value="{{ v.pk }}" form="compare-form"
+                 title="Compare as second" {% if v2 == v.pk|stringformat:"s" %}checked{% endif %}>
+        </td>
+        <td><span class="code-tag">v{{ v.version_number }}</span></td>
+        <td>{{ v.created_at|date:"d M Y H:i" }}</td>
+        <td>{{ v.created_by|default:"—" }}</td>
+        <td>{% if v.is_published %}<span class="badge badge-active">Published</span>{% else %}<span class="badge badge-inactive">—</span>{% endif %}</td>
+        <td><span class="s-val">{{ v.snapshot|length }}</span></td>
+        <td style="color:var(--tx2);font-size:11px">{{ v.reason|default:"—" }}</td>
+        <td>
+          <form method="post" action="{% url 'scheduling:schedule_versions' schedule.pk %}" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="restore" value="{{ v.pk }}">
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px">Restore</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" style="color:var(--tx3)">No versions yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

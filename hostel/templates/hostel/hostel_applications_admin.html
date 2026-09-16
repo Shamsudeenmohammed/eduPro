@@ -33,28 +33,29 @@
 </div>
 
 <div class="filter-bar">
-  <a href="{% url 'operations:hostel_applications_admin' %}" class="{% if not current_status %}active{% endif %}">All</a>
+  <a href="{% url 'hostel:applications' %}" class="{% if not status_filter %}active{% endif %}">All</a>
   {% for key, label in status_choices %}
-  <a href="{% url 'operations:hostel_applications_admin' %}?status={{ key }}"
-     class="{% if current_status == key %}active{% endif %}">{{ label }}</a>
+  <a href="{% url 'hostel:applications' %}?status={{ key }}"
+     class="{% if status_filter == key %}active{% endif %}">{{ label }}</a>
   {% endfor %}
 </div>
 
-{% if applications %}
+{% if page_obj.object_list %}
 <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;">
-  {% for app in applications %}
+  {% for app in page_obj %}
   <div class="app-row">
     <div class="app-student">
       <div class="name">{{ app.student.get_full_name|default:app.student.email }}</div>
       <div class="email">{{ app.student.email }}</div>
     </div>
     <div class="app-room">
-      {{ app.room.hostel.name }} — Rm {{ app.room.room_number }}
+      {{ app.room.hostel.name }} &mdash; Rm {{ app.room.room_number }}
       <div style="font-size: .75rem; color: #888;">{{ app.room.capacity }} bed</div>
     </div>
     <div>
       <span class="status-badge
         {% if app.status == 'pending' %}sb-pending
+        {% elif app.status == 'under_review' %}sb-pending
         {% elif app.status == 'approved' %}sb-approved
         {% elif app.status == 'rejected' %}sb-rejected
         {% elif app.status == 'confirmed' %}sb-confirmed
@@ -62,16 +63,16 @@
         {{ app.get_status_display }}
       </span>
     </div>
-    <div class="app-date">{{ app.created_at|date:"M d, Y" }}</div>
+    <div class="app-date">{{ app.submitted_at|default:app.created_at|date:"M d, Y" }}</div>
 
-    {% if app.status == "pending" %}
+    {% if app.status == "pending" or app.status == "under_review" %}
     <div class="app-actions">
-      <form method="post" action="{% url 'operations:hostel_application_approve' app.pk %}" style="display:inline;">
+      <form method="post" action="{% url 'hostel:application_approve' app.pk %}" style="display:inline;">
         {% csrf_token %}
         <input type="text" name="admin_remark" class="remark-input" placeholder="Remark (optional)">
         <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approve this application?')">Approve</button>
       </form>
-      <form method="post" action="{% url 'operations:hostel_application_reject' app.pk %}" style="display:inline;">
+      <form method="post" action="{% url 'hostel:application_reject' app.pk %}" style="display:inline;">
         {% csrf_token %}
         <input type="text" name="admin_remark" class="remark-input" placeholder="Reason for rejection">
         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Reject this application?')">Reject</button>
@@ -83,12 +84,25 @@
   </div>
   {% endfor %}
 </div>
+
+<div style="display: flex; justify-content: center; gap: .5rem; margin-top: 1rem; flex-wrap: wrap;">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" style="padding: .4rem .8rem; border-radius: 8px; background: var(--surface2); color: var(--text, #eee); font-size: .82rem; text-decoration: none;">Previous</a>
+  {% endif %}
+  <span style="padding: .4rem .8rem; font-size: .82rem; color: #888;">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" style="padding: .4rem .8rem; border-radius: 8px; background: var(--surface2); color: var(--text, #eee); font-size: .82rem; text-decoration: none;">Next</a>
+  {% endif %}
+</div>
+
 {% else %}
 <div style="text-align: center; padding: 3rem 1rem; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border);">
-  <div style="font-size: 3rem; margin-bottom: .75rem;">📋</div>
+  <div style="font-size: 3rem; margin-bottom: .75rem;">&#128203;</div>
   <h5 style="font-weight: 700; color: var(--text, #eee);">No Applications</h5>
   <p style="color: #888; font-size: .85rem; margin-top: .3rem;">
-    {% if current_status %}No {{ current_status }} applications found.{% else %}No applications have been submitted yet.{% endif %}
+    {% if status_filter %}No {{ status_filter }} applications found.{% else %}No applications have been submitted yet.{% endif %}
   </p>
 </div>
 {% endif %}

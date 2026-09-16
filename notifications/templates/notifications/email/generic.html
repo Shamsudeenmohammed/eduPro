@@ -1,0 +1,6 @@
+{% extends "notifications/email/email_shell.html" %}
+{% block email_body %}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+  {% if link %}<p><a class="btn" href="{{ link }}" style="color:#000">Open in {{ site_name }}</a></p>{% endif %}
+{% endblock %}

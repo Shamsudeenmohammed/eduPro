@@ -1,0 +1,44 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+<script src="/static/js/scheduling.js"></script>
+{% endblock %}
+{% block breadcrumb %}Room Details{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>{{ room.name }}</h1>
+    <p>{{ room.building }} · {{ room.get_room_type_display }} · capacity {{ room.capacity }} (exam {{ room.exam_capacity }})</p>
+  </div>
+  <div class="ph-right">
+    <span class="s-pill {% if room.is_available %}pill-green{% else %}pill-rose{% endif %}">
+      {{ room.is_available|yesno:"Available,Full" }}</span>
+    <a class="btn btn-ghost" href="{% url 'scheduling:room_timetable' room.pk %}">Timetable →</a>
+    <a class="btn btn-primary" href="{% url 'scheduling:room_edit' room.pk %}">Edit</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:room_list' %}">← Rooms</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><span class="card-title">Usage ({{ usage|length }})</span></div>
+  <table class="reg-table">
+    <thead><tr><th>Schedule</th><th>Course</th><th>Day</th><th>Time</th><th>Type</th></tr></thead>
+    <tbody>
+    {% for e in usage %}
+      <tr>
+        <td>{{ e.schedule.name }}</td>
+        <td><span class="code-tag">{{ e.course.code }}</span></td>
+        <td>{{ e.get_day_display }}</td>
+        <td>{{ e.start_time }}–{{ e.end_time }}</td>
+        <td>{{ e.get_session_type_display }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" style="color:var(--tx3)">This room is not scheduled yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

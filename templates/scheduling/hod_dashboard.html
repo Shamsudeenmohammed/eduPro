@@ -1,0 +1,97 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}HOD Dashboard · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}HOD Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>HOD Dashboard</h1>
+    <p>Your department at a glance.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-primary" href="{% url 'scheduling:hod_approvals' %}">Review Approvals</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:calendar' %}">Calendar</a>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--blue)"></span>
+    <div class="kpi-val">{{ stats.pending_approvals|length }}</div>
+    <div class="kpi-label">Awaiting Sign-off</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--teal)"></span>
+    <div class="kpi-val">{{ stats.total_entries|default:0 }}</div>
+    <div class="kpi-label">Published Sessions</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--ochre)"></span>
+    <div class="kpi-val">{{ stats.lecturers|default:0 }}</div>
+    <div class="kpi-label">Lecturers</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--rose)"></span>
+    <div class="kpi-val">{{ stats.courses|default:0 }}</div>
+    <div class="kpi-label">Courses Taught</div>
+  </div>
+</div>
+
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Needs Your Sign-off</span>
+      <a class="card-action" href="{% url 'scheduling:hod_approvals' %}">Review →</a>
+    </div>
+    <ul class="status-list">
+      {% for a in stats.pending_approvals %}
+        <li class="status-row">
+          <span class="s-label">{{ a.schedule.name }} · {{ a.rows.0.department.name|default:"my department" }}
+            <span class="badge badge-amber">{{ a.rows|length }} pending</span></span>
+          <span class="s-pill pill-amber">Under review</span>
+        </li>
+      {% empty %}
+        <li class="status-row"><span class="s-label">Nothing pending.</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Published Timetables</span>
+      <a class="card-action" href="{% url 'scheduling:calendar' %}">Calendar →</a>
+    </div>
+    <ul class="status-list">
+      {% for s in published %}
+        <li class="status-row">
+          <span class="s-label">{{ s.name }}</span>
+          <span class="s-pill pill-green">Published</span>
+        </li>
+      {% empty %}
+        <li class="status-row"><span class="s-label">No published timetables yet.</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <div class="card-header"><span class="card-title">Upcoming (your departments)</span></div>
+  <ul class="status-list">
+    {% for it in upcoming %}
+      <li class="status-row">
+        <span class="s-label">
+          {% if it.kind == 'event' %}<span class="badge {% if it.event_type == 'holiday' or it.event_type == 'break' %}badge-success{% elif it.event_type == 'exam' or it.event_type == 'deadline' %}badge-blue{% elif it.event_type == 'result' %}badge-danger{% else %}badge-purple{% endif %}">{{ it.event_type_label }}</span>
+          {{ it.title }}{% if it.time %} · {{ it.time }}{% endif %}
+          {% else %}<strong>{{ it.title }}</strong> {{ it.session_type }} {{ it.time }}
+          {% if it.room %} · {{ it.room }}{% endif %}
+          {% endif %}
+        </span>
+        <span class="s-val">{{ it.date|date:"d M" }}</span>
+      </li>
+    {% empty %}
+      <li class="status-row"><span class="s-label">No classes or events scheduled soon.</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

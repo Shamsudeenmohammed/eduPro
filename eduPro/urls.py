@@ -36,12 +36,19 @@ urlpatterns = [
     # Enterprise modules
     path("core/", include("core.urls", namespace="core")),
     path("operations/", include("operations.urls", namespace="operations")),
+    path("hostel/", include("hostel.urls", namespace="hostel")),
     path("finance/", include("finance.urls", namespace="finance")),
     path("feedback/", include("feedback.urls", namespace="feedback")),
     path("analytics/", include("analytics.urls", namespace="analytics")),
     path("elearning/", include("elearning.urls", namespace="elearning")),
     path("messages/", include("messaging.urls", namespace="messaging")),
     path("api/", include("api.urls", namespace="api")),
+
+    # Academic Intelligence Calendar & Scheduling
+    path("scheduling/", include("scheduling.urls", namespace="scheduling")),
+
+    # Notifications (webhook, centre, preferences)
+    path("notifications/", include("notifications.urls", namespace="notifications")),
 ]
 
 if settings.DEBUG:

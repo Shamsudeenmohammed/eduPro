@@ -1,0 +1,98 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}Conflicts · {{ schedule.name }} · eduPro{% endblock %}
+{% block breadcrumb %}Conflicts{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Conflicts — {{ schedule.name }}</h1>
+    <p>Constraint violations per session, hard and soft.</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'scheduling:schedule_detail' schedule.pk %}">← Back</a>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--rose)"></span>
+    <div class="kpi-val">{{ report.hard_total }}</div>
+    <div class="kpi-label">Hard Conflicts</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--ochre)"></span>
+    <div class="kpi-val">{{ report.soft_total }}</div>
+    <div class="kpi-label">Soft Conflicts</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--blue)"></span>
+    <div class="kpi-val">{{ report.unplaced_count }}</div>
+    <div class="kpi-label">Unplaced</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--teal)"></span>
+    <div class="kpi-val">{{ report.rows|length }}</div>
+    <div class="kpi-label">Flagged Sessions</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Violation Details</span></div>
+  <table class="reg-table">
+    <thead><tr><th>Entry</th><th>Hard Violations</th><th>Soft Violations</th></tr></thead>
+    <tbody>
+    {% for r in report.rows %}
+      <tr>
+        <td style="vertical-align:top">
+          <span class="code-tag">{{ r.entry.course.code }}</span>
+          <div style="font-size:11px;color:var(--tx2);margin-top:4px">
+            {{ r.entry.get_day_display }} · {{ r.entry.start_time|time:"H:i" }}–{{ r.entry.end_time|time:"H:i" }}
+          </div>
+        </td>
+        <td style="vertical-align:top">
+          {% for v in r.hard %}
+          <div style="margin-bottom:8px">
+            <span class="s-pill pill-rose">hard</span>
+            <span class="code-tag" style="margin-left:4px">{{ v.kind }}</span>
+            <div style="font-size:11px;color:var(--tx1);margin-top:3px">{{ v.message }}</div>
+            {% if v.fix_hint %}<div style="font-size:11px;color:var(--tx3)">Hint: {{ v.fix_hint }}</div>{% endif %}
+          </div>
+          {% empty %}<span style="color:var(--tx3);font-size:11px">—</span>{% endfor %}
+        </td>
+        <td style="vertical-align:top">
+          {% for v in r.soft %}
+          <div style="margin-bottom:8px">
+            <span class="s-pill pill-amber">soft</span>
+            <span class="code-tag" style="margin-left:4px">{{ v.kind }}</span>
+            <div style="font-size:11px;color:var(--tx1);margin-top:3px">{{ v.message }}</div>
+            {% if v.fix_hint %}<div style="font-size:11px;color:var(--tx3)">Hint: {{ v.fix_hint }}</div>{% endif %}
+          </div>
+          {% empty %}<span style="color:var(--tx3);font-size:11px">—</span>{% endfor %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3" style="color:var(--tx3)">No conflicts detected.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-header"><span class="card-title">Unplaced Sessions</span>
+    <span class="s-pill pill-amber">{{ report.unplaced_count }}</span>
+  </div>
+  <ul class="status-list">
+    {% for reason in report.unplaced_reasons %}
+    <li class="status-row">
+      <span class="s-pill pill-rose">unplaced</span>
+      <span class="s-label">{{ reason }}</span>
+    </li>
+    {% empty %}
+    <li class="status-row"><span class="s-label">All requirements placed.</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

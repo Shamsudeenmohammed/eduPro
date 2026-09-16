@@ -1,0 +1,46 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ page_title }} · eduPro{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block breadcrumb %}{{ page_title }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>{{ page_title }}</h1></div>
+  <div class="ph-right">
+    {% if manage %}
+    <a class="btn btn-primary" href="{% url 'scheduling:event_create' %}">+ Event</a>
+    <a class="btn btn-ghost" href="{% url 'scheduling:calendar' %}">Calendar View →</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+<table class="reg-table">
+  <thead>
+    <tr><th>Title</th><th>Type</th><th>Scope</th><th>From</th><th>To</th><th>Blocks scheduling</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for e in events %}
+    <tr>
+      <td><strong>{{ e.title }}</strong></td>
+      <td><span class="badge badge-blue">{{ e.get_event_type_display }}</span></td>
+      <td>{{ e.get_scope_display }}</td>
+      <td>{{ e.start_date|date:"d M Y" }}</td>
+      <td>{{ e.end_date|date:"d M Y"|default:"—" }}</td>
+      <td>{% if e.affects_scheduling %}<span class="badge badge-inactive">Yes</span>{% else %}No{% endif %}</td>
+      <td><a class="card-action" href="{% url 'scheduling:event_edit' e.pk %}">Edit</a>
+        <form method="post" action="{% url 'scheduling:event_delete' e.pk %}" style="display:inline" onsubmit="return confirm('Delete this event?')">
+          {% csrf_token %}<button class="card-action" style="color:var(--rose);background:none;border:none;cursor:pointer">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" style="color:var(--tx3)">No events.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

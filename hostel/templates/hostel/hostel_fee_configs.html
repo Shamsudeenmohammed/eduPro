@@ -1,0 +1,74 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div style="margin-bottom: 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+  <div>
+    <h1 style="font-size: 1.3rem; font-weight: 800; margin: 0;">Hostel Fee Configurations</h1>
+    <p style="margin: .25rem 0 0; color: #888; font-size: .85rem;">
+      Links a hostel + academic session to a finance fee structure. Optional semester /
+      room overrides narrow the scope. Payment truth lives in Finance.
+    </p>
+  </div>
+  <a href="{% url 'hostel:fee_config_create' %}" class="btn btn-primary btn-sm" style="font-weight:700;">Add Configuration</a>
+</div>
+
+{% if configs %}
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;">
+  <div style="overflow-x: auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:.85rem;">
+      <thead>
+        <tr style="text-align:left; color:#888; border-bottom:1px solid var(--border);">
+          <th style="padding:.7rem 1rem;">Hostel</th>
+          <th style="padding:.7rem 1rem;">Scope</th>
+          <th style="padding:.7rem 1rem;">Session</th>
+          <th style="padding:.7rem 1rem;">Fee Structure</th>
+          <th style="padding:.7rem 1rem;">Amount</th>
+          <th style="padding:.7rem 1rem;">Due Date</th>
+          <th style="padding:.7rem 1rem;">Status</th>
+          <th style="padding:.7rem 1rem; text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for config in configs %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:.7rem 1rem; color: var(--text, #eee); font-weight:600;">{{ config.hostel.name }}</td>
+          <td style="padding:.7rem 1rem; color:#bbb;">
+            {% if config.room %}
+              <span style="display:inline-block; font-size:.72rem; font-weight:700; padding:.2rem .6rem; border-radius:99px; background:#e0e7ff; color:#3730a3; margin-right:.35rem;">Room override</span>
+            {% elif config.semester %}
+              <span style="display:inline-block; font-size:.72rem; font-weight:700; padding:.2rem .6rem; border-radius:99px; background:#e0e7ff; color:#3730a3; margin-right:.35rem;">Semester</span>
+            {% else %}
+              <span style="display:inline-block; font-size:.72rem; font-weight:700; padding:.2rem .6rem; border-radius:99px; background:#f1f5f9; color:#475569; margin-right:.35rem;">All semesters</span>
+            {% endif %}
+            {{ config.scope_label }}
+          </td>
+          <td style="padding:.7rem 1rem; color:#bbb;">{{ config.session.name }}</td>
+          <td style="padding:.7rem 1rem; color:#bbb;">{{ config.fee_structure.name|default:"—" }}</td>
+          <td style="padding:.7rem 1rem; color:#bbb;">GHC {{ config.effective_amount|default:"—"|floatformat:2 }}</td>
+          <td style="padding:.7rem 1rem; color:#bbb;">{{ config.due_date|date:"M d, Y"|default:"—" }}</td>
+          <td style="padding:.7rem 1rem;">
+            <span style="font-size:.72rem; font-weight:700; padding:.2rem .65rem; border-radius:99px; {% if config.is_active %}background:#dcfce7; color:#166534;{% else %}background:#fee2e2; color:#991b1b;{% endif %}">
+              {{ config.is_active|yesno:"Active,Inactive" }}
+            </span>
+          </td>
+          <td style="padding:.7rem 1rem; text-align:right; white-space:nowrap;">
+            <a href="{% url 'hostel:fee_config_edit' config.pk %}" class="btn btn-outline-secondary btn-sm" style="padding:.25rem .7rem; font-size:.72rem; font-weight:700; text-decoration:none;">Edit</a>
+            <form method="post" action="{% url 'hostel:fee_config_delete' config.pk %}" style="display:inline;"
+              onsubmit="return confirm('Delete this fee configuration for {{ config.hostel.name }} / {{ config.session.name }}?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm" style="padding:.25rem .7rem; font-size:.72rem; font-weight:700;">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div style="text-align:center; padding:3rem 1rem; background:var(--surface); border-radius:14px; border:1px dashed var(--border);">
+  <div style="font-size:2.6rem; margin-bottom:.75rem;">&#128176;</div>
+  <h5 style="font-weight:700; color:var(--text, #eee);">No Fee Configurations</h5>
+  <p style="color:#888; font-size:.85rem; margin-top:.3rem;">Add a configuration to attach hostel charges to finance.</p>
+</div>
+{% endif %}
+{% endblock %}

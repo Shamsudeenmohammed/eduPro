@@ -1,0 +1,73 @@
+{% extends "teachers/base.html" %}
+{% block title %}Notifications — eduPro{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Notifications</div>
+    <form method="post" action="{% url 'notifications:mark_all_read' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="notifications:centre">
+      <button class="btn btn-secondary btn-sm" type="submit">Mark all read</button>
+    </form>
+  </div>
+  <div class="card-body">
+    {% if page_obj %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Message</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for n in page_obj %}
+            <tr style="{% if not n.read_at %}background:rgba(245,158,11,.06);{% endif %}">
+              <td><span class="badge badge-blue">{{ n.get_notification_type_display }}</span></td>
+              <td>
+                <div><strong>{{ n.title }}</strong></div>
+                <div style="color:var(--muted);font-size:12.5px">{{ n.message|truncatechars:120 }}</div>
+                {% if n.link %}<a href="{{ n.link }}">Open</a>{% endif %}
+              </td>
+              <td>{{ n.created_at|timesince }} ago</td>
+              <td>
+                {% if n.read_at %}<span class="badge badge-active">Read</span>
+                {% else %}<span class="badge badge-amber">New</span>{% endif %}
+              </td>
+              <td>
+                {% if not n.read_at %}
+                <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-secondary btn-sm" type="submit">Mark read</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div class="pagination">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>
+        {% endif %}
+        <span class="page-link current">{{ page_obj.number }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="page-link">›</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">&raquo;</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-state">
+        <span class="icon">🔔</span>
+        <p>You are all caught up.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }}</title>
+<style>
+  body { margin:0; padding:0; background:#0e0f13; font-family:'Segoe UI',Arial,sans-serif; }
+  .wrap { max-width:600px; margin:0 auto; padding:24px 16px; }
+  .card { background:#16181f; border:1px solid #2a2d38; border-radius:10px; overflow:hidden; }
+  .head { background:#16181f; border-bottom:1px solid #2a2d38; padding:18px 24px; }
+  .logo { font-size:18px; font-weight:700; color:#e8c547; letter-spacing:-.2px; }
+  .body { padding:24px; color:#e8e9ed; font-size:14px; line-height:1.6; }
+  .body h2 { margin:0 0 10px; color:#ffffff; font-size:18px; }
+  .body p { margin:0 0 14px; }
+  .btn { display:inline-block; background:#e8c547; color:#000; text-decoration:none;
+         font-weight:600; padding:10px 22px; border-radius:8px; font-size:14px; }
+  .foot { padding:14px 24px; color:#7b7f8e; font-size:12px;
+          border-top:1px solid #2a2d38; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="head"><span class="logo">{{ site_name }}</span></div>
+      <div class="body">{% block email_body %}{% endblock %}</div>
+      <div class="foot">
+        You received this because you are subscribed to {{ site_name }} notifications.
+        You can change your preferences from the Notification Settings page.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

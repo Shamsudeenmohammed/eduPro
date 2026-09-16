@@ -1,0 +1,769 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Academic Calendar &amp; Scheduling Center · eduPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;
+  --surface:#161920;
+  --surface2:#1e222d;
+  --muted:#7a8099;
+  --border:#2a2f3d;
+  --accent:#f59e0b;
+  --accent2:#a78bfa;
+  --success:#34d399;
+  --warning:#fbbf24;
+  --danger:#f87171;
+  --info:#60a5fa;
+  --text:#e8eaf0;
+  --font:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Sans',monospace;
+  --radius:10px;
+  --shadow:0 4px 24px rgba(0,0,0,.35);
+  --ochre:#f59e0b;
+  --ochre2:#d97706;
+  --ochre-dim:rgba(245,158,11,0.12);
+  --teal:#34d399;
+  --teal-dim:rgba(52,211,153,0.1);
+  --rose:#f87171;
+  --rose-dim:rgba(248,113,113,0.1);
+  --blue:#60a5fa;
+  --blue-dim:rgba(96,165,250,0.1);
+  --tx1:#e8eaf0;
+  --tx2:#7a8099;
+  --tx3:#515970;
+  --surface3:#222632;
+  --border2:rgba(255,255,255,0.11);
+  --r:10px;
+  --r2:12px;
+}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;min-height:100vh;font-size:13px;line-height:1.5;overflow-x:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:230px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-logo{padding:22px 18px 18px;font-size:21px;font-weight:800;color:var(--accent);letter-spacing:-.5px;border-bottom:1px solid var(--border)}
+.sidebar-logo span{color:var(--accent2)}
+.sidebar-nav{padding:14px 0;flex:1}
+.nav-section{padding:8px 18px 3px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:500;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(245,158,11,.08)}
+.nav-icon{font-size:15px;width:17px;text-align:center}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sidebar-user{padding:14px 18px;border-top:1px solid var(--border);font-size:13px}
+.sidebar-user .name{font-weight:600;color:var(--text)}
+.role-badge-container{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.role-badge{display:inline-block;align-self:flex-start;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(245,158,11,.15);color:var(--accent)}
+.logout-link{display:block;margin-top:8px;color:var(--muted);font-size:13px;text-decoration:none}
+.logout-link:hover{color:var(--danger)}
+
+/* ── SIDEBAR OVERLAY (mobile) ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
+.sidebar-overlay.open{display:block}
+.hamburger{display:none;background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px}
+
+/* ── MAIN ── */
+.main-wrap{flex:1;margin-left:230px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+@media(max-width:768px){.main-wrap{margin-left:0}.sidebar{transform:translateX(-100%);transition:transform .25s ease;z-index:100}.sidebar.open{transform:translateX(0)}.hamburger{display:flex}.page-heading{font-size:16px}.topbar{padding:10px 14px}}
+@media(max-width:640px){.content{padding:12px 8px}.topbar{padding:10px 10px}.page-heading{font-size:14px}.btn{font-size:12px;padding:4px 9px}}
+@media(max-width:480px){.content{padding:8px 5px}.topbar{padding:6px 8px}.page-heading{font-size:12px}.btn{font-size:10.5px;padding:3px 6px}}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.page-heading{font-size:19px;font-weight:700;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.tb-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--muted);font-size:12px;cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--font)}
+.tb-pill:hover{color:var(--text);border-color:var(--border);background:var(--border)}
+.tb-pill svg{width:13px;height:13px}
+.tb-avatar{width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0}
+.content{flex:1;padding:24px 28px}
+
+/* ── MESSAGES ── */
+.messages-wrap{margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
+.msg-item{padding:10px 14px;border-radius:var(--r);font-size:12.5px;display:flex;align-items:center;gap:8px;border:1px solid}
+.msg-success{background:rgba(62,207,178,0.07);border-color:rgba(62,207,178,0.2);color:var(--teal)}
+.msg-error{background:rgba(224,95,117,0.07);border-color:rgba(224,95,117,0.2);color:var(--rose)}
+.msg-warning{background:rgba(232,168,76,0.07);border-color:rgba(232,168,76,0.2);color:var(--ochre)}
+.msg-info{background:rgba(91,156,246,0.07);border-color:rgba(91,156,246,0.2);color:var(--blue)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-amber{background:rgba(245,158,11,.15);color:var(--accent)}
+.badge-active{background:rgba(52,211,153,.15);color:var(--success)}
+.badge-inactive{background:rgba(248,113,113,.12);color:var(--danger)}
+.badge-purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+.badge-blue{background:rgba(96,165,250,.15);color:var(--info)}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.ph-left h1{font-size:21px;font-weight:700;letter-spacing:-0.4px;color:var(--tx1);line-height:1.2}
+.ph-left p{font-size:12.5px;color:var(--tx2);margin-top:3px}
+.ph-right{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;border:none;transition:all 0.15s;white-space:nowrap}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-primary{background:var(--ochre);color:#0b0d11}
+.btn-primary:hover{background:var(--ochre2)}
+.btn-ghost{background:var(--surface2);color:var(--tx1);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface3);border-color:rgba(255,255,255,0.18)}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s;cursor:default}
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kpi-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.kpi-icon svg{width:17px;height:17px}
+.kpi-trend{font-family:var(--mono);font-size:10px;font-weight:500;display:flex;align-items:center;gap:3px;padding:3px 7px;border-radius:4px}
+.kpi-val{font-family:var(--mono);font-size:28px;font-weight:500;letter-spacing:-0.5px;line-height:1;color:var(--tx1);margin-bottom:4px;animation:countUp 0.5s ease both}
+.kpi-label{font-size:11px;color:var(--tx2);font-weight:500;text-transform:uppercase;letter-spacing:0.6px}
+.kpi-bar{margin-top:12px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);width:0%}
+@keyframes countUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BODY GRID ── */
+.body-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;align-items:start}
+@media(max-width:1100px){.body-grid{grid-template-columns:1fr}}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:700;color:var(--tx1);display:flex;align-items:center;gap:7px}
+.card-title svg{width:15px;height:15px;color:var(--tx3)}
+.card-action{font-size:11.5px;color:var(--tx3);cursor:pointer;transition:color 0.15s;text-decoration:none}
+.card-action:hover{color:var(--ochre)}
+
+/* ── MODULE GRID ── */
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+@media(max-width:700px){.module-grid{grid-template-columns:repeat(2,1fr)}}
+.module-tile{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;transition:all 0.15s;position:relative;overflow:hidden}
+.module-tile::after{content:'→';position:absolute;right:12px;bottom:12px;font-size:12px;color:var(--tx3);transition:all 0.15s}
+.module-tile:hover{border-color:var(--border2);background:var(--surface3);transform:translateY(-1px)}
+.module-tile:hover::after{color:var(--ochre);transform:translateX(2px)}
+.mt-ico{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:2px}
+.mt-name{font-size:12.5px;font-weight:700;color:var(--tx1)}
+.mt-desc{font-size:11px;color:var(--tx3);line-height:1.4;padding-right:16px}
+
+/* ── SPARKLINES ── */
+.sparkline-row{display:flex;align-items:center;gap:8px;padding:10px 18px 14px}
+.spark-label{font-size:11px;color:var(--tx2);min-width:90px;font-weight:500}
+.spark-wrap{flex:1;height:28px;min-width:0}
+canvas.spark{display:block;width:100%;height:28px}
+.spark-val{font-family:var(--mono);font-size:11px;color:var(--tx2);min-width:28px;text-align:right}
+
+/* ── STATUS ── */
+.status-list{list-style:none}
+.status-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:12px}
+.status-row:last-child{border-bottom:none}
+.status-row:hover{background:rgba(255,255,255,0.02)}
+.s-label{color:var(--tx2);font-weight:500}
+.s-pill{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px}
+.s-val{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--tx1)}
+.pill-green{background:rgba(62,207,178,0.12);color:var(--teal)}
+.pill-amber{background:rgba(232,168,76,0.15);color:var(--ochre)}
+.pill-muted{background:var(--surface2);color:var(--tx2);border:1px solid var(--border)}
+.pill-rose{background:var(--rose-dim);color:var(--rose)}
+
+/* ── QUICK ACTIONS ── */
+.actions-list{padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.action-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:7px;border:1px solid var(--border);text-decoration:none;cursor:pointer;transition:all 0.15s;background:none}
+.action-row:hover{border-color:var(--border2);background:var(--surface2)}
+.ar-left{display:flex;align-items:center;gap:8px}
+.ar-ico{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.ar-ico svg{width:13px;height:13px}
+.ar-label{font-size:12px;font-weight:600;color:var(--tx1)}
+.ar-count{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px}
+.ar-arrow{color:var(--tx3);font-size:11px;transition:all 0.15s}
+.action-row:hover .ar-arrow{transform:translateX(2px);color:var(--ochre)}
+
+/* ── BOTTOM GRID ── */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+
+/* ── REGISTRATION TABLE ── */
+.reg-table{width:100%;border-collapse:collapse}
+.reg-table th{padding:8px 16px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--tx3);border-bottom:1px solid var(--border)}
+.reg-table td{padding:11px 16px;font-size:12.5px;border-bottom:1px solid var(--border)}
+.reg-table tr:last-child td{border-bottom:none}
+.reg-table tr:hover td{background:rgba(255,255,255,0.02)}
+.code-tag{font-family:var(--mono);font-size:11px;color:var(--ochre);background:var(--ochre-dim);padding:2px 7px;border-radius:4px;border:1px solid rgba(232,168,76,0.2)}
+.status-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;font-family:var(--mono);letter-spacing:0.3px}
+
+/* ── DEPT PROGRESS ── */
+.prog-list{list-style:none;padding:10px 18px;display:flex;flex-direction:column;gap:12px}
+.prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.prog-name{font-size:12px;font-weight:600;color:var(--tx1)}
+.prog-pct{font-family:var(--mono);font-size:11px;color:var(--tx2)}
+.prog-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width 1.4s cubic-bezier(0.4,0,0.2,1);width:0%}
+
+/* ── FEED ── */
+.feed-list{list-style:none}
+.feed-item{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background 0.12s;align-items:flex-start}
+.feed-item:last-child{border-bottom:none}
+.feed-item:hover{background:rgba(255,255,255,0.02)}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.feed-body{flex:1;min-width:0}
+.feed-msg{font-size:12.5px;color:var(--tx1);line-height:1.4}
+.feed-msg strong{color:var(--ochre);font-weight:600}
+.feed-time{font-size:10.5px;color:var(--tx3);font-family:var(--mono);margin-top:2px}
+.feed-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:2px;font-family:var(--mono);letter-spacing:0.3px}
+.feed-filter-btn{cursor:pointer;border:none;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;transition:all 0.15s}
+
+/* ── UPTIME ── */
+#uptimeVal{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--tx1)}
+/* ── Collapsible sidebar menu groups ── */
+.sidebar-menu-toggle {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 9px 18px; margin: 0; background: none; border: none;
+  border-left: 3px solid transparent;
+  color: var(--muted); font-family: inherit; font-size: 13.5px; font-weight: 600;
+  letter-spacing: .2px; text-align: left; cursor: pointer; line-height: 1.5;
+  transition: color .15s, background-color .15s, border-color .15s;
+}
+.sidebar-menu-toggle:hover { color: var(--text); background: var(--surface2); }
+.sidebar-menu-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sidebar-menu-toggle .menu-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-menu-toggle svg { width: 15px; height: 15px; flex-shrink: 0; }
+.sidebar-menu-toggle .menu-icon, .sidebar-menu-toggle .nav-icon { flex-shrink: 0; opacity: .75; }
+.sidebar-menu-toggle .menu-arrow { flex-shrink: 0; font-size: 10px; color: var(--muted); transition: transform .2s ease; }
+.sidebar-menu-toggle.open .menu-arrow { transform: rotate(180deg); }
+.sidebar-submenu { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+.sidebar-submenu.open { max-height: 1600px; }
+.sidebar-submenu .nav-item { padding-left: 34px; }
+.subgroup-title {
+  padding: 10px 18px 2px 34px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--muted); opacity: .8;
+}
+</style>
+
+<link rel="stylesheet" href="/static/css/scheduling.css">
+
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">edu<span>Pro</span></div>
+<nav class="sidebar-nav" id="sidebarNav" data-role="admin">
+    
+<a href="/accounts/dashboard/admin/" class="nav-item ">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  <span>Dashboard</span>
+</a>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="people" aria-expanded="false" aria-controls="sub-people">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+  <span class="menu-title">People</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-people">
+  <a href="/accounts/users/" class="nav-item "><span>All Users</span></a>
+  <a href="/accounts/admin/registrations/" class="nav-item ">
+    <span>Registrations</span>
+    
+  </a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="academics" aria-expanded="false" aria-controls="sub-academics">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+  <span class="menu-title">Academics</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-academics">
+  <a href="/academics/courses/" class="nav-item "><span>Courses</span></a>
+  <a href="/academics/enrolments/" class="nav-item "><span>Enrolments</span></a>
+  <a href="/academics/result-sheets/admin/" class="nav-item "><span>Result Sheets</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="finance" aria-expanded="false" aria-controls="sub-finance">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <span class="menu-title">Finance</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-finance">
+  <a href="/finance/" class="nav-item "><span>Finance Dashboard</span></a>
+  <a href="/finance/structures/" class="nav-item "><span>Fee Structures</span></a>
+  <a href="/finance/students/" class="nav-item "><span>Student Fees</span></a>
+  <a href="/finance/retake-fees/" class="nav-item "><span>Retake Fees</span></a>
+  <a href="/finance/payroll/" class="nav-item "><span>Payroll</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="hostel" aria-expanded="false" aria-controls="sub-hostel">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  <span class="menu-title">Hostel</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-hostel">
+  <a href="/hostel/staff/dashboard/" class="nav-item "><span>Dashboard</span></a>
+  <div class="subgroup-title">Accommodation</div>
+  <a href="/hostel/staff/hostels/" class="nav-item "><span>Hostels</span></a>
+  <a href="/hostel/staff/blocks/" class="nav-item "><span>Blocks</span></a>
+  <a href="/hostel/staff/floors/" class="nav-item "><span>Floors</span></a>
+  <a href="/hostel/staff/rooms/" class="nav-item "><span>Rooms</span></a>
+  <a href="/hostel/staff/beds/" class="nav-item "><span>Beds</span></a>
+  <div class="subgroup-title">Applications</div>
+  <a href="/hostel/staff/applications/" class="nav-item ">
+    <span>Applications</span>
+    
+  </a>
+  <div class="subgroup-title">Allocations</div>
+  <a href="/hostel/staff/allocations/" class="nav-item "><span>Allocations</span></a>
+  <a href="/hostel/staff/residents/" class="nav-item "><span>Residents</span></a>
+  <a href="/hostel/staff/check-ins/" class="nav-item "><span>Check-ins</span></a>
+  <a href="/hostel/staff/check-outs/" class="nav-item "><span>Check-outs</span></a>
+  <a href="/hostel/staff/transfers/" class="nav-item "><span>Transfers</span></a>
+  <div class="subgroup-title">Operations</div>
+  <a href="/hostel/staff/maintenance/" class="nav-item "><span>Maintenance</span></a>
+  <a href="/hostel/staff/incidents/" class="nav-item "><span>Incidents</span></a>
+  <div class="subgroup-title">Finance</div>
+  <a href="/hostel/staff/fee-configs/" class="nav-item "><span>Hostel Charges</span></a>
+  <a href="/hostel/staff/outstanding-balances/" class="nav-item "><span>Outstanding Balances</span></a>
+  <div class="subgroup-title">Reports</div>
+  <a href="/hostel/staff/reports/" class="nav-item "><span>Reports</span></a>
+  <div class="subgroup-title">Policy</div>
+  <a href="/hostel/staff/policy/" class="nav-item "><span>Policy</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="admissions" aria-expanded="false" aria-controls="sub-admissions">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+  <span class="menu-title">Admissions</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-admissions">
+  <a href="/portal/admissions/" class="nav-item "><span>Admissions Dashboard</span></a>
+  <a href="/portal/admissions/applications/" class="nav-item "><span>Applications</span></a>
+  <a href="/portal/admissions/cycles/" class="nav-item "><span>Cycles</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="services" aria-expanded="false" aria-controls="sub-services">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+  <span class="menu-title">Services</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-services">
+  <a href="/analytics/" class="nav-item "><span>Analytics</span></a>
+  <a href="/operations/announcements/" class="nav-item "><span>Announcements</span></a>
+  <a href="/operations/timetable/" class="nav-item "><span>Timetable</span></a>
+  <a href="/operations/calendar/" class="nav-item "><span>Calendar</span></a>
+  <a href="/operations/tickets/admin/" class="nav-item "><span>Tickets</span></a>
+  <a href="/feedback/dashboard/" class="nav-item "><span>Feedback</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="scheduling" aria-expanded="false" aria-controls="sub-scheduling">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+  <span class="menu-title">Scheduling</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-scheduling">
+  <a href="/scheduling/" class="nav-item "><span>⚡ Scheduling Command Center</span></a>
+  <a href="/scheduling/calendar/" class="nav-item active"><span>📅 Academic Calendar</span></a>
+  <a href="/scheduling/list/" class="nav-item "><span>📋 Schedules</span></a>
+  <a href="/scheduling/rooms/" class="nav-item "><span>🏛 Rooms</span></a>
+  <a href="/scheduling/slots/" class="nav-item "><span>🕐 Time Slots</span></a>
+  <a href="/scheduling/availability/" class="nav-item "><span>🚫 Lecturer Availability</span></a>
+  <a href="/scheduling/settings/" class="nav-item "><span>⚙ Scheduling Settings</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="system" aria-expanded="false" aria-controls="sub-system">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" d="M19.07 4.93A10 10 0 104.93 19.07"/></svg>
+  <span class="menu-title">System</span>
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-system">
+  <a href="/api/" class="nav-item "><span>API</span></a>
+  <a href="/admin/" class="nav-item"><span>Django Admin</span></a>
+  <a href="/core/audit-logs/" class="nav-item "><span>Audit Logs</span></a>
+  <a href="/accounts/profile/" class="nav-item "><span>My Profile</span></a>
+  <a href="/accounts/profile/change-password/" class="nav-item "><span>Change Password</span></a>
+</div>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="name">Shamsudeen Mohammed</div>
+    <div class="role-badge-container">
+      <span class="role-badge">Admin</span>
+      
+        <span class="role-badge hod">HOD</span>
+      
+    </div>
+    <a href="/accounts/logout/" class="logout-link">↩ Sign out</a>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── MAIN WRAP ── -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="page-heading">Academic Calendar</div>
+    </div>
+    <div class="topbar-right">
+      <a href="/accounts/profile/" class="tb-pill">Profile</a>
+      <a href="/admin/" class="tb-pill">Django Admin</a>
+      <a href="/accounts/profile/" class="tb-avatar" title="Shamsudeen Mohammed">
+        SM
+      </a>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    
+
+    
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Academic Calendar</h1>
+    <p>Sunday, 13 September 2026</p>
+  </div>
+  <div class="ph-right">
+    <div class="cal-nav">
+      <a class="btn btn-ghost" href="/scheduling/calendar/?mode=day&year=2026&month=9&day=12&&amp;session=1">← Prev</a>
+      <a class="btn btn-ghost" href="/scheduling/calendar/?mode=day&year=2026&month=9&day=13&&amp;session=1">Today</a>
+      <a class="btn btn-ghost" href="/scheduling/calendar/?mode=day&year=2026&month=9&day=14&&amp;session=1">Next →</a>
+    </div>
+    
+    <a class="btn btn-primary" href="/scheduling/events/add/">+ Event</a>
+    
+  </div>
+</div>
+
+    
+<div class="cal-toolbar">
+  <div class="cal-modes" role="group" aria-label="View mode">
+    <a class="btn btn-primary" href="/scheduling/calendar/?mode=day">Day</a>
+    <a class="btn btn-ghost" href="/scheduling/calendar/?mode=week">Week</a>
+    <a class="btn btn-ghost" href="/scheduling/calendar/?mode=month">Month</a>
+    <a class="btn btn-ghost" href="/scheduling/calendar/?mode=agenda">Agenda</a>
+  </div>
+
+  <form class="cal-filters" method="get" action="/scheduling/calendar/" data-autosubmit>
+    <input type="hidden" name="mode" value="day">
+    <select name="session" aria-label="Session">
+      <option value="">All sessions</option>
+      <option value="3" >X2027</option><option value="2" >2026/2027</option><option value="1" selected>2025/2026</option>
+    </select>
+    <select name="semester" aria-label="Semester">
+      <option value="1" >first · 2025/2026</option><option value="2" selected>second · 2025/2026</option>
+    </select>
+    <select name="dept" aria-label="Department">
+      <option value="">All departments</option>
+      <option value="4" >CSC 101 — Introduction to computing (SCIS)</option><option value="1" >CSS — Computer Science Society (SCIS)</option><option value="2" >IT — INFORMATION TECHNOLOGY (SCIS)</option>
+    </select>
+    <select name="program" aria-label="Programme">
+      <option value="">All programmes</option>
+      <option value="1" >CS — BSc. Computer Science</option><option value="2" >IT — INFORMATION TECHNOLOGY</option>
+    </select>
+    <select name="level" aria-label="Level">
+      <option value="">All levels</option>
+      <option value="1" >CS — 100</option><option value="2" >CS — 200</option><option value="3" >CS — 300</option><option value="4" >CS — 400</option><option value="9" >IT — 100</option><option value="10" >IT — 200</option><option value="11" >IT — 300</option><option value="12" >IT — 400</option>
+    </select>
+    <select name="course" aria-label="Course">
+      <option value="">All courses</option>
+      <option value="2" >CSC 102</option><option value="3" >CSC 455</option><option value="1" >MTH 101</option>
+    </select>
+    
+    <select name="lecturer" aria-label="Lecturer">
+      <option value="">All lecturers</option>
+      <option value="4" >Mahamadu Azindoo</option>
+    </select>
+    
+    
+    <select name="room" aria-label="Room">
+      <option value="">All rooms</option>
+      
+    </select>
+    
+    <select name="type" aria-label="Event type">
+      <option value="">All event types</option>
+      <option value="session" >Academic Session</option><option value="semester" >Semester</option><option value="holiday" >Holiday</option><option value="break" >Mid-Semester Break</option><option value="exam" >Examination Window</option><option value="ceremony" >Ceremony / Event</option><option value="deadline" >Deadline</option><option value="result" >Result Release</option><option value="general" >General Event</option>
+    </select>
+    
+    <select name="status" aria-label="Schedule status">
+      <option value="">Any status</option>
+      <option value="draft" >Draft</option><option value="generated" >Generated</option><option value="under_review" >Under Review</option><option value="hod_approved" >HOD Approved</option><option value="approved" >Approved</option><option value="published" >Published</option><option value="rejected" >Rejected</option><option value="revision" >Revision Required</option><option value="archived" >Archived</option>
+    </select>
+    <select name="schedule" aria-label="Schedule">
+      <option value="">Any schedule</option>
+      
+    </select>
+    
+  </form>
+
+  <form class="cal-search" data-search>
+    <input type="search" name="q" placeholder="Search calendar…" autocomplete="off" aria-label="Search calendar" minlength="2">
+    <div class="search-results" hidden></div>
+  </form>
+</div>
+
+<div class="cal-legend">
+  <span class="legend-item"><span class="legend-dot" style="background:var(--ochre)"></span>Session</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--teal)"></span>Holiday / Break</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--info)"></span>Exam / Deadline</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--rose)"></span>Result / Ceremony</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Class</span>
+</div>
+
+
+<div class="card cal-card">
+  <div class="card-header"><span class="card-title">Sunday, 13 September 2026</span></div>
+  <div class="cal-stack-list">
+    
+      <div class="cal-stack-row">
+        
+<button type="button" class="cal-chip cal-chip-event" data-kind="event"
+        data-type="general" data-date="2026-09-13"
+        data-url="/scheduling/calendar/event/2/"
+        title="General event">
+  <span class="chip-label">General event</span>
+  
+  <span class="chip-meta">
+    General Event
+    
+  </span>
+  
+</button>
+
+      </div>
+    
+  </div>
+</div>
+
+
+
+<dialog id="cal-modal" class="cal-modal">
+  <div class="cal-modal-inner" id="cal-modal-body">
+    <div class="cal-modal-loading">Loading…</div>
+  </div>
+</dialog>
+
+<script src="/static/js/scheduling.js" defer></script>
+
+
+  </div><!-- /content -->
+</div><!-- /main-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+(function(){
+
+  /* ── KPI bar animations ── */
+  setTimeout(function(){
+    document.querySelectorAll('.kpi-bar-fill[data-pct]').forEach(function(el){
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+    document.querySelectorAll('.dept-bar[data-pct]').forEach(function(el){
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+  }, 200);
+
+  /* ── Uptime clock ── */
+  var secs = 0;
+  var uptimeEl = document.getElementById('uptimeVal');
+  if(uptimeEl){
+    setInterval(function(){
+      secs++;
+      var h = Math.floor(secs/3600);
+      var m = Math.floor((secs%3600)/60);
+      var s = secs % 60;
+      var f = function(n){ return String(n).padStart(2,'0'); };
+      uptimeEl.textContent = f(h)+':'+f(m)+':'+f(s);
+    }, 1000);
+  }
+
+  /* ── Sparkline renderer ── */
+  function drawSparkline(canvasId, data, color) {
+    var cv = document.getElementById(canvasId);
+    if(!cv) return;
+    var dpr = window.devicePixelRatio || 1;
+    var W = cv.parentElement.offsetWidth || 120;
+    var H = 28;
+    cv.style.width = W + 'px';
+    cv.style.height = H + 'px';
+    cv.width  = W * dpr;
+    cv.height = H * dpr;
+    var ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    var min = Math.min.apply(null, data);
+    var max = Math.max.apply(null, data);
+    var range = max - min || 1;
+    var pts = data.map(function(v,i){
+      return [
+        (i/(data.length-1))*(W-4)+2,
+        H - ((v-min)/range)*(H-6)-3
+      ];
+    });
+    /* Fill */
+    var fill = new Path2D();
+    fill.moveTo(pts[0][0], H);
+    fill.lineTo(pts[0][0], pts[0][1]);
+    for(var i=1;i<pts.length;i++){
+      var cpx=(pts[i][0]+pts[i-1][0])/2;
+      fill.bezierCurveTo(cpx,pts[i-1][1],cpx,pts[i][1],pts[i][0],pts[i][1]);
+    }
+    fill.lineTo(pts[pts.length-1][0],H);
+    var grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,color+'44');
+    grad.addColorStop(1,color+'00');
+    ctx.fillStyle=grad;
+    ctx.fill(fill);
+    /* Line */
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0],pts[0][1]);
+    for(var j=1;j<pts.length;j++){
+      var cx=(pts[j][0]+pts[j-1][0])/2;
+      ctx.bezierCurveTo(cx,pts[j-1][1],cx,pts[j][1],pts[j][0],pts[j][1]);
+    }
+    ctx.strokeStyle=color;
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    /* Dot */
+    var last=pts[pts.length-1];
+    ctx.beginPath();
+    ctx.arc(last[0],last[1],2.5,0,Math.PI*2);
+    ctx.fillStyle=color;
+    ctx.fill();
+  }
+
+  /* ── Feed filter ── */
+  window.filterFeed = function(type){
+    document.querySelectorAll('.feed-filter-btn').forEach(function(btn){
+      btn.className = 'feed-filter-btn ' + (btn.getAttribute('data-filter')===type ? 'pill-green' : 'pill-muted');
+    });
+    var items = document.querySelectorAll('#feedList .feed-item');
+    var visible = 0;
+    items.forEach(function(item){
+      var show = (type==='all') || (item.getAttribute('data-status')===type);
+      item.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    var emptyMsg = document.getElementById('feed-empty');
+    if(emptyMsg) emptyMsg.style.display = (visible===0) ? '' : 'none';
+  };
+
+  /* ── Mobile sidebar toggle ── */
+  var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay'),hb=document.getElementById('hamburger');
+  if(hb&&sb){
+    function openSb(){sb.classList.add('open');ov.classList.add('open');document.body.style.overflow='hidden';}
+    function closeSb(){sb.classList.remove('open');ov.classList.remove('open');document.body.style.overflow='';}
+    hb.addEventListener('click',openSb);
+    ov.addEventListener('click',closeSb);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSb();});
+  }
+
+  /* ── Chart.js global helpers ── */
+  window.eduPro = window.eduPro || {};
+  window.eduPro.renderBarChart = function(canvasId, labels, data, label) {
+    var ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: data,
+          backgroundColor: '#e8a84c44',
+          borderColor: '#e8a84c',
+          borderWidth: 1.5,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#8a91a0' } },
+          x: { grid: { display: false }, ticks: { color: '#8a91a0' } }
+        }
+      }
+    });
+  };
+
+})();
+</script>
+
+<script>(function () {
+  var nav = document.getElementById('sidebarNav');
+  if (!nav) return;
+  var toggles = Array.prototype.slice.call(nav.querySelectorAll('.sidebar-menu-toggle'));
+  if (toggles.length === 0) return;
+  var role = nav.getAttribute('data-role') || 'app';
+  var KEY = 'eduPro_sidebar_' + role + '_open';
+
+  function submenu(btn) {
+    var id = btn.getAttribute('aria-controls');
+    return id ? document.getElementById(id) : null;
+  }
+  function setState(btn, open, persistNow) {
+    if (btn.classList.contains('open') === open) return;
+    btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var sub = submenu(btn);
+    if (sub) sub.classList.toggle('open', open);
+    if (persistNow) persist();
+  }
+  function openExclusive(btn) {
+    toggles.forEach(function (other) {
+      if (other !== btn) setState(other, false, false);
+    });
+    setState(btn, true, true);
+  }
+  function persist() {
+    var map = {};
+    toggles.forEach(function (t) { map[t.dataset.menu] = t.classList.contains('open'); });
+    try { localStorage.setItem(KEY, JSON.stringify(map)); } catch (e) {}
+  }
+  function restore() {
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { map = {}; }
+    toggles.forEach(function (t) {
+      if (map[t.dataset.menu] === true) setState(t, true, false);
+    });
+  }
+
+  toggles.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.classList.contains('open')) { setState(btn, false, true); }
+      else { openExclusive(btn); }
+    });
+  });
+
+  var active = nav.querySelector('.sidebar-submenu .nav-item.active');
+  if (active) {
+    var group = active.closest ? active.closest('.sidebar-submenu') : null;
+    if (group) {
+      for (var i = 0; i < toggles.length; i++) {
+        if (toggles[i].getAttribute('aria-controls') === group.id) {
+          openExclusive(toggles[i]);
+          return;
+        }
+      }
+    }
+  } else {
+    restore();
+  }
+})();</script>
+
+
+</body>
+</html>

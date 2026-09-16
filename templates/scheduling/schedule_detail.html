@@ -1,0 +1,188 @@
+{% extends base_template %}
+{% load scheduling_tags %}
+{% block title %}{{ schedule.name }} · eduPro{% endblock %}
+{% block breadcrumb %}Schedule · {{ schedule.name }}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/scheduling.css">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>{{ schedule.name }}</h1>
+    <p>{{ schedule.semester }} · {{ schedule.get_schedule_type_display }}
+      · <span class="badge {{ schedule.status|status_badge_class }}">{{ schedule.get_status_display }}</span></p>
+  </div>
+  <div class="ph-right">
+    {% if is_editable and schedule.status == 'draft' or is_editable and schedule.status == 'generated' %}
+      <a class="btn btn-primary" href="{% url 'scheduling:schedule_generate' schedule.pk %}">Generate</a>
+      <form method="post" action="{% url 'scheduling:schedule_optimize' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-ghost">Optimize</button>
+      </form>
+      <form method="post" action="{% url 'scheduling:schedule_repair' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-ghost">Repair</button>
+      </form>
+      <form method="post" action="{% url 'scheduling:schedule_submit' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-ghost">Submit for review</button>
+      </form>
+    {% endif %}
+    {% if schedule.status == 'hod_approved' %}
+      <form method="post" action="{% url 'scheduling:schedule_approve' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-primary">Approve</button>
+      </form>
+    {% endif %}
+    {% if schedule.status == 'approved' %}
+      <form method="post" action="{% url 'scheduling:schedule_publish' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-primary">Publish</button>
+      </form>
+    {% endif %}
+    {% if schedule.status == 'published' %}
+      <form method="post" action="{% url 'scheduling:schedule_unpublish' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-ghost">Unpublish</button>
+      </form>
+    {% endif %}
+    {% if schedule.status != 'archived' %}
+      <form method="post" action="{% url 'scheduling:schedule_archive' schedule.pk %}" style="display:inline">
+        {% csrf_token %}<button class="btn btn-ghost">Archive</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--ochre)"></span>
+    <div class="kpi-val">{{ entries_total }}</div>
+    <div class="kpi-label">Total Entries</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--rose)"></span>
+    <div class="kpi-val">{{ schedule.hard_conflicts }}</div>
+    <div class="kpi-label">Hard Conflicts</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--blue)"></span>
+    <div class="kpi-val">{{ schedule.unplaced }}</div>
+    <div class="kpi-label">Unplaced</div>
+  </div>
+  <div class="kpi">
+    <span class="kpi-accent" style="background:var(--teal)"></span>
+    <div class="kpi-val">{{ schedule.score|floatformat:1 }}</div>
+    <div class="kpi-label">Score</div>
+  </div>
+</div>
+
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Entries</span>
+      <span>
+        {% if is_editable %}<a class="card-action" href="{% url 'scheduling:schedule_entries' schedule.pk %}">+ Add session</a>{% endif %}
+        <a class="card-action" href="{% url 'scheduling:schedule_conflicts' schedule.pk %}" style="margin-left:10px">Conflicts</a>
+      </span>
+    </div>
+    <table class="reg-table">
+      <thead><tr><th>Day</th><th>Course</th><th>Time</th><th>Room</th><th>Lecturer</th><th>Type</th><th>Lock</th>{% if is_editable %}<th>Actions</th>{% endif %}</tr></thead>
+      <tbody>
+      {% if entries_total == 0 %}
+        <tr><td colspan="{% if is_editable %}8{% else %}7{% endif %}" style="color:var(--tx3)">No sessions yet — generate or add entries manually.</td></tr>
+      {% else %}
+        {% for d in days %}
+          {% for e in d.entries %}
+          <tr>
+            <td>{{ d.name }}</td>
+            <td><span class="code-tag">{{ e.course.code }}</span> {{ e.course.title }}</td>
+            <td>{{ e.start_time|time:"H:i" }}–{{ e.end_time|time:"H:i" }}</td>
+            <td>{% firstof e.room_name e.room "—" %}</td>
+            <td>{% firstof e.lecturer_name e.lecturer "—" %}</td>
+            <td>{{ e.get_session_type_display }}</td>
+            <td>{% if e.is_locked %}<span class="s-pill pill-amber">Locked</span>{% else %}<span class="s-pill pill-green">Open</span>{% endif %}</td>
+            {% if is_editable %}
+            <td>
+              {% if e.is_locked %}
+              <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}" style="display:inline">
+                {% csrf_token %}<input type="hidden" name="unlock" value="{{ e.pk }}">
+                <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px">Unlock</button>
+              </form>
+              {% else %}
+              <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}" style="display:inline">
+                {% csrf_token %}<input type="hidden" name="lock" value="{{ e.pk }}">
+                <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px">Lock</button>
+              </form>
+              {% endif %}
+              <form method="post" action="{% url 'scheduling:schedule_entries' schedule.pk %}" style="display:inline">
+                {% csrf_token %}<input type="hidden" name="delete" value="{{ e.pk }}">
+                <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px;color:var(--rose)">Delete</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">HOD Approvals</span></div>
+    <ul class="status-list">
+      {% for row in hod_rows %}
+      <li class="status-row">
+        <div style="flex:1;min-width:0">
+          <div><strong>{{ row.department.name }}</strong></div>
+          <div style="font-size:11px;color:var(--tx2)">{{ row.hod.get_full_name|default:row.hod|default:"No HOD" }}</div>
+        </div>
+        {% if not row.approval %}
+          <span class="s-pill pill-amber">Pending</span>
+        {% elif row.approval.approved %}
+          <span class="s-pill pill-green">Approved</span>
+        {% else %}
+          <span class="s-pill pill-rose">Objected</span>
+        {% endif %}
+      </li>
+      {% if row.approval and row.approval.comment %}
+      <li class="status-row" style="font-size:11px;color:var(--tx2)">Note: {{ row.approval.comment }}</li>
+      {% endif %}
+      {% if not row.approval %}
+      <li class="status-row">
+        <form method="post" action="{% url 'scheduling:hod_decide' schedule.pk %}" style="display:flex;gap:6px;width:100%">
+          {% csrf_token %}
+          <input type="hidden" name="department" value="{{ row.department.pk }}">
+          <button class="btn" name="action" value="approve" style="background:var(--teal);color:#0b0d11;padding:3px 10px;font-size:11px">Approve</button>
+          <button class="btn" name="action" value="reject" style="background:var(--rose);color:#fff;padding:3px 10px;font-size:11px">Reject</button>
+        </form>
+      </li>
+      {% endif %}
+      {% empty %}
+      <li class="status-row"><span class="s-label">No departments involved.</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="bottom-grid">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Versions</span>
+      <a class="card-action" href="{% url 'scheduling:schedule_versions' schedule.pk %}">All versions →</a>
+    </div>
+    <ul class="status-list">
+      {% for v in versions %}
+      <li class="status-row">
+        <span class="s-label">v{{ v.version_number }} · {{ v.reason|default:"Snapshot" }}</span>
+        <span class="s-val">{{ v.created_at|date:"d M Y H:i" }}</span>
+      </li>
+      {% empty %}
+      <li class="status-row"><span class="s-label">No versions saved yet.</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Tools</span></div>
+    <ul class="status-list">
+      <li class="status-row"><a class="card-action" href="{% url 'scheduling:schedule_conflicts' schedule.pk %}">Conflict report</a></li>
+      <li class="status-row"><a class="card-action" href="{% url 'scheduling:schedule_versions' schedule.pk %}">Version history</a></li>
+      {% if is_editable %}<li class="status-row"><a class="card-action" href="{% url 'scheduling:schedule_entries' schedule.pk %}">Add / edit entries</a></li>{% endif %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

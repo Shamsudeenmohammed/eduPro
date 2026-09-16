@@ -1,0 +1,66 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div style="max-width:720px;margin:0 auto;padding:1.5rem;">
+
+  <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Start Maintenance</h2>
+      <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Mark a bed as under maintenance</p>
+    </div>
+    <a href="{% url 'hostel:maintenance' %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Back to Maintenance</a>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.75rem;">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div style="background:#dc2626;border:1px solid #dc2626;border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;">
+          {% for error in form.non_field_errors %}
+            <div style="color:#fff;font-size:.85rem;">{{ error }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="hostel-form">
+        {% for field in form %}
+          <div style="margin-bottom:1rem;">
+            <label for="{{ field.id_for_label }}" style="display:block;color:var(--text);font-size:.85rem;font-weight:600;margin-bottom:.35rem;">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div style="margin-top:.35rem;">
+                {% for error in field.errors %}
+                  <div style="color:#f87171;font-size:.78rem;font-weight:600;">{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if field.help_text %}
+              <div style="color:var(--text);opacity:.5;font-size:.75rem;margin-top:.25rem;">{{ field.help_text }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn-success btn-sm" style="padding:.5rem 1.5rem;">Start Maintenance</button>
+    </form>
+  </div>
+
+</div>
+
+<style>
+  .hostel-form input, .hostel-form select, .hostel-form textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .55rem .8rem;
+    color: var(--text);
+    font-size: .9rem;
+  }
+  .hostel-form input:focus, .hostel-form select:focus, .hostel-form textarea:focus {
+    outline: none;
+    border-color: var(--ochre);
+  }
+</style>
+{% endblock content %}

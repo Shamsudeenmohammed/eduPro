@@ -1,0 +1,7 @@
+{% extends "notifications/email/email_shell.html" %}
+{% block email_body %}
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+  <p>New course material: <strong>{{ context.material_title }}</strong> for {{ context.offering.course.code|default:"" }}.</p>
+  {% if link %}<p><a class="btn" href="{{ link }}" style="color:#000">View Materials</a></p>{% endif %}
+{% endblock %}

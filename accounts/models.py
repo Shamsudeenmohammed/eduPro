@@ -47,6 +47,8 @@ class StaffResponsibility(models.TextChoices):
     ADMISSIONS_OFFICER   = "admissions_officer",   _("Admissions Officer")
     EXAMINATIONS_OFFICER = "examinations_officer", _("Examinations Officer")
     COUNSELOR            = "counselor",            _("Student Counselor")
+    HOSTEL_OFFICER       = "hostel_officer",       _("Hostel Officer")
+    WARDEN               = "warden",               _("Hostel Warden")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -202,6 +204,19 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
             return True
         return self.staff_roles.filter(
             responsibility=StaffResponsibility.HOD, is_active=True
+        ).exists()
+
+    @property
+    def is_hostel_officer(self):
+        """True for hostel officers or wardens (admin/superuser always)."""
+        if self.is_admin:
+            return True
+        return self.staff_roles.filter(
+            responsibility__in=(
+                StaffResponsibility.HOSTEL_OFFICER,
+                StaffResponsibility.WARDEN,
+            ),
+            is_active=True,
         ).exists()
 
     # ── Multi-responsibility helpers ──────────────────────────────────────
