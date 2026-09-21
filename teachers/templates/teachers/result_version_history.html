@@ -1,0 +1,63 @@
+{% extends "teachers/base.html" %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'teachers:result_sheet_view' sheet.pk %}">{{ sheet.offering.course.code }} — Results</a><span class="sep">/</span>
+  <span>Revision History</span>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><span class="card-title">Revision History</span></div>
+  <div class="card-body" style="padding:14px 20px;">
+    <div class="detail-row"><span class="detail-label">Course</span><span class="detail-value">{{ sheet.offering.course.code }} — {{ sheet.offering.course.title }}</span></div>
+    <div class="detail-row"><span class="detail-label">Semester</span><span class="detail-value">{{ sheet.offering.semester }}</span></div>
+    <div class="detail-row"><span class="detail-label">Current Revision</span><span class="detail-value">{{ sheet.revision }}</span></div>
+    <div class="detail-row"><span class="detail-label">Versions Captured</span><span class="detail-value">{{ versions|length }}</span></div>
+  </div>
+</div>
+
+{% for version in versions %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Revision {{ version.revision }}</span>
+    <span style="font-size:13px;color:var(--muted);">{{ version.results|length }} student{{ version.results|length|pluralize }}</span>
+  </div>
+  <div class="card-body">
+    <div class="detail-row"><span class="detail-label">Captured At</span><span class="detail-value">{{ version.created_at|date:"d M Y H:i" }}</span></div>
+    <div class="detail-row"><span class="detail-label">Captured By</span><span class="detail-value">{{ version.created_by.get_full_name|default:"—" }}</span></div>
+    <div class="detail-row"><span class="detail-label">Note</span><span class="detail-value">{{ version.note|default:"—" }}</span></div>
+    {% if version.results %}
+    <div class="table-wrap" style="margin-top:10px;">
+      <table>
+        <thead>
+          <tr><th>Student</th><th>CA Score</th><th>Exam Score</th><th>Total</th><th>Grade</th><th>Grade Point</th><th>Remark</th></tr>
+        </thead>
+        <tbody>
+          {% for record in version.results %}
+          <tr>
+            <td>{{ record.student_name }}
+              {% if record.is_absent %}<br><span class="badge badge-inactive">Absent</span>{% endif %}
+            </td>
+            <td>{{ record.ca_score|default:"—" }}</td>
+            <td>{{ record.exam_score|default:"—" }}</td>
+            <td><strong>{{ record.total_score|default:"—" }}</strong></td>
+            <td>{{ record.grade|default:"—" }}</td>
+            <td>{{ record.grade_point|default:"—" }}</td>
+            <td style="font-size:12px;color:var(--muted);">{{ record.remark|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="margin-top:8px;">
+      <span class="icon">🗂️</span>No student results in this revision.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="empty-state">
+  <span class="icon">🕓</span>No revision snapshots captured yet. Publish the sheet to create its first version.
+</div>
+{% endfor %}
+{% endblock %}

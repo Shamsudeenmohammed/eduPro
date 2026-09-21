@@ -1,0 +1,224 @@
+{% extends "teachers/base.html" %}
+{% block content %}
+<div class="breadcrumb" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <span>HOD Review Center</span>
+  <a href="{% url 'teachers:hod_result_sheets' %}" class="btn btn-secondary btn-sm">📋 Full Department List</a>
+</div>
+
+{% if dept %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="display:flex;align-items:center;gap:12px;padding:14px 20px;">
+    <span style="font-size:22px;">🏛️</span>
+    <div>
+      <div style="font-weight:700;font-size:15px;">{{ dept.name }}</div>
+      <div style="font-size:13px;color:var(--muted);">Reviewer: {{ request.user.get_full_name }}</div>
+    </div>
+    <a href="{% url 'teachers:hod_review_center' %}" class="btn btn-secondary btn-sm" style="margin-left:auto;">Reset</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Queue stats -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;">
+  <div class="stat-card">
+    <div class="stat-label">Awaiting Review</div>
+    <div class="stat-value" {% if stats.overdue_count %}style="color:var(--warning);"{% endif %}>{{ stats.pending_count }}</div>
+    <div class="stat-delta {% if stats.overdue_count %}down{% endif %}">{{ stats.overdue_count }} overdue</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Longest Wait</div>
+    <div class="stat-value">
+      {% if stats.oldest %}{{ stats.oldest.submitted_at|timesince }}{% else %}—{% endif %}
+    </div>
+    <div class="stat-delta">{{ stats.oldest.offering.course.code|default:"no pending sheets" }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Average Wait</div>
+    <div class="stat-value">{{ stats.avg_wait_hours }} h</div>
+    <div class="stat-delta">SLA: {{ sla_hours }} h</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Published</div>
+    <div class="stat-value">{{ stats.published_count }}</div>
+    <div class="stat-delta">{{ stats.approved_count }} approved total</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:12px 20px;">
+    <div>
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">Status</label>
+      <select name="status" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex:1;min-width:180px;">
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">Search course</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Code or title…"
+        style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+    </div>
+    {% if departments %}
+    <div>
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">Department</label>
+      <select name="dept" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+        <option value="">All departments</option>
+        {% for d in departments %}
+        <option value="{{ d.pk }}" {% if dept_pk == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+    <a href="{% url 'teachers:hod_review_center' %}" class="btn btn-secondary btn-sm">Clear</a>
+  </div>
+</form>
+
+<!-- Review queue -->
+<form id="batchForm" method="post" action="{% url 'teachers:hod_review_batch' %}">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Review Queue</span>
+      <span style="font-size:13px;color:var(--muted);" id="batchCount"></span>
+    </div>
+    <div class="card-body" style="padding:12px 20px;display:flex;gap:8px;border-bottom:1px solid var(--border);align-items:center;">
+      <span style="font-size:13px;color:var(--muted);">Batch actions:</span>
+      <button type="button" class="btn btn-success btn-sm" onclick="batchApprove()">✓ Approve Selected</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="openRejectModal()">✗ Reject Selected</button>
+      <span style="font-size:12px;color:var(--muted);margin-left:8px;">Applies to submitted sheets only</span>
+    </div>
+    <div class="table-wrap">
+      {% if queue %}
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px;"><input type="checkbox" id="checkboxAll" aria-label="Select all"></th>
+            <th>#</th>
+            <th>Course</th>
+            <th>Semester</th>
+            {% if not dept %}<th>Department</th>{% endif %}
+            <th>Submitted By</th>
+            <th>Submitted</th>
+            <th>Wait</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sheet in queue %}
+          <tr {% if sheet.is_overdue %}style="background:rgba(239,112,112,.05);"{% endif %}>
+            <td>
+              {% if sheet.status == "submitted" %}
+              <input type="checkbox" class="sheet-check" name="sheet_ids" value="{{ sheet.pk }}"
+                onchange="updateBatchCount()" aria-label="Select {{ sheet.offering.course.code }}">
+              {% endif %}
+            </td>
+            <td class="muted" style="color:var(--muted);font-size:12px;">{{ forloop.counter }}</td>
+            <td>
+              <strong>{{ sheet.offering.course.code }}</strong><br>
+              <span style="font-size:12px;color:var(--muted);">{{ sheet.offering.course.title }}</span>
+            </td>
+            <td>{{ sheet.offering.semester }}</td>
+            {% if not dept %}
+            <td><span style="font-size:12px;">{{ sheet.offering.course.department.name }}</span></td>
+            {% endif %}
+            <td>{{ sheet.submitted_by.get_full_name|default:"—" }}</td>
+            <td>{{ sheet.submitted_at|date:"d M Y H:i"|default:"—" }}</td>
+            <td>
+              {% if sheet.status == "submitted" %}
+                <span style="font-weight:600;">{{ sheet.awaiting_days }}d {{ sheet.awaiting_hours|floatformat:0 }}h</span>
+                {% if sheet.is_overdue %}<br><span class="badge badge-rejected">Overdue</span>{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if sheet.status == "open" %}<span class="badge badge-open">Open</span>
+              {% elif sheet.status == "submitted" %}<span class="badge badge-submitted">Submitted</span>
+              {% elif sheet.status == "approved" %}<span class="badge badge-approved">Approved ✓</span>
+              {% elif sheet.status == "rejected" %}<span class="badge badge-rejected">Rejected</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'teachers:result_sheet_view' sheet.pk %}" class="btn btn-secondary btn-sm">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <span class="icon">✅</span>
+        No result sheets match the current view.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Reject modal -->
+  <div id="rejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border-radius:12px;padding:28px;max-width:460px;width:94%;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+      <h3 style="margin:0 0 6px;font-size:17px;">Reject Selected Result Sheets</h3>
+      <p style="margin:0 0 16px;font-size:13px;color:var(--muted);" id="rejectSubtitle"></p>
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Rejection Note <span style="color:var(--danger)">*</span></label>
+      <textarea name="rejection_note" rows="4"
+        style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;resize:vertical;"
+        placeholder="Explain why these sheets are being returned for correction…" required></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="batchReject()">Reject & Return</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+function selectedIds() {
+  return Array.prototype.map.call(
+    document.querySelectorAll('input.sheet-check:checked'),
+    function (el) { return el.value; }
+  );
+}
+function updateBatchCount() {
+  var n = selectedIds().length;
+  document.getElementById('batchCount').textContent = n ? n + ' result sheet(s) selected' : '';
+}
+document.getElementById('checkboxAll').addEventListener('change', function (e) {
+  var checked = e.target.checked;
+  document.querySelectorAll('input.sheet-check').forEach(function (el) { el.checked = checked; });
+  updateBatchCount();
+});
+function batchApprove() {
+  var n = selectedIds().length;
+  if (!n) { alert('Select at least one submitted result sheet to approve.'); return; }
+  if (!confirm('Approve and lock ' + n + ' result sheet(s)?')) return;
+  submitBatch('approve');
+}
+function openRejectModal() {
+  var n = selectedIds().length;
+  if (!n) { alert('Select at least one submitted result sheet to reject.'); return; }
+  document.getElementById('rejectSubtitle').textContent = n + ' selected: a rejection reason is required for each.';
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').style.display = 'none';
+}
+function batchReject() {
+  var note = document.querySelector('#rejectModal textarea[name="rejection_note"]').value.trim();
+  if (!note) { alert('A rejection note is required.'); return; }
+  submitBatch('reject');
+}
+function submitBatch(action) {
+  var prev = document.getElementById('batchAction');
+  if (prev) prev.remove();
+  var inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'action'; inp.id = 'batchAction'; inp.value = action;
+  document.getElementById('batchForm').appendChild(inp);
+  document.getElementById('batchForm').submit();
+}
+document.getElementById('rejectModal').addEventListener('click', function (e) {
+  if (e.target === this) closeRejectModal();
+});
+</script>
+{% endblock %}
