@@ -1,4 +1,4 @@
-{% load role_tags %}
+{% load static role_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,6 +124,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
 @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 {% include "components/sidebar_collapse.css.html" %}
 </style>
+<link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 </head>
 <body>
 

@@ -132,7 +132,6 @@
 <div class="sidebar-submenu" id="sub-services">
   <a href="{% url 'analytics:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'analytics' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Analytics</span></a>
   <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.namespace == 'operations' and request.resolver_match.url_name == 'announcements' %}active{% endif %}"><span>Announcements</span></a>
-  <a href="{% url 'operations:timetable' %}" class="nav-item {% if request.resolver_match.namespace == 'operations' and request.resolver_match.url_name == 'timetable' %}active{% endif %}"><span>Timetable</span></a>
   <a href="{% url 'operations:ticket_admin' %}" class="nav-item {% if request.resolver_match.url_name == 'ticket_admin' %}active{% endif %}"><span>Tickets</span></a>
   <a href="{% url 'feedback:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'feedback' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Feedback</span></a>
 </div>

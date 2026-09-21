@@ -48,6 +48,11 @@ class NotificationService:
         NotificationType.QUIZ_REMINDER: (Channel.APP, Channel.EMAIL, Channel.SMS),
         NotificationType.QUIZ_RESULT_AVAILABLE: (Channel.APP, Channel.EMAIL),
         NotificationType.LMS_ANNOUNCEMENT: (Channel.APP, Channel.EMAIL),
+        NotificationType.RESULT_SUBMITTED: (Channel.APP, Channel.EMAIL),
+        NotificationType.RESULT_APPROVED: (Channel.APP, Channel.EMAIL),
+        NotificationType.RESULT_REJECTED: (Channel.APP, Channel.EMAIL),
+        NotificationType.RESULT_PUBLISHED: (Channel.APP, Channel.EMAIL),
+        NotificationType.RESULT_REVISED: (Channel.APP, Channel.EMAIL),
     }
 
     # Map NotificationType -> students.NotificationCategory for the in-app bell.
@@ -61,6 +66,7 @@ class NotificationService:
         NotificationType.QUIZ_REMINDER: "deadline",
         NotificationType.QUIZ_RESULT_AVAILABLE: "result",
         NotificationType.LMS_ANNOUNCEMENT: "general",
+        NotificationType.RESULT_PUBLISHED: "result",
     }
 
     # ── Public API ───────────────────────────────────────────────────────────

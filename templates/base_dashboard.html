@@ -6,6 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ page_title|default:"Dashboard" }} — {{ site_name }}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/edupro.css' %}">
+  <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+  <style>
+    @media (max-width: 640px) {
+      .nav-inner { padding: 0 0.75rem; }
+      .nav-brand { font-size: 0.9rem; }
+      .nav-links { gap: 0.5rem; }
+      .nav-links a { font-size: 0.8rem; padding: 4px 8px; }
+      .theme-toggle { padding: 0.25rem 0.5rem; }
+      h1 { font-size: 1.15rem !important; }
+    }
+    .messages { word-break: break-word; }
+  </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body>

@@ -55,7 +55,19 @@
       <td><span class="badge {% status_badge s.status %}">{{ s.get_status_display }}</span></td>
       <td><span class="code-tag {% if s.hard_conflicts %}pill-rose{% else %}pill-green{% endif %}">{{ s.hard_conflicts }}</span></td>
       <td><span class="code-tag {% if s.unplaced %}pill-rose{% else %}pill-green{% endif %}">{{ s.unplaced }}</span></td>
-      <td style="text-align:right"><a class="card-action" href="{% url 'scheduling:schedule_detail' s.pk %}">Open →</a></td>
+      <td style="text-align:right;white-space:nowrap">
+        <a class="card-action" href="{% url 'scheduling:schedule_detail' s.pk %}">Open →</a>
+        <span style="opacity:.35">·</span>
+        <a class="card-action" href="{% url 'scheduling:schedule_edit' s.pk %}">Edit</a>
+        <span style="opacity:.35">·</span>
+        <form method="post" action="{% url 'scheduling:schedule_delete' s.pk %}"
+              style="display:inline"
+              onsubmit="return confirm('Delete schedule “{{ s.name|escapejs }}”? This permanently removes it and its history.')">
+          {% csrf_token %}
+          <button type="submit" class="card-action"
+                  style="background:none;border:none;padding:0;cursor:pointer;color:var(--danger);font-family:inherit;font-size:inherit">Delete</button>
+        </form>
+      </td>
     </tr>
   {% empty %}
     <tr><td colspan="7" style="color:var(--tx3)">No schedules{% if cur_status or cur_semester %} match the current filter{% endif %}. <a class="card-action" href="{% url 'scheduling:schedule_create' %}">Create one</a>.</td></tr>

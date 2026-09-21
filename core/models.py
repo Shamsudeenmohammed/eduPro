@@ -24,6 +24,9 @@ class AuditAction(models.TextChoices):
     IMPORT = "import", _("Import")
     APPROVE = "approve", _("Approve")
     REJECT = "reject", _("Reject")
+    SUBMIT = "submit", _("Submit")
+    PUBLISH = "publish", _("Publish")
+    REVISE = "revise", _("Revise")
 
 
 class AuditLog(TimeStampedModel):

@@ -27,7 +27,7 @@
     <tr>
       <td><strong>{{ item.lecturer.get_full_name|default:item.lecturer }}</strong></td>
       <td>{{ item.get_day_display }}</td>
-      <td><span class="code-tag">{{ item.start_time|time:"H:i" }}–{{ item.end_time|time:"H:i" }}</span></td>
+      <td><span class="code-tag">{{ item.start_time|time:"g:i A" }}–{{ item.end_time|time:"g:i A" }}</span></td>
       <td>{{ item.reason|default:"—" }}</td>
       <td>{% if item.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
       <td style="text-align:right">

@@ -67,7 +67,10 @@ def score_schedule(entries, config):
         days_per_cohort[sig].add(e.day)
 
     for (sig, day), day_entries in by_cohort_day.items():
-        day_entries.sort(key=lambda e: (e.start_time, e.course.code))
+        day_entries.sort(key=lambda e: (
+            e.start_time,
+            getattr(getattr(e, "course", None), "code", "") or "",
+        ))
         run = 1
         for prev, cur in zip(day_entries, day_entries[1:]):
             gap = _minutes(prev.end_time, cur.start_time)

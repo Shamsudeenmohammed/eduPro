@@ -824,7 +824,7 @@ def slot_regenerate(request):
         .values_list("day", "start_time", "end_time")
     )
     created = 0
-    for slot in generator._slot_list(cfg):
+    for slot in generator._coarse_slots(cfg):
         key = (slot["day"], slot["start_time"], slot["end_time"])
         if key in existing_kw:
             continue
@@ -976,6 +976,26 @@ def schedule_create(request):
         "base_template": _base_for_user(request.user),
         "form": form,
         "cancel_url": "scheduling:schedule_list",
+    })
+
+
+@login_required
+@admin_required
+def schedule_edit(request, pk):
+    schedule = get_object_or_404(AcademicSchedule, pk=pk)
+    form = AcademicScheduleForm(request.POST or None, instance=schedule)
+    if request.method == "POST" and form.is_valid():
+        try:
+            services.update_schedule(schedule, request.user, form.cleaned_data)
+            messages.success(request, f"Updated “{schedule.name}”.")
+            return redirect("scheduling:schedule_detail", pk=schedule.pk)
+        except Exception as exc:
+            _flash_errors(request, exc)
+    return render(request, "scheduling/schedule_form.html", {
+        "page_title": f"Edit — {schedule.name}",
+        "base_template": _base_for_user(request.user),
+        "form": form,
+        "schedule": schedule,
     })
 
 
@@ -1276,6 +1296,42 @@ def schedule_archive(request, pk):
         lambda r, s: services.archive_schedule(s, r.user),
         "Archived “%s”.",
     )
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def schedule_unarchive(request, pk):
+    return _schedule_post(
+        request, pk,
+        lambda r, s: services.unarchive_schedule(s, r.user),
+        "Restored “%s” from archive.",
+    )
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def schedule_clear_unplaced(request, pk):
+    return _schedule_post(
+        request, pk,
+        lambda r, s: services.clear_unplaced(s, r.user),
+        "Cleared unplaced sessions for “%s”.",
+    )
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def schedule_delete(request, pk):
+    schedule = get_object_or_404(AcademicSchedule, pk=pk)
+    name = schedule.name
+    try:
+        services.delete_schedule(schedule, request.user)
+        messages.success(request, f"Deleted “{name}”.")
+    except Exception as exc:
+        _flash_errors(request, exc)
+    return redirect("scheduling:schedule_list")
 
 
 # ═════════════════════════════════════════════════════════════════════════

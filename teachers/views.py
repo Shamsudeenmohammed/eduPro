@@ -6,18 +6,25 @@ Access: teacher_required decorator from accounts.decorators.
 Result submission also accessible to admins.
 """
 
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.decorators import role_required, teacher_required, hod_required
+from accounts.models import EduProUser, StaffResponsibility
 from academics.models import CourseAllocation, CourseOffering, Enrolment, TeacherDepartment
+from core.models import AuditAction, AuditLog
 from students.models import StudentNotification
 
 from notifications.models import NotificationType
+from notifications.recipients import EnrolmentQuery
 from notifications.services import NotificationService
 
 from .forms import (
@@ -44,6 +51,7 @@ from .models import (
     QuizAttempt,
     QuizQuestion,
     ResultSheet,
+    ResultVersion,
     StudentResult,
     TeacherProfile,
 )
@@ -739,6 +747,129 @@ def attendance_sheet_detail(request, pk):
 # RESULTS
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _result_sheet_context(sheet):
+    """Standard context for result-lifecycle notifications."""
+    return {
+        "offering": sheet.offering,
+        "course_code": sheet.offering.course.code,
+        "sheet_pk": sheet.pk,
+    }
+
+
+def _department_reviewers(sheet):
+    """Users to notify when a sheet is submitted: the dept HOD + HOD role holders."""
+    department = sheet.offering.course.department
+    if department is None:
+        return EduProUser.objects.none()
+    from accounts.models import UserStaffRole
+    hod_ids = UserStaffRole.objects.filter(
+        responsibility=StaffResponsibility.HOD,
+        department=department,
+        is_active=True,
+    ).values_list("user_id", flat=True)
+    reviewer_ids = set(hod_ids)
+    if department.hod_id:
+        reviewer_ids.add(department.hod_id)
+    return EduProUser.objects.filter(pk__in=reviewer_ids)
+
+
+def _result_audit(actor, sheet, action, changes=None):
+    """Persist an immutable audit record for a result lifecycle transition."""
+    AuditLog.objects.create(
+        user=actor,
+        action=action,
+        model_name="teachers.ResultSheet",
+        object_id=str(sheet.pk),
+        object_repr=f"{sheet.offering.course.code} | {sheet.offering.semester}",
+        changes=changes or {},
+        path="/teachers/results/",
+    )
+
+
+REVIEW_SLA_HOURS = 72  # submitted sheets pending longer than this are "overdue"
+
+
+def _hod_review_scope(user):
+    """Return (dept_or_None, reviewable ResultSheet QuerySet) for a review user."""
+    if user.is_superuser or getattr(user, "is_admin", False):
+        return None, ResultSheet.objects
+    depts = user.get_hod_departments()
+    return depts.first(), ResultSheet.objects.filter(
+        offering__course__department__in=depts
+    )
+
+
+def _sheet_in_review_scope(sheet, user):
+    """True if the user may review this sheet (admin/superuser, or its dept HOD)."""
+    if user.is_superuser or getattr(user, "is_admin", False):
+        return True
+    return user.is_hod_of(sheet.offering.course.department)
+
+
+def _approve_sheet(sheet, user):
+    """Transition submitted → approved; returns (ok, message)."""
+    if not _sheet_in_review_scope(sheet, user):
+        return False, "You can only approve results for courses in your department."
+    if sheet.status != ResultSheet.SheetStatus.SUBMITTED:
+        return False, "Only submitted result sheets can be approved."
+
+    sheet.status      = ResultSheet.SheetStatus.APPROVED
+    sheet.approved_by = user
+    sheet.approved_at = timezone.now()
+    sheet.save()
+
+    try:
+        from core.utils import update_student_gpa
+        student_ids = sheet.student_results.values_list(
+            "enrolment__student_id", flat=True
+        ).distinct()
+        for student_id in student_ids:
+            try:
+                update_student_gpa(EduProUser.objects.get(pk=student_id))
+            except EduProUser.DoesNotExist:
+                pass
+    except ImportError:
+        pass
+
+    _result_audit(user, sheet, AuditAction.APPROVE)
+    if sheet.submitted_by:
+        NotificationService.send(
+            notification_type=NotificationType.RESULT_APPROVED,
+            recipients=[sheet.submitted_by],
+            context=_result_sheet_context(sheet),
+            module="RESULTS",
+            idempotency_key=(
+                f"result_approved:{sheet.pk}:{int(sheet.approved_at.timestamp())}"
+                if sheet.approved_at else f"result_approved:{sheet.pk}"
+            ),
+        )
+    return True, "Result sheet approved and locked."
+
+
+def _reject_sheet(sheet, user, note):
+    """Transition a sheet to rejected with a note; returns (ok, message)."""
+    if not _sheet_in_review_scope(sheet, user):
+        return False, "You can only reject results for courses in your department."
+
+    note = note or "No reason provided."
+    sheet.status         = ResultSheet.SheetStatus.REJECTED
+    sheet.rejection_note = note
+    sheet.save()
+    _result_audit(user, sheet, AuditAction.REJECT, {"note": note})
+    if sheet.submitted_by:
+        NotificationService.send(
+            notification_type=NotificationType.RESULT_REJECTED,
+            recipients=[sheet.submitted_by],
+            context={**_result_sheet_context(sheet), "reason": note},
+            module="RESULTS",
+            idempotency_key=(
+                f"result_rejected:{sheet.pk}:{int(sheet.submitted_at.timestamp())}"
+                if sheet.submitted_at else f"result_rejected:{sheet.pk}"
+            ),
+        )
+    return True, "Result sheet rejected and returned for correction."
+
+
 @login_required
 @teacher_required
 def result_sheet_list(request):
@@ -880,6 +1011,21 @@ def result_submit(request, sheet_pk):
     sheet.submitted_by = request.user
     sheet.submitted_at = timezone.now()
     sheet.save()
+    _result_audit(request.user, sheet, AuditAction.SUBMIT)
+
+    reviewers = _department_reviewers(sheet)
+    if reviewers.exists():
+        NotificationService.send(
+            notification_type=NotificationType.RESULT_SUBMITTED,
+            recipients=reviewers,
+            context={
+                **_result_sheet_context(sheet),
+                "submitted_by_name": request.user.get_full_name(),
+            },
+            module="RESULTS",
+            idempotency_key=f"result_submitted:{sheet.pk}:{int(sheet.submitted_at.timestamp())}",
+        )
+
     messages.success(request, "Result sheet submitted for approval.")
     return redirect("teachers:result_sheet_list")
 
@@ -892,48 +1038,8 @@ def result_approve(request, sheet_pk):
     HODs may only approve sheets for courses in their own department.
     """
     sheet = get_object_or_404(ResultSheet, pk=sheet_pk)
-
-    # Department scope check for HODs
-    if not request.user.is_superuser and not getattr(request.user, "is_admin", False):
-        # User is HOD — verify course belongs to their department
-        course_dept = sheet.offering.course.department
-        teacher_profile = getattr(request.user, "teacher_profile", None)
-        hod_dept = None
-        if teacher_profile:
-            # Check if this teacher is HOD of any department
-            try:
-                from academics.models import Department
-                hod_dept = Department.objects.filter(hod=request.user).first()
-            except Exception:
-                pass
-        if not hod_dept or hod_dept != course_dept:
-            messages.error(request, "You can only approve results for courses in your department.")
-            return redirect("teachers:result_sheet_list")
-
-    if sheet.status != ResultSheet.SheetStatus.SUBMITTED:
-        messages.error(request, "Only submitted result sheets can be approved.")
-        return redirect("teachers:result_sheet_list")
-
-    sheet.status      = ResultSheet.SheetStatus.APPROVED
-    sheet.approved_by = request.user
-    sheet.approved_at = timezone.now()
-    sheet.save()
-
-    try:
-        from core.utils import update_student_gpa
-        student_ids = sheet.student_results.values_list(
-            "enrolment__student_id", flat=True
-        ).distinct()
-        for student_id in student_ids:
-            from accounts.models import EduProUser
-            try:
-                update_student_gpa(EduProUser.objects.get(pk=student_id))
-            except EduProUser.DoesNotExist:
-                pass
-    except ImportError:
-        pass
-
-    messages.success(request, "Result sheet approved and locked.")
+    ok, msg = _approve_sheet(sheet, request.user)
+    (messages.success if ok else messages.error)(request, msg)
     return redirect("teachers:result_sheet_list")
 
 
@@ -945,25 +1051,130 @@ def result_reject(request, sheet_pk):
     HODs may only reject sheets for courses in their own department.
     """
     sheet = get_object_or_404(ResultSheet, pk=sheet_pk)
-
-    # Department scope check for HODs
-    if not request.user.is_superuser and not getattr(request.user, "is_admin", False):
-        course_dept = sheet.offering.course.department
-        try:
-            from academics.models import Department
-            hod_dept = Department.objects.filter(hod=request.user).first()
-        except Exception:
-            hod_dept = None
-        if not hod_dept or hod_dept != course_dept:
-            messages.error(request, "You can only reject results for courses in your department.")
-            return redirect("teachers:result_sheet_list")
-
-    note  = request.POST.get("rejection_note", "No reason provided.")
-    sheet.status         = ResultSheet.SheetStatus.REJECTED
-    sheet.rejection_note = note
-    sheet.save()
-    messages.warning(request, "Result sheet rejected and returned to teacher.")
+    note = request.POST.get("rejection_note", "")
+    ok, msg = _reject_sheet(sheet, request.user, note)
+    (messages.success if ok else messages.error)(request, msg)
     return redirect("teachers:result_sheet_list")
+
+
+@login_required
+@teacher_required
+@require_POST
+def result_publish(request, sheet_pk):
+    """
+    Publish an approved result sheet.
+
+    Creates the immutable ResultVersion snapshot for this revision and
+    notifies the enrolled students.  Admins, examinations officers and deans
+    may publish.
+    """
+    sheet = get_object_or_404(ResultSheet, pk=sheet_pk)
+    if not sheet.can_publish(request.user):
+        messages.error(request, "You do not have permission to publish result sheets.")
+        return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+    if sheet.status != ResultSheet.SheetStatus.APPROVED:
+        messages.error(request, "Only approved result sheets can be published.")
+        return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+    if sheet.published_at is not None:
+        messages.info(request, "This result sheet has already been published.")
+        return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+
+    sheet.published_by = request.user
+    sheet.published_at = timezone.now()
+    sheet.save(update_fields=["published_by", "published_at", "updated_at"])
+    ResultVersion.capture(sheet, actor=request.user)
+    _result_audit(request.user, sheet, AuditAction.PUBLISH, {"revision": sheet.revision})
+
+    NotificationService.send(
+            notification_type=NotificationType.RESULT_PUBLISHED,
+            recipients=EnrolmentQuery(sheet.offering),
+            context={
+                **_result_sheet_context(sheet),
+                "revision": sheet.revision,
+                "student_link": reverse("students:results_list"),
+            },
+            module="RESULTS",
+            idempotency_key=f"result_published:{sheet.pk}:{sheet.revision}",
+        )
+
+    messages.success(
+        request,
+        f"Result sheet published (revision {sheet.revision}). Students notified.",
+    )
+    return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+
+
+@login_required
+@teacher_required
+@require_POST
+def result_revise(request, sheet_pk):
+    """
+    Return a published sheet to draft so corrections can be made.
+
+    The published snapshot stays in history (immutable); the revision counter
+    is bumped so the next publish creates the next version.  A mandatory
+    reason is stored and sent to the sheet teacher.
+    """
+    sheet = get_object_or_404(ResultSheet, pk=sheet_pk)
+    if not sheet.can_revise(request.user):
+        messages.error(
+            request,
+            "Only administrators or examinations staff can revise published result sheets.",
+        )
+        return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+
+    reason = request.POST.get("reason", "").strip()
+    if not reason:
+        messages.error(request, "A reason is required to revise a published result sheet.")
+        return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+
+    sheet.status = ResultSheet.SheetStatus.OPEN
+    sheet.published_by = None
+    sheet.published_at = None
+    sheet.revision = (sheet.revision or 1) + 1
+    sheet.last_revision_note = reason
+    sheet.last_revised_by = request.user
+    sheet.last_revised_at = timezone.now()
+    sheet.save(update_fields=[
+        "status", "published_by", "published_at", "revision",
+        "last_revision_note", "last_revised_by", "last_revised_at", "updated_at",
+    ])
+    _result_audit(
+        request.user, sheet, AuditAction.REVISE,
+        {"note": reason, "revision": sheet.revision},
+    )
+
+    if sheet.submitted_by:
+        NotificationService.send(
+            notification_type=NotificationType.RESULT_REVISED,
+            recipients=[sheet.submitted_by],
+            context={**_result_sheet_context(sheet), "reason": reason},
+            module="RESULTS",
+            idempotency_key=f"result_revised:{sheet.pk}:{sheet.revision}",
+        )
+
+    messages.warning(request, "Published results returned to draft for correction.")
+    return redirect("teachers:result_sheet_view", sheet_pk=sheet.pk)
+
+
+@login_required
+def result_version_history(request, sheet_pk):
+    """Immutable revision history of a result sheet."""
+    sheet = get_object_or_404(ResultSheet, pk=sheet_pk)
+    user = request.user
+
+    is_teacher = (
+        user.is_admin or user.is_superuser or _teacher_owns_offering(user, sheet.offering)
+    )
+    if not (is_teacher or sheet.can_publish(user)):
+        messages.error(request, "Access denied.")
+        return redirect("accounts:dashboard")
+
+    return render(request, "teachers/result_version_history.html", {
+        "page_title": f"Revision History — {sheet.offering.course.code}",
+        "sheet":      sheet,
+        "versions":   sheet.versions.all(),
+    })
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1006,6 +1217,143 @@ def hod_result_sheets(request):
         "sheets":     sheets,
         "dept":       dept,
     })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HOD REVIEW CENTER — prioritised queue with batch actions
+# ─────────────────────────────────────────────────────────────────────────────
+
+HOD_REVIEW_STATUSES = (
+    ("submitted", "Awaiting approval"),
+    ("approved",  "Approved"),
+    ("rejected",  "Rejected"),
+    ("all",       "All statuses"),
+)
+
+
+def _awaiting_stats(sheets):
+    """Queue stats across a scoped queryset."""
+    now = timezone.now()
+    pending_qs = sheets.filter(status=ResultSheet.SheetStatus.SUBMITTED)
+    pending_count = pending_qs.count()
+    oldest = pending_qs.order_by("submitted_at").first()
+
+    avg_wait_hours = 0
+    if pending_count:
+        total = sum(
+            (now - (s.submitted_at or now)).total_seconds() / 3600
+            for s in pending_qs.only("submitted_at")
+        )
+        avg_wait_hours = total / pending_count
+
+    return {
+        "pending_count": pending_count,
+        "oldest":        oldest,
+        "avg_wait_hours": round(avg_wait_hours, 1),
+        "overdue_count":  pending_qs.filter(
+            submitted_at__lt=now - timedelta(hours=REVIEW_SLA_HOURS)
+        ).count(),
+        "approved_count": sheets.filter(status=ResultSheet.SheetStatus.APPROVED).count(),
+        "published_count": sheets.filter(published_at__isnull=False).count(),
+    }
+
+
+@login_required
+@hod_required
+def hod_review_center(request):
+    """Prioritised HOD review queue with filters and batch approve/reject."""
+    from academics.models import Department
+
+    user = request.user
+    dept, scoped = _hod_review_scope(user)
+
+    status = request.GET.get("status", "submitted")
+    q      = (request.GET.get("q") or "").strip()
+    dept_pk = request.GET.get("dept") or ""
+
+    stats = _awaiting_stats(scoped)
+
+    sheets = scoped.select_related(
+        "offering__course__department",
+        "offering__semester__session",
+        "submitted_by", "approved_by", "published_by",
+    )
+    if status and status != "all":
+        sheets = sheets.filter(status=status)
+    if q:
+        sheets = sheets.filter(
+            Q(offering__course__code__icontains=q)
+            | Q(offering__course__title__icontains=q)
+        )
+    if dept_pk:
+        sheets = sheets.filter(offering__course__department_id=dept_pk)
+
+    queue = list(sheets.order_by("submitted_at", "offering__course__code"))
+    now = timezone.now()
+    for sheet in queue:
+        awaiting = (now - sheet.submitted_at).total_seconds() / 3600 if sheet.submitted_at else 0
+        sheet.awaiting_hours = round(awaiting, 1)
+        sheet.awaiting_days  = int(awaiting // 24)
+        sheet.is_overdue     = awaiting > REVIEW_SLA_HOURS
+
+    return render(request, "teachers/hod_review_center.html", {
+        "page_title":    "HOD Review Center",
+        "dept":          dept,
+        "queue":         queue,
+        "stats":         stats,
+        "status_choices": HOD_REVIEW_STATUSES,
+        "current_status": status,
+        "q":             q,
+        "dept_pk":       dept_pk,
+        "departments":   (
+            Department.objects.order_by("name") if user.is_superuser or getattr(user, "is_admin", False)
+            else Department.objects.none()
+        ),
+        "sla_hours":     REVIEW_SLA_HOURS,
+    })
+
+
+@login_required
+@hod_required
+@require_POST
+def hod_review_batch(request):
+    """Approve or reject multiple submitted result sheets in one action."""
+    action = request.POST.get("action")
+    raw_ids = request.POST.getlist("sheet_ids")
+    note = (request.POST.get("rejection_note") or "").strip()
+
+    if action not in ("approve", "reject"):
+        messages.error(request, "Unknown batch action.")
+        return redirect("teachers:hod_review_center")
+    if not raw_ids:
+        messages.warning(request, "No result sheets were selected.")
+        return redirect("teachers:hod_review_center")
+
+    sheets = ResultSheet.objects.filter(pk__in=raw_ids)
+    ok_count = 0
+    for sheet in sheets:
+        if action == "approve":
+            ok, msg = _approve_sheet(sheet, request.user)
+        else:
+            ok, msg = _reject_sheet(sheet, request.user, note)
+        if ok:
+            ok_count += 1
+        else:
+            messages.warning(
+                request, f"{sheet.offering.course.code}: {msg}"
+            )
+
+    if action == "approve":
+        messages.success(
+            request,
+            f"{ok_count} result sheet(s) approved and locked.",
+        )
+    else:
+        messages.success(
+            request,
+            f"{ok_count} result sheet(s) rejected and returned for correction.",
+        )
+    return redirect("teachers:hod_review_center")
 
 
 @login_required
@@ -1053,6 +1401,7 @@ def result_sheet_view(request, sheet_pk):
         "results":    results,
         "is_teacher": is_teacher,
         "is_admin":   is_admin,
+        "can_publish": sheet.can_publish(user),
     })
 
 

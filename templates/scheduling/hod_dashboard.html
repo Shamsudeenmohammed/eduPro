@@ -3,6 +3,36 @@
 {% block title %}HOD Dashboard · eduPro{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="/static/css/scheduling.css">
+<style>
+  /* KPI stat cards */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+  .kpi:hover{border-color:var(--border2, rgba(255,255,255,.14));transform:translateY(-1px)}
+  .kpi-accent{position:absolute;top:0;left:0;right:0;height:3px}
+  .kpi-val{font-size:30px;font-weight:700;letter-spacing:-.5px;line-height:1;color:var(--text);margin:14px 0 6px;font-family:var(--font-display, var(--font-body))}
+  .kpi-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+  @media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.kpi-grid{grid-template-columns:1fr}}
+
+  /* Two-column body */
+  .body-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;margin-bottom:16px}
+  @media(max-width:1100px){.body-grid{grid-template-columns:1fr}}
+
+  /* Status lists (needs sign-off / published / upcoming) */
+  .status-list{list-style:none;margin:0}
+  .status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px;transition:background .15s}
+  .status-row:last-child{border-bottom:none}
+  .status-row:hover{background:var(--surface2)}
+  .s-label{color:var(--text);font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+  .s-val{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .s-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .pill-green{background:rgba(52,211,153,.15);color:var(--success)}
+  .pill-amber{background:rgba(245,158,11,.15);color:var(--accent)}
+
+  /* Badge variants used by the upcoming feed */
+  .badge-success{background:rgba(52,211,153,.15);color:var(--success)}
+  .badge-danger{background:rgba(248,113,113,.15);color:var(--danger)}
+</style>
 {% endblock %}
 {% block breadcrumb %}HOD Dashboard{% endblock %}
 {% block content %}

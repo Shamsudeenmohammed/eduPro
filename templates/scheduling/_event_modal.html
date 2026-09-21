@@ -22,7 +22,7 @@
       <span class="gen-key">When</span>
       <span class="gen-val">
         {{ ev.start_date|date:"D, d M Y" }}{% if ev.end_date and ev.end_date != ev.start_date %} → {{ ev.end_date|date:"D, d M Y" }}{% endif %}
-        {% if ev.all_day %}<em class="gen-em">all day</em>{% elif ev.start_time %} · {{ ev.start_time|time:"H:i" }}{% if ev.end_time %}–{{ ev.end_time|time:"H:i" }}{% endif %}{% endif %}
+        {% if ev.all_day %}<em class="gen-em">all day</em>{% elif ev.start_time %} · {{ ev.start_time|time:"g:i A" }}{% if ev.end_time %}–{{ ev.end_time|time:"g:i A" }}{% endif %}{% endif %}
       </span>
     </div>
     {% if ev.offering %}

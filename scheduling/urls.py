@@ -87,6 +87,14 @@ urlpatterns = [
          name="schedule_unpublish"),
     path("schedule/<int:pk>/archive/", views.schedule_archive,
          name="schedule_archive"),
+    path("schedule/<int:pk>/unarchive/", views.schedule_unarchive,
+         name="schedule_unarchive"),
+    path("schedule/<int:pk>/clear-unplaced/", views.schedule_clear_unplaced,
+         name="schedule_clear_unplaced"),
+    path("schedule/<int:pk>/edit/", views.schedule_edit,
+         name="schedule_edit"),
+    path("schedule/<int:pk>/delete/", views.schedule_delete,
+         name="schedule_delete"),
 
     # ── personal timetables ───────────────────────────────────────────
     path("my-timetable/", views.my_timetable, name="my_timetable"),

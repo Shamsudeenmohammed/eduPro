@@ -3,6 +3,53 @@
 {% block title %}My Timetable · eduPro{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="/static/css/scheduling.css">
+<style>
+  .tt-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; font-size: 12px; color: var(--sch-ink-2); }
+  .tt-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .tt-legend .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .sw-lecture { background: rgba(47, 212, 167, 0.35); border: 1px solid rgba(47, 212, 167, 0.9); }
+  .sw-lab     { background: rgba(91, 157, 255, 0.35); border: 1px solid rgba(91, 157, 255, 0.9); }
+  .sw-exam    { background: rgba(255, 107, 129, 0.35); border: 1px solid rgba(255, 107, 129, 0.9); }
+
+  .tt-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  .tt-day { min-width: 0; }
+  .tt-day-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 8px 10px; border: 1px solid var(--sch-line); border-radius: var(--sch-r);
+    background: var(--sch-panel);
+  }
+  .tt-day-name {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--sch-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tt-day-count {
+    font-size: 10.5px; font-weight: 700; color: var(--sch-ink-2); background: var(--sch-panel-3);
+    border-radius: 999px; padding: 2px 8px; font-variant-numeric: tabular-nums; flex: none;
+  }
+  .tt-day-body { display: flex; flex-direction: column; gap: 6px; padding: 8px 0 2px; min-height: 58px; }
+  .tt-empty { font-size: 11px; color: var(--sch-ink-3); text-align: center; padding: 16px 0 8px; }
+
+  .tt-day .tblock {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 8px 10px;
+  }
+  .tt-day .tcourse { font-size: 11px; font-weight: 700; color: var(--sch-ink); }
+  .tt-day .tmeta {
+    margin-top: 0; padding-top: 5px;
+    border-top: 1px dashed var(--sch-line);
+    font-family: var(--mono); font-size: 10px; letter-spacing: .01em;
+    color: var(--sch-ink-2);
+  }
+
+  .tt-day.today .tt-day-head { border-color: var(--sch-teal); background: var(--teal-dim); }
+  .tt-day.today .tt-day-count { color: var(--sch-bg); background: var(--sch-teal); }
+
+  @media (max-width: 1100px) { .tt-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 700px)  {
+    .tt-grid { grid-template-columns: 1fr; }
+    .tt-day-body { min-height: 0; }
+  }
+</style>
 {% endblock %}
 {% block content %}
 <div class="page-header">
@@ -14,26 +61,33 @@
 
 <div class="card">
   <div class="card-header"><span class="card-title">Week View</span></div>
-  <div class="card-body" style="padding:14px">
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
+  <div class="card-body" style="padding:16px 18px">
+    <div class="tt-legend">
+      <span class="lg"><span class="sw sw-lecture"></span>Lecture</span>
+      <span class="lg"><span class="sw sw-lab"></span>Lab</span>
+      <span class="lg"><span class="sw sw-exam"></span>Exam</span>
+    </div>
+    {% if data.days %}
+    <div class="tt-grid">
       {% for d in data.days %}
-      <div style="min-width:0">
-        <div class="status-row" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--r)">
-          <span class="s-label" style="font-weight:700">{{ d.label }}</span>
-          <span class="s-val">{{ d.entries|length }}</span>
+      <div class="tt-day{% if d.weekday == data.today %} today{% endif %}">
+        <div class="tt-day-head">
+          <span class="tt-day-name">{{ d.label|slice:":3" }}</span>
+          <span class="tt-day-count">{{ d.entries|length }}</span>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;padding:6px 2px">
+        <div class="tt-day-body">
           {% for e in d.entries %}
             {% entry_block e %}
           {% empty %}
-            <span style="font-size:11px;color:var(--tx3);text-align:center">—</span>
+            <span class="tt-empty">—</span>
           {% endfor %}
         </div>
       </div>
-      {% empty %}
-      <div style="color:var(--tx3);font-size:12px">No timetable entries.</div>
       {% endfor %}
     </div>
+    {% else %}
+    <p style="color:var(--sch-ink-3);font-size:13px">No timetable entries yet.</p>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

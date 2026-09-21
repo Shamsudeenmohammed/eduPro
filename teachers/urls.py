@@ -52,10 +52,15 @@ urlpatterns = [
     path("results/<int:sheet_pk>/submit/",             views.result_submit,      name="result_submit"),
     path("results/<int:sheet_pk>/approve/",            views.result_approve,     name="result_approve"),
     path("results/<int:sheet_pk>/reject/",             views.result_reject,      name="result_reject"),
+    path("results/<int:sheet_pk>/publish/",            views.result_publish,     name="result_publish"),
+    path("results/<int:sheet_pk>/revise/",             views.result_revise,      name="result_revise"),
+    path("results/<int:sheet_pk>/versions/",           views.result_version_history, name="result_version_history"),
     path("results/<int:sheet_pk>/view/",               views.result_sheet_view,  name="result_sheet_view"),
 
     # HOD department results
     path("hod/results/",                               views.hod_result_sheets,  name="hod_result_sheets"),
+    path("hod/review-center/",                         views.hod_review_center,  name="hod_review_center"),
+    path("hod/review-center/batch/",                   views.hod_review_batch,   name="hod_review_batch"),
 
     # Student performance
     path("courses/<int:offering_pk>/students/<int:student_pk>/performance/",

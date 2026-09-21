@@ -38,7 +38,7 @@
     {% for slot in slots %}
       {% if slot.day == day %}
       <tr>
-        <td><span class="code-tag">{{ slot.start_time|time:"H:i" }}–{{ slot.end_time|time:"H:i" }}</span></td>
+        <td><span class="code-tag">{{ slot.start_time|time:"g:i A" }}–{{ slot.end_time|time:"g:i A" }}</span></td>
         <td>{{ slot.label|default:"—" }}</td>
         <td>{% if slot.is_default %}<span class="badge badge-blue">Default</span>{% else %}<span class="badge badge-inactive">Custom</span>{% endif %}</td>
         <td style="text-align:right">

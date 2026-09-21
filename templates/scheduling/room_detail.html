@@ -32,7 +32,7 @@
         <td>{{ e.schedule.name }}</td>
         <td><span class="code-tag">{{ e.course.code }}</span></td>
         <td>{{ e.get_day_display }}</td>
-        <td>{{ e.start_time }}–{{ e.end_time }}</td>
+        <td>{{ e.start_time|time:"g:i A" }}–{{ e.end_time|time:"g:i A" }}</td>
         <td>{{ e.get_session_type_display }}</td>
       </tr>
     {% empty %}

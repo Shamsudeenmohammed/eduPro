@@ -1,4 +1,4 @@
-{% load role_tags academics_tags %}
+{% load static role_tags academics_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -187,6 +187,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
 .empty-state a{color:var(--accent);font-weight:600}
 {% include "components/sidebar_collapse.css.html" %}
 </style>
+<link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 </head>
 <body>
 

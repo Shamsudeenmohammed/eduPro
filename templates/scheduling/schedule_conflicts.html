@@ -49,7 +49,7 @@
         <td style="vertical-align:top">
           <span class="code-tag">{{ r.entry.course.code }}</span>
           <div style="font-size:11px;color:var(--tx2);margin-top:4px">
-            {{ r.entry.get_day_display }} · {{ r.entry.start_time|time:"H:i" }}–{{ r.entry.end_time|time:"H:i" }}
+            {{ r.entry.get_day_display }} · {{ r.entry.start_time|time:"g:i A" }}–{{ r.entry.end_time|time:"g:i A" }}
           </div>
         </td>
         <td style="vertical-align:top">

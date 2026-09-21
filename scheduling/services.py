@@ -579,6 +579,81 @@ def archive_schedule(schedule, actor, note=""):
           changes={"action": "archive", "note": note})
 
 
+def unarchive_schedule(schedule, actor, note=""):
+    """Restore an archived schedule back to DRAFT for rework."""
+    if schedule.status != ScheduleStatus.ARCHIVED:
+        raise ValueError(_("Only archived schedules can be unarchived."))
+    schedule.status = ScheduleStatus.DRAFT
+    schedule.is_current = False
+    schedule.save()
+    audit(ACTIONS["UPDATE"], actor, instance=schedule,
+          changes={"action": "unarchive", "note": note})
+
+
+def clear_unplaced(schedule, actor, note=""):
+    """Reset the unplaced counter after manual resolution of unplaced sessions.
+
+    Use this when unplaced requirements have been addressed (e.g. via manual
+    entry addition, offering removal, or constraint relaxation) but the
+    schedule was not regenerated.
+    """
+    if schedule.unplaced == 0:
+        raise ValueError(_("No unplaced sessions to clear."))
+    old_count = schedule.unplaced
+    schedule.unplaced = 0
+    schedule.save(update_fields=["unplaced", "updated_at"])
+    audit(ACTIONS["UPDATE"], actor, instance=schedule,
+          changes={"action": "clear_unplaced", "old_count": old_count, "note": note})
+
+
+_EDITABLE = (
+    ScheduleStatus.DRAFT,
+    ScheduleStatus.GENERATED,
+    ScheduleStatus.REJECTED,
+    ScheduleStatus.CORRECTION_REQUIRED,
+)
+
+
+def update_schedule(schedule, actor, data, note=""):
+    """Update editable metadata (name / semester / type / notes / availability)."""
+    if schedule.status not in _EDITABLE:
+        raise ValueError(
+            _("A %s schedule cannot be edited — unpublish, unarchive or request "
+              "a revision first.")
+            % schedule.get_status_display()
+        )
+    changed = {}
+    allowed = ("name", "semester", "schedule_type",
+               "consider_room_availability", "notes")
+    for field in allowed:
+        if field in data and getattr(schedule, field) != data[field]:
+            changed[field] = getattr(schedule, field)
+            setattr(schedule, field, data[field])
+    if changed:
+        schedule.save(update_fields=list(changed) + ["updated_at"])
+        audit(ACTIONS["UPDATE"], actor, instance=schedule,
+              changes={"action": "update", "previous": changed, "note": note})
+    return schedule
+
+
+def delete_schedule(schedule, actor, note=""):
+    """Permanently delete a schedule and its cascade (entries, versions,
+    HOD approvals, generation jobs).
+
+    A published schedule is withdrawn first so its timetable stops being
+    shown, then the row itself (with history) is removed.
+    """
+    name = schedule.name
+    with transaction.atomic():
+        if schedule.is_published:
+            schedule.is_current = False
+            schedule.status = ScheduleStatus.DRAFT
+            schedule.save(update_fields=["is_current", "status", "updated_at"])
+        audit(ACTIONS["DELETE"], actor, instance=schedule,
+              changes={"action": "delete", "name": name, "note": note})
+        schedule.delete()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Entries (manual / locked)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -831,7 +906,8 @@ def timetable_for_user(user, schedule=None):
         schedule = qs.order_by("-semester__session__start_date").first()
 
     if schedule is None:
-        return {"schedule": None, "days": []}
+        return {"schedule": None, "days": [],
+                "today": timezone.localdate().isoweekday() - 1}
 
     qs = ScheduleEntry.objects.filter(schedule=schedule)
     if user.role == "student":
@@ -864,7 +940,8 @@ def timetable_for_user(user, schedule=None):
          "entries": [e for e in entries if e.day == i]}
         for i in range(7)
     ]
-    return {"schedule": schedule, "days": days}
+    return {"schedule": schedule, "days": days,
+            "today": timezone.localdate().isoweekday() - 1}
 
 
 def health_check(institution):

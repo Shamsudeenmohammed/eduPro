@@ -17,6 +17,7 @@
   <span class="nav-icon">✅</span><span class="menu-title">Department</span><span class="menu-arrow" aria-hidden="true">▾</span>
 </button>
 <div class="sidebar-submenu" id="sub-department">
+  <a href="{% url 'teachers:hod_review_center' %}" class="nav-item {% if request.resolver_match.url_name == 'hod_review_center' or request.resolver_match.url_name == 'hod_review_batch' %}active{% endif %}"><span>Review Center</span></a>
   <a href="{% url 'teachers:hod_result_sheets' %}" class="nav-item {% if request.resolver_match.url_name == 'hod_result_sheets' %}active{% endif %}"><span>HOD Approvals</span></a>
 </div>
 {% endif %}
@@ -26,7 +27,6 @@
 </button>
 <div class="sidebar-submenu" id="sub-services">
   <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.url_name == 'announcements' %}active{% endif %}"><span>Announcements</span></a>
-  <a href="{% url 'operations:timetable' %}" class="nav-item {% if request.resolver_match.url_name == 'timetable' %}active{% endif %}"><span>Timetable</span></a>
   <a href="{% url 'hostel:hostel' %}" class="nav-item {% if request.resolver_match.url_name == 'hostel' %}active{% endif %}"><span>Hostel</span></a>
   <a href="{% url 'feedback:submit' %}" class="nav-item {% if request.resolver_match.url_name == 'submit' %}active{% endif %}"><span>Feedback</span></a>
 </div>

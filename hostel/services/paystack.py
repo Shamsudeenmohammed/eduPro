@@ -42,6 +42,7 @@ class PaystackService:
         return {
             "Authorization": "Bearer " + (settings.PAYSTACK_SECRET_KEY or ""),
             "Content-Type": "application/json",
+            "User-Agent": "EduProPayments/1.0 (+https://edupro.local)",
         }
 
     @classmethod
@@ -61,7 +62,7 @@ class PaystackService:
                 detail = json.loads(exc.read().decode("utf-8") or b"{}")
                 msg = detail.get("message") or "Paystack rejected the request."
             except Exception:
-                msg = "Paystack request failed."
+                msg = f"Paystack returned HTTP {exc.code}."
             logger.error("Paystack HTTP %s %s -> %s: %s", method, path, exc.code, msg)
             raise PaystackError(msg) from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:

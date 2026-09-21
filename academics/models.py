@@ -14,6 +14,8 @@ Approval flow:
     → admin.finalize()      → FINALIZED      [sheet is immutable]
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -844,3 +846,288 @@ class ResultSheet(TimeStampedModel):
                 _("A locked result sheet already exists for this offering.")
             )
         return sheet, created
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GRADING CONFIGURATION  (Phase 2 — central academic engine)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class GradingScheme(TimeStampedModel):
+    """
+    Configurable grading scale (e.g. "standard" 100-point A–F 4.0 scale).
+
+    Result sheets reference a scheme by name; the central academic engine
+    (academics.services) resolves scores to letter grades and grade points
+    through the scheme's grade boundaries.
+    """
+
+    name = models.CharField(
+        _("scheme name"), max_length=30, unique=True,
+        help_text=_("Stable machine key, e.g. 'standard'."),
+    )
+    label = models.CharField(_("display label"), max_length=80)
+    ca_weight = models.PositiveSmallIntegerField(
+        _("CA weight (%)"), default=30,
+        validators=[MaxValueValidator(100)],
+    )
+    exam_weight = models.PositiveSmallIntegerField(
+        _("exam weight (%)"), default=70,
+        validators=[MaxValueValidator(100)],
+    )
+    is_default = models.BooleanField(
+        _("default scheme"), default=False,
+        help_text=_("Scheme used when no specific scheme is requested."),
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+
+    class Meta:
+        verbose_name = _("grading scheme")
+        verbose_name_plural = _("grading schemes")
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.label or self.name
+
+
+class GradeBoundary(TimeStampedModel):
+    """
+    One letter-grade band within a GradingScheme.
+
+    A band is inclusive of `min_score` and exclusive of `max_score`;
+    a null `max_score` means "no upper bound" (the top band).
+    """
+
+    scheme = models.ForeignKey(
+        GradingScheme, on_delete=models.CASCADE,
+        related_name="boundaries", verbose_name=_("scheme"),
+    )
+    grade = models.CharField(
+        _("letter grade"), max_length=3, db_index=True,
+        help_text=_("e.g. A+, A, B-, F"),
+    )
+    min_score = models.DecimalField(
+        _("min score (inclusive)"), max_digits=5, decimal_places=2,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    max_score = models.DecimalField(
+        _("max score (exclusive)"), max_digits=5, decimal_places=2,
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text=_("Leave blank for the top band (no upper bound)."),
+    )
+    grade_point = models.DecimalField(
+        _("grade point"), max_digits=3, decimal_places=1,
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+
+    class Meta:
+        verbose_name = _("grade boundary")
+        verbose_name_plural = _("grade boundaries")
+        ordering = ["scheme", "-min_score"]
+        unique_together = [("scheme", "grade")]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(max_score__isnull=True)
+                | models.Q(min_score__lt=models.F("max_score")),
+                name="boundary_min_lt_max",
+            ),
+        ]
+
+    def __str__(self):
+        upper = str(self.max_score) if self.max_score is not None else "\u221e"
+        return f"{self.grade} [{self.min_score}\u2013{upper}) \u2192 {self.grade_point}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROGRESSION & GRADUATION ENGINE  (new)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ProgressionPolicy(TimeStampedModel):
+    """
+    Configurable rules for annual academic progression and graduation.
+
+    A policy with `program = NULL` is the institution-wide default; a
+    per-program policy overrides it when present.
+    """
+
+    program = models.OneToOneField(
+        Program, on_delete=models.CASCADE,
+        null=True, blank=True, related_name="progression_policy",
+        verbose_name=_("program"),
+        help_text=_("Leave blank for the institution-wide default policy."),
+    )
+    min_cgpa_to_advance = models.DecimalField(
+        _("minimum CGPA to advance"), max_digits=3, decimal_places=2,
+        default=Decimal("1.00"),
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    probation_threshold = models.DecimalField(
+        _("probation threshold"), max_digits=3, decimal_places=2,
+        default=Decimal("0.50"),
+        help_text=_("Session GPA below this places the student on probation."),
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    withdraw_threshold = models.DecimalField(
+        _("withdrawal threshold"), max_digits=3, decimal_places=2,
+        default=Decimal("0.20"),
+        help_text=_("Session GPA below this triggers withdrawal."),
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    max_failed_per_year = models.PositiveSmallIntegerField(
+        _("max failed courses per year"), default=2,
+        help_text=_("More failed courses than this forces a repeat level."),
+    )
+    min_credits_per_year = models.PositiveSmallIntegerField(
+        _("minimum credits per year"), default=30,
+        help_text=_("Minimum session credit load expected. Used for diagnostics."),
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+
+    objects     = ActiveManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        verbose_name        = _("progression policy")
+        verbose_name_plural = _("progression policies")
+        ordering = ["program"]
+
+    def __str__(self):
+        label = self.program.code if self.program else "Global default"
+        return f"Progression policy — {label}"
+
+
+class StudentStatus(TimeStampedModel):
+    """
+    One annual academic-standing decision per student per academic session.
+    """
+
+    class Decision(models.TextChoices):
+        ADVANCE    = "advance",    _("Advance")
+        PROBATION  = "probation",  _("Probation")
+        REPEAT     = "repeat",     _("Repeat level")
+        WITHDRAWN  = "withdrawn",  _("Withdrawn")
+        DEFERRED   = "deferred",   _("Deferred")
+        COMPLETED  = "completed",  _("Completed / graduation eligible")
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="academic_statuses", verbose_name=_("student"),
+        limit_choices_to={"role": "student"},
+    )
+    session = models.ForeignKey(
+        AcademicSession, on_delete=models.CASCADE,
+        related_name="student_statuses", verbose_name=_("academic session"),
+    )
+    level_at_decision = models.ForeignKey(
+        Level, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="status_entries",
+        verbose_name=_("level at decision"),
+    )
+    decision = models.CharField(
+        _("decision"), max_length=12,
+        choices=Decision.choices, default=Decision.ADVANCE,
+    )
+    session_gpa = models.DecimalField(
+        _("session GPA"), max_digits=3, decimal_places=2,
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    cgpa_at_decision = models.DecimalField(
+        _("CGPA at decision"), max_digits=4, decimal_places=2,
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    credits_earned = models.PositiveSmallIntegerField(_("session credits earned"), default=0)
+    next_level = models.ForeignKey(
+        Level, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="advanced_level_students",
+        verbose_name=_("next level"),
+    )
+    reasons = models.TextField(_("reasons"), blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="status_decisions_made",
+        verbose_name=_("decided by"),
+    )
+    reviewed_at = models.DateTimeField(_("decided at"), null=True, blank=True)
+
+    class Meta:
+        verbose_name        = _("student academic status")
+        verbose_name_plural = _("student academic statuses")
+        ordering = ["-session__start_date", "student__last_name"]
+        unique_together = [("student", "session")]
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} — {self.session.name}: {self.get_decision_display()}"
+
+
+class GraduationRecord(TimeStampedModel):
+    """
+    One award record per student-program-session. Tracks eligibility,
+    award classification, and the review/award workflow.
+    """
+
+    class Status(models.TextChoices):
+        PENDING   = "pending",   _("Pending verification")
+        CONFIRMED = "confirmed", _("Confirmed eligible")
+        REJECTED  = "rejected",  _("Rejected")
+        AWARDED   = "awarded",   _("Degree awarded")
+
+    class AwardClass(models.TextChoices):
+        FIRST       = "first",        _("First Class Honours")
+        SECOND_UP   = "second_upper", _("Second Class Upper Division")
+        SECOND_LO   = "second_lower", _("Second Class Lower Division")
+        THIRD       = "third",        _("Third Class")
+        PASS        = "pass",         _("Pass / Ordinary")
+        NOT_AWARDED = "not_awarded",  _("Not awarded")
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="graduation_records", verbose_name=_("student"),
+        limit_choices_to={"role": "student"},
+    )
+    program = models.ForeignKey(
+        Program, on_delete=models.CASCADE,
+        related_name="graduation_records", verbose_name=_("program"),
+    )
+    session = models.ForeignKey(
+        AcademicSession, on_delete=models.CASCADE,
+        related_name="graduation_records", verbose_name=_("completing session"),
+    )
+    level_at_graduation = models.ForeignKey(
+        Level, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="graduations",
+        verbose_name=_("level at graduation"),
+    )
+    cgpa = models.DecimalField(
+        _("CGPA at graduation"), max_digits=4, decimal_places=2,
+        null=True, blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(4)],
+    )
+    total_credits = models.PositiveSmallIntegerField(_("total credits earned"), default=0)
+    eligible = models.BooleanField(_("eligible"), default=False)
+    award_class = models.CharField(
+        _("award class"), max_length=14,
+        choices=AwardClass.choices, blank=True,
+    )
+    status = models.CharField(
+        _("status"), max_length=10,
+        choices=Status.choices, default=Status.PENDING,
+    )
+    reasons = models.TextField(_("reasons"), blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="graduation_reviews",
+        verbose_name=_("reviewed by"),
+    )
+    reviewed_at = models.DateTimeField(_("reviewed at"), null=True, blank=True)
+
+    class Meta:
+        verbose_name        = _("graduation record")
+        verbose_name_plural = _("graduation records")
+        ordering = ["-session__start_date", "student__last_name"]
+        unique_together = [("student", "program", "session")]
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} — {self.program.code} — {self.get_status_display()}"

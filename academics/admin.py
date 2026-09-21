@@ -19,12 +19,17 @@ from .models import (
     Department,
     Enrolment,
     Faculty,
+    GradeBoundary,
+    GradingScheme,
+    GraduationRecord,
     Institution,
     Level,
     Program,
+    ProgressionPolicy,
     ResultSheet,
     Semester,
     StudentProfile,
+    StudentStatus,
     TeacherDepartment,
 )
 
@@ -81,6 +86,13 @@ class TeacherDepartmentInline(admin.TabularInline):
     model = TeacherDepartment
     extra = 0
     fields = ("department", "is_primary", "joined_date", "is_active")
+
+
+class GradeBoundaryInline(admin.TabularInline):
+    model = GradeBoundary
+    extra = 1
+    fields = ("grade", "min_score", "max_score", "grade_point", "is_active")
+    ordering = ("-min_score",)
 
 
 # ── Admin actions ──────────────────────────────────────────────────────────
@@ -240,7 +252,7 @@ class StudentProfileAdmin(admin.ModelAdmin):
         "student__email", "student__first_name", "student__last_name",
         "student_number",
     )
-    raw_id_fields = ("student",)
+    autocomplete_fields = ("student",)
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(
@@ -312,4 +324,74 @@ class ResultSheetAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related(
             "offering__course", "offering__semester__session",
             "department", "submitted_by",
+        )
+
+
+@admin.register(GradingScheme)
+class GradingSchemeAdmin(admin.ModelAdmin):
+    list_display = ("name", "label", "ca_weight", "exam_weight", "is_default", "is_active")
+    list_filter  = ("is_default", "is_active")
+    search_fields = ("name", "label")
+    inlines      = [GradeBoundaryInline]
+
+
+@admin.register(GradeBoundary)
+class GradeBoundaryAdmin(admin.ModelAdmin):
+    list_display = ("scheme", "grade", "min_score", "max_score", "grade_point", "is_active")
+    list_filter  = ("scheme", "is_active")
+    search_fields = ("scheme__name", "grade")
+    ordering     = ("scheme", "-min_score")
+
+
+@admin.register(ProgressionPolicy)
+class ProgressionPolicyAdmin(admin.ModelAdmin):
+    list_display = (
+        "program", "min_cgpa_to_advance", "probation_threshold",
+        "withdraw_threshold", "max_failed_per_year", "min_credits_per_year",
+        "is_active",
+    )
+    list_filter  = ("is_active",)
+    search_fields = ("program__code", "program__name")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("program")
+
+
+@admin.register(StudentStatus)
+class StudentStatusAdmin(admin.ModelAdmin):
+    list_display = (
+        "student", "session", "decision", "session_gpa",
+        "cgpa_at_decision", "credits_earned", "next_level", "reviewed_by",
+    )
+    list_filter  = ("decision", "session", "level_at_decision")
+    search_fields = (
+        "student__first_name", "student__last_name", "student__email",
+        "student__username",
+    )
+    date_hierarchy = "reviewed_at"
+    raw_id_fields = ("student", "level_at_decision", "next_level")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            "student", "session", "level_at_decision", "next_level", "reviewed_by",
+        )
+
+
+@admin.register(GraduationRecord)
+class GraduationRecordAdmin(admin.ModelAdmin):
+    list_display = (
+        "student", "program", "session", "status", "eligible",
+        "award_class", "cgpa", "total_credits", "reviewed_by",
+    )
+    list_filter  = ("status", "eligible", "award_class", "program", "session")
+    search_fields = (
+        "student__first_name", "student__last_name", "student__email",
+        "student__username", "program__code",
+    )
+    date_hierarchy = "reviewed_at"
+    raw_id_fields = ("student", "level_at_graduation")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            "student", "program", "session", "level_at_graduation", "reviewed_by",
         )

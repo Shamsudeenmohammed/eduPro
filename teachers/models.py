@@ -777,6 +777,31 @@ class ResultSheet(TimeStampedModel):
     submitted_at    = models.DateTimeField(_("submitted at"), null=True, blank=True)
     approved_at     = models.DateTimeField(_("approved at"), null=True, blank=True)
     rejection_note  = models.TextField(_("rejection note"), blank=True)
+    # ── Publication / revision (Phase 3 — unified result lifecycle) ──────────
+    revision        = models.PositiveSmallIntegerField(
+        _("revision"), default=1,
+        help_text=_("Publication round. Bumped each time a published sheet is revised."),
+    )
+    published_by    = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="result_sheets_published",
+        verbose_name=_("published by"),
+    )
+    published_at    = models.DateTimeField(_("published at"), null=True, blank=True)
+    last_revision_note = models.TextField(
+        _("last revision note"), blank=True,
+        help_text=_("Mandatory reason supplied when a published sheet was returned for correction."),
+    )
+    last_revised_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="result_sheets_revised",
+        verbose_name=_("last revised by"),
+    )
+    last_revised_at = models.DateTimeField(_("last revised at"), null=True, blank=True)
 
     class Meta:
         verbose_name        = _("result sheet")
@@ -806,6 +831,30 @@ class ResultSheet(TimeStampedModel):
         return CourseAllocation.objects.filter(
             offering=self.offering, teacher=user, is_active=True
         ).exists()
+
+    @property
+    def is_published(self):
+        """A published sheet is approved and has a publication timestamp."""
+        return (
+            self.status == self.SheetStatus.APPROVED
+            and self.published_at is not None
+        )
+
+    def can_publish(self, user):
+        """Return True if `user` may publish/revise this sheet (board roles)."""
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        if user.is_admin or user.is_superuser:
+            return True
+        from accounts.models import StaffResponsibility
+        return (
+            user.has_responsibility(StaffResponsibility.EXAMINATIONS_OFFICER)
+            or user.has_responsibility(StaffResponsibility.DEAN)
+        )
+
+    def can_revise(self, user):
+        """Published sheets can only be returned to draft by a board member."""
+        return self.is_published and self.can_publish(user)
 
 
 class GradeChoice(models.TextChoices):
@@ -943,20 +992,124 @@ class StudentResult(TimeStampedModel):
 
     def compute_total(self):
         """
-        Compute weighted total from ca_score and exam_score.
+        Compute weighted total from ca_score and exam_score, then derive
+        letter grade and grade point via the central academic engine.
         Call save() after to persist.
         """
-        rs = self.result_sheet
+        from academics.services import compute_result
         if self.ca_score is None and self.exam_score is None:
             return
-        ca_component   = (float(self.ca_score or 0) * rs.ca_weight) / 100
-        exam_component = (float(self.exam_score or 0) * rs.exam_weight) / 100
-        total = round(ca_component + exam_component, 2)
-        self.total_score = total
-        self.grade       = compute_grade(total)
-        self.grade_point = GRADE_POINTS.get(self.grade, 0.0)
+        compute_result(self)
 
     def save(self, *args, **kwargs):
         if self.ca_score is not None or self.exam_score is not None:
             self.compute_total()
         super().save(*args, **kwargs)
+
+
+class ResultVersion(TimeStampedModel):
+    """
+    Immutable snapshot of a ResultSheet at a given publication round.
+
+    Revision history:
+      * every publish captures one ResultVersion for the sheet.
+      * a published sheet is immutable; returning it to draft (revision)
+        bumps ResultSheet.revision so the next publish creates the next version.
+      * `results` holds the full student-marks snapshot as JSON.
+    """
+
+    result_sheet = models.ForeignKey(
+        ResultSheet,
+        on_delete=models.CASCADE,
+        related_name="versions",
+        verbose_name=_("result sheet"),
+    )
+    revision = models.PositiveIntegerField(
+        _("revision"), default=1,
+    )
+    sheet_status = models.CharField(
+        _("sheet status at snapshot"), max_length=12, blank=True,
+    )
+    results = models.JSONField(_("results snapshot"), default=list, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="result_versions_created",
+        verbose_name=_("created by"),
+    )
+    note = models.TextField(
+        _("revision note"), blank=True,
+        help_text=_("Reason supplied for this publication/revision round."),
+    )
+
+    class Meta:
+        verbose_name = _("result version")
+        verbose_name_plural = _("result versions")
+        ordering = ["-revision"]
+        unique_together = [("result_sheet", "revision")]
+
+    def __str__(self):
+        course = self.result_sheet.offering.course.code
+        return f"Revision {self.revision} — {course} ({self.created_at:%d %b %Y})"
+
+    @classmethod
+    def snapshot_records(cls, sheet):
+        """Serialize the sheet's current StudentResults into plain dicts."""
+        records = []
+        for sr in sheet.student_results.select_related(
+            "enrolment__student", "enrolment__student__academic_profile",
+        ):
+            profile = getattr(sr.enrolment.student, "academic_profile", None)
+            records.append({
+                "student_id": sr.enrolment.student_id,
+                "student_number": getattr(profile, "student_number", ""),
+                "student_name": sr.enrolment.student.get_full_name(),
+                "ca_score": str(sr.ca_score) if sr.ca_score is not None else None,
+                "exam_score": str(sr.exam_score) if sr.exam_score is not None else None,
+                "total_score": str(sr.total_score) if sr.total_score is not None else None,
+                "grade": sr.grade,
+                "grade_point": str(sr.grade_point) if sr.grade_point is not None else None,
+                "is_absent": bool(sr.is_absent),
+                "remark": sr.remark,
+            })
+        return records
+
+    @classmethod
+    def capture(cls, sheet, actor=None, note=""):
+        """
+        Snapshot the sheet's current results as its latest revision.
+
+        Returns (version, created).  Idempotent per (sheet, revision).
+        """
+        revision = sheet.revision or 1
+        return cls.objects.get_or_create(
+            result_sheet=sheet,
+            revision=revision,
+            defaults={
+                "sheet_status": sheet.status,
+                "results": cls.snapshot_records(sheet),
+                "created_by": actor,
+                "note": note,
+            },
+        )
+
+    def restore_into_sheet(self):
+        """
+        Write this snapshot's values back onto the sheet's StudentResults.
+        Used when re-entering results after a revision, or on admin override.
+        """
+        for record in self.results:
+            sr = self.result_sheet.student_results.filter(
+                enrolment__student_id=record.get("student_id")
+            ).first()
+            if sr is None:
+                continue
+            sr.ca_score = record.get("ca_score")
+            sr.exam_score = record.get("exam_score")
+            sr.total_score = record.get("total_score")
+            sr.grade = record.get("grade") or ""
+            sr.grade_point = record.get("grade_point")
+            sr.is_absent = bool(record.get("is_absent", False))
+            sr.remark = record.get("remark", "")
+            sr.save()

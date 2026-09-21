@@ -48,7 +48,7 @@
       <tr>
         <td>{{ e.get_day_display }}</td>
         <td><span class="code-tag">{{ e.course.code }}</span> {{ e.course.title }}</td>
-        <td>{{ e.start_time|time:"H:i" }}–{{ e.end_time|time:"H:i" }}</td>
+        <td>{{ e.start_time|time:"g:i A" }}–{{ e.end_time|time:"g:i A" }}</td>
         <td>{% firstof e.room_name e.room "—" %}</td>
         <td>{% firstof e.lecturer_name e.lecturer "—" %}</td>
         <td>{{ e.get_session_type_display }}</td>

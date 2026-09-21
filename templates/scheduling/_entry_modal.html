@@ -17,7 +17,7 @@
       <span class="gen-key">When</span>
       <span class="gen-val">
         {% if occ_date %}{{ occ_date|date:"D, d M Y" }} · {% endif %}{{ entry.get_day_display }}s
-        {{ entry.start_time|time:"H:i" }}–{{ entry.end_time|time:"H:i" }}
+        {{ entry.start_time|time:"g:i A" }}–{{ entry.end_time|time:"g:i A" }}
       </span>
     </div>
     {% if entry.lecturer or entry.lecturer_name %}

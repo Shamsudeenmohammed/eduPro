@@ -43,6 +43,14 @@ def entry_block(entry):
     return mark_safe(
         f'<div class="tblock tblock-{entry.session_type}">'
         f'<span class="tcourse">{entry.course.code}</span>'
-        f'<span class="tmeta">{entry.start_time:%H:%M}–{entry.end_time:%H:%M} · {room}</span>'
+        f'<span class="tmeta">{_ampm(entry.start_time)}–{_ampm(entry.end_time)} · {room}</span>'
         f'</div>'
     )
+
+
+def _ampm(value):
+    """Format a time as e.g. '9:05 AM' (cross-platform strftime-safe)."""
+    if value is None:
+        return ""
+    hour = value.hour % 12 or 12
+    return f"{hour}:{value.minute:02d} {'AM' if value.hour < 12 else 'PM'}"

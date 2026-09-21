@@ -20,9 +20,11 @@ from academics.models import (
     AcademicSession,
     CourseOffering,
     Enrolment,
+    GraduationRecord,
     Semester,
     StudentProfile,
 )
+from academics.services import evaluate_graduation
 from teachers.models import (
     Assignment,
     AssignmentSubmission,
@@ -830,12 +832,42 @@ def academic_progress(request):
 
     cgpa = round(total_points / total_credits, 2) if total_credits else None
 
+    # Academic standing (progression engine) & graduation eligibility
+    from academics.models import StudentStatus
+
+    status_history = list(
+        StudentStatus.objects.filter(student=user)
+        .select_related("session", "level_at_decision", "next_level")
+        .order_by("-session__start_date")
+    )
+    current_status = status_history[0] if status_history else None
+
+    graduation = evaluate_graduation(user)
+    AWARD_LABELS = {
+        "first": "First Class",
+        "second_upper": "Second Class Upper",
+        "second_lower": "Second Class Lower",
+        "third": "Third Class",
+        "pass": "Pass",
+    }
+    graduation["award_class_label"] = AWARD_LABELS.get(graduation["award_class"], "")
+    grad_record = (
+        GraduationRecord.objects.filter(student=user)
+        .select_related("program", "session")
+        .order_by("-session__start_date")
+        .first()
+    )
+
     return render(request, "students/academic_progress.html", {
-        "page_title":    "Academic Progress",
-        "profile":       profile,
-        "session_stats": session_stats,
-        "cgpa":          cgpa,
-        "total_credits": total_credits,
+        "page_title":     "Academic Progress",
+        "profile":        profile,
+        "session_stats":  session_stats,
+        "cgpa":           cgpa,
+        "total_credits":  total_credits,
+        "status_history": status_history,
+        "current_status": current_status,
+        "graduation":     graduation,
+        "grad_record":    grad_record,
     })
 
 

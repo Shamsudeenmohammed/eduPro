@@ -24,6 +24,11 @@ class NotificationType(models.TextChoices):
     QUIZ_REMINDER = "quiz_reminder", "Quiz Reminder"
     QUIZ_RESULT_AVAILABLE = "quiz_result_available", "Quiz Result Available"
     LMS_ANNOUNCEMENT = "lms_announcement", "LMS Announcement"
+    RESULT_SUBMITTED = "result_submitted", "Result Sheet Submitted"
+    RESULT_APPROVED = "result_approved", "Result Sheet Approved"
+    RESULT_REJECTED = "result_rejected", "Result Sheet Rejected"
+    RESULT_PUBLISHED = "result_published", "Results Published"
+    RESULT_REVISED = "result_revised", "Results Returned for Revision"
 
 
 class Channel(models.TextChoices):

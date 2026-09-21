@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -359,6 +360,7 @@
     .delay-4 { animation-delay: .2s; }
   {% include "components/sidebar_collapse.css.html" %}
   </style>
+  <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body>

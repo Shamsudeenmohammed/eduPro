@@ -152,7 +152,7 @@
     </div>
   </a>
   {% if request.user|has_role:"HOD" or request.user|has_role:"ADMIN" %}
-  <a href="{% url 'teachers:result_sheet_list' %}" class="stat-card">
+  <a href="{% url 'teachers:hod_review_center' %}" class="stat-card">
     <div class="stat-icon ic-rose">⚖️</div>
     <div class="stat-body">
       <div class="stat-label">HOD Review</div>
@@ -187,7 +187,7 @@
     <div class="panel">
       <div class="panel-head">
         <span class="panel-title">🏛️ Department Result Endorsements</span>
-        <a href="{% url 'teachers:result_sheet_list' %}" class="panel-action">Manage all →</a>
+        <a href="{% url 'teachers:hod_review_center' %}" class="panel-action">Open Review Center →</a>
       </div>
       <table class="sub-table">
         <thead>

@@ -231,7 +231,7 @@ JAZZMIN_SETTINGS = {
         {"name": "Search", "url": "admin_global_search", "permissions": ["auth.view_user"]},
     ],
     "show_sidebar": True,
-    "navigation_expanded": True,
+    "navigation_expanded": False,
     "hide_apps": [],
     "hide_models": [],
     "order_with_respect_to": [

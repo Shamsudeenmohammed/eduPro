@@ -108,7 +108,7 @@ def optimize_schedule(schedule, config, options=None, actor=None):
         best_cand = min(cands, key=lambda c: (
             generator._candidate_penalty(config, c[0], c[1], c[2], c[4],
                                          p, {p["day"]}),
-            c[0], c[1].hour, c[1].minute, c[3],
+            c[0], c[1].hour, c[1].minute, c[3] or 0,
         ))
         # only accept if strictly better than current placement
         room_pool = rooms_by_session.get(p["session_type"], [])

@@ -17,6 +17,11 @@ TYPE_LABELS = {
     NotificationType.QUIZ_REMINDER: "Quiz Reminder",
     NotificationType.QUIZ_RESULT_AVAILABLE: "Quiz Result",
     NotificationType.LMS_ANNOUNCEMENT: "Announcement",
+    NotificationType.RESULT_SUBMITTED: "Results Submitted",
+    NotificationType.RESULT_APPROVED: "Results Approved",
+    NotificationType.RESULT_REJECTED: "Results Rejected",
+    NotificationType.RESULT_PUBLISHED: "Results Published",
+    NotificationType.RESULT_REVISED: "Results Returned for Revision",
 }
 
 DEADLINE_FORMAT = "%b %d, %I:%M %p"
@@ -64,6 +69,23 @@ def _quiz_link(ctx):
         except Exception:  # noqa: BLE001
             return ""
     return ctx.get("link", "")
+
+
+def _result_view_link(ctx):
+    sheet_pk = ctx.get("sheet_pk")
+    if sheet_pk:
+        from django.urls import reverse
+
+        try:
+            return reverse("teachers:result_sheet_view", kwargs={"sheet_pk": sheet_pk})
+        except Exception:  # noqa: BLE001
+            return ""
+    return ctx.get("link", "")
+
+
+def _revision_suffix(context):
+    revision = context.get("revision")
+    return f" (revision {revision})" if revision else ""
 
 
 BUILDERS = {
@@ -120,6 +142,36 @@ BUILDERS = {
         f"Announcement: {c.get('subject', 'Course announcement')}",
         c.get("body", "") or f"New announcement for {_course_code(c)}.",
         c.get("link", ""),
+    ),
+    NotificationType.RESULT_SUBMITTED: lambda c: (
+        f"Results submitted for review: {_course_code(c)}",
+        f"{c.get('submitted_by_name', 'A teacher')} submitted results for {_course_code(c)}. "
+        f"They are awaiting your review.",
+        _result_view_link(c),
+    ),
+    NotificationType.RESULT_APPROVED: lambda c: (
+        f"Results approved: {_course_code(c)}",
+        f"The result sheet for {_course_code(c)} has been approved and locked. "
+        f"Students will be notified once the results are published.",
+        _result_view_link(c),
+    ),
+    NotificationType.RESULT_REJECTED: lambda c: (
+        f"Results rejected: {_course_code(c)}",
+        f"The result sheet for {_course_code(c)} was rejected for correction. "
+        f"{c.get('reason', 'No reason given.')}",
+        _result_view_link(c),
+    ),
+    NotificationType.RESULT_PUBLISHED: lambda c: (
+        f"Your results are ready: {_course_code(c)}",
+        f"Results for {_course_code(c)} have been published{_revision_suffix(c)}. "
+        f"View them from the results page.",
+        c.get("student_link") or _result_view_link(c),
+    ),
+    NotificationType.RESULT_REVISED: lambda c: (
+        f"Results returned for correction: {_course_code(c)}",
+        f"The published results for {_course_code(c)} have been returned to draft. "
+        f"Reason: {c.get('reason', 'No reason given.')}",
+        _result_view_link(c),
     ),
 }
 

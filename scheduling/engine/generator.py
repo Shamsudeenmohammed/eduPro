@@ -12,11 +12,15 @@ MRV-guided placement over weekly class requirements:
   2. Build the pool of legal (room, slot) placements.
   3. Repeatedly pick the requirement with the fewest legal candidates
      (Most Constrained / MRV) and commit it to its best-scoring placement.
-  4. If the chosen requirement has no legal placement it is recorded as
-     UNPLACED (with a reason) and the search continues — producing a
-     best-effort schedule instead of giving up entirely.
-  5. Determinism: candidates are always iterated in a fixed order (day, start,
-     room id) seeded only by `config.seed` for tie-breaks; never random.
+4. If the chosen requirement has no legal placement it is recorded as
+      UNPLACED (with a reason) and the search continues — producing a
+      best-effort schedule instead of giving up entirely.
+   5. Rooms are optional: when no usable room exists for a slot the session
+      may be placed WITHOUT a room, so a timetable is produced even if no
+      rooms are configured or none match capacity.  Other hard constraints
+      (lecturer busy, cohort clash, …) are never relaxed by this fallback.
+   6. Determinism: candidates are always iterated in a fixed order (day, start,
+      room id) seeded only by `config.seed` for tie-breaks; never random.
 
 Hard constraints enforced (mirroring engine.constraints):
   workday, room type, capacity, lecturer busy, room busy, cohort clash,
@@ -126,16 +130,8 @@ def _cohort_signature(offering):
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:32]
 
 
-def _slot_list(config):
-    """Canonical slots: TimeSlot defaults first, else coarse workday slots."""
-    slots = list(
-        TimeSlot.objects.filter(is_default=True, is_active=True)
-        .order_by("day", "start_time")
-        .values("day", "start_time", "end_time")
-    )
-    if slots:
-        return slots
-
+def _coarse_slots(config):
+    """Coarse fallback slot grid (no DB dependency): fixed workday hours."""
     workdays = sorted(config.workday_set) or [0]
     minute = config.default_slot_minutes
     result = []
@@ -149,6 +145,18 @@ def _slot_list(config):
             })
             cursor += minute
     return result
+
+
+def _slot_list(config):
+    """Canonical slots: TimeSlot defaults first, else coarse workday slots."""
+    slots = list(
+        TimeSlot.objects.filter(is_default=True, is_active=True)
+        .order_by("day", "start_time")
+        .values("day", "start_time", "end_time")
+    )
+    if slots:
+        return slots
+    return _coarse_slots(config)
 
 
 def _room_pool(config, session_type):
@@ -279,7 +287,13 @@ def _capacity_ok(room, enrolled, session_type):
 
 def _legal_candidates(requirement, state, slots, room_pool, workdays,
                       unavail_map, blackout_days, min_break):
-    """Legal (day, start, end, room_id, room) placements, fixed ordering."""
+    """Legal (day, start, end, room_id, room) placements, fixed ordering.
+
+    Rooms are preferred, but when no usable room exists for a slot the
+    requirement may still be placed WITHOUT a room (room_id=None, room=None).
+    This keeps the generator a true best-effort producer: a timetable is
+    always generated even if no rooms are configured or none match capacity.
+    """
     sig = requirement["cohort_sig"]
     lecturer_id = requirement["lecturer_id"]
     enrolled = requirement["enrolled"]
@@ -300,19 +314,29 @@ def _legal_candidates(requirement, state, slots, room_pool, workdays,
             continue
         if _break_violated(state.cohort_slots[(day, sig)], start, end, min_break):
             continue
+        # Lecturer busy is a hard constraint: it must skip the whole slot and
+        # can NOT fall back to a no-room placement.
+        if lecturer_id is not None and _overlaps(
+                state.lecturer_slots[(day, lecturer_id)], start, end):
+            continue
 
+        slot_candidates = []
         for room in room_pool:
             rid = room["id"]
             if not _capacity_ok(room, enrolled, session_type):
                 continue
             if _overlaps(state.room_slots[(day, rid)], start, end):
                 continue
-            if lecturer_id is not None and _overlaps(
-                    state.lecturer_slots[(day, lecturer_id)], start, end):
-                continue
-            candidates.append((day, start, end, rid, room))
+            slot_candidates.append((day, start, end, rid, room))
 
-    candidates.sort(key=lambda c: (c[0], c[1].hour, c[1].minute, c[3]))
+        if slot_candidates:
+            candidates.extend(slot_candidates)
+        else:
+            # Nothing usable in this slot → allow a no-room placement so the
+            # session is still part of the timetable.
+            candidates.append((day, start, end, None, None))
+
+    candidates.sort(key=lambda c: (c[0], c[1].hour, c[1].minute, c[3] or 0))
     return candidates
 
 
@@ -330,7 +354,8 @@ def _candidate_penalty(config, day, start, end, room, requirement, used_days):
         penalty += (end_min - evening) / 60.0
     if day in used_days:
         penalty += 1.0
-    if requirement["session_type"] == SessionType.LAB and room["room_type"] != "lab":
+    if (requirement["session_type"] == SessionType.LAB and room is not None
+            and room["room_type"] != "lab"):
         penalty += 2.0
     return round(penalty, 3)
 

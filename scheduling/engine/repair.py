@@ -97,7 +97,7 @@ def repair_schedule(schedule, config, actor=None, options=None):
         # prefer the best legal candidate deterministically
         if cands:
             nday, nstart, nend, nrid, nroom = min(
-                cands, key=lambda c: (c[0], c[1].hour, c[1].minute, c[3])
+                cands, key=lambda c: (c[0], c[1].hour, c[1].minute, c[3] or 0)
             )
             state.assign(key, nday, nstart, nend, nrid, lecturer_id, sig)
             p.update({

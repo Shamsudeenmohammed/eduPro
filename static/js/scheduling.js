@@ -74,7 +74,7 @@
       timeZone: tzName
     });
     var tFmt = new Intl.DateTimeFormat('en-GB', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tzName
+      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: tzName
     });
     function tick() {
       var now = new Date();

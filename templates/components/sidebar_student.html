@@ -38,7 +38,6 @@
 </button>
 <div class="sidebar-submenu" id="sub-services">
   <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.url_name == 'announcements' %}active{% endif %}"><span>Announcements</span></a>
-  <a href="{% url 'operations:timetable' %}" class="nav-item {% if request.resolver_match.url_name == 'timetable' %}active{% endif %}"><span>Timetable</span></a>
   <a href="{% url 'operations:ticket_list' %}" class="nav-item {% if request.resolver_match.url_name == 'ticket_list' or request.resolver_match.url_name == 'ticket_create' %}active{% endif %}"><span>Support</span></a>
   <a href="{% url 'feedback:submit' %}" class="nav-item {% if request.resolver_match.url_name == 'submit' %}active{% endif %}"><span>Feedback</span></a>
 </div>

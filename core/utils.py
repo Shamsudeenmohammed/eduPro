@@ -1,67 +1,12 @@
 """Shared utilities — PDF generation, GPA, imports."""
 
 import io
-from decimal import Decimal
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 
-from academics.models import Enrolment, StudentProfile
-from teachers.models import GRADE_POINTS, StudentResult
-
-
-def calculate_semester_gpa(student, semester):
-    """GPA for one semester: sum(grade_point * credits) / sum(credits)."""
-    results = StudentResult.objects.filter(
-        enrolment__student=student,
-        enrolment__offering__semester=semester,
-        result_sheet__status="approved",
-        grade_point__isnull=False,
-    ).select_related("enrolment__offering__course")
-
-    total_points = Decimal("0")
-    total_credits = 0
-    for r in results:
-        credits = r.enrolment.offering.course.credit_units
-        total_points += Decimal(str(r.grade_point)) * credits
-        total_credits += credits
-
-    if total_credits == 0:
-        return None
-    return round(total_points / total_credits, 2)
-
-
-def calculate_cgpa(student):
-    """Cumulative GPA across all completed enrolments."""
-    results = StudentResult.objects.filter(
-        enrolment__student=student,
-        result_sheet__status="approved",
-        grade_point__isnull=False,
-    ).select_related("enrolment__offering__course")
-
-    total_points = Decimal("0")
-    total_credits = 0
-    for r in results:
-        credits = r.enrolment.offering.course.credit_units
-        total_points += Decimal(str(r.grade_point)) * credits
-        total_credits += credits
-
-    if total_credits == 0:
-        return None
-    return round(total_points / total_credits, 2)
-
-
-def update_student_gpa(student):
-    """Persist CGPA on StudentProfile."""
-    cgpa = calculate_cgpa(student)
-    if cgpa is None:
-        return
-    try:
-        profile = student.academic_profile
-        profile.cumulative_gpa = cgpa
-        profile.save(update_fields=["cumulative_gpa", "updated_at"])
-    except StudentProfile.DoesNotExist:
-        pass
+from academics.services import calculate_cgpa, calculate_semester_gpa, update_student_gpa
+from teachers.models import StudentResult
 
 
 def generate_pdf_from_html(html_content, filename="document.pdf"):

@@ -2,10 +2,25 @@
 {% block topbar_actions %}
 {% if is_teacher or is_admin %}
 <a href="{% url 'teachers:result_sheet_list' %}" class="btn btn-secondary btn-sm">← Back</a>
+<a href="{% url 'teachers:result_version_history' sheet.pk %}" class="btn btn-secondary btn-sm">History</a>
 {% if is_admin and sheet.status == "submitted" %}
 <form method="post" action="{% url 'teachers:result_approve' sheet.pk %}" style="display:inline;">
   {% csrf_token %}
   <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approve and lock this sheet?')">Approve</button>
+</form>
+{% endif %}
+{% if can_publish and sheet.status == "approved" and not sheet.published_at %}
+<form method="post" action="{% url 'teachers:result_publish' sheet.pk %}" style="display:inline;">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Publish these results to students?')">Publish</button>
+</form>
+{% endif %}
+{% if can_publish and sheet.published_at %}
+<form method="post" action="{% url 'teachers:result_revise' sheet.pk %}" style="display:inline;">
+  {% csrf_token %}
+  <input type="text" name="reason" placeholder="Reason for revision (required)" required
+    style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:210px;">
+  <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Return these results to draft for correction?')">Revise</button>
 </form>
 {% endif %}
 {% endif %}
@@ -31,11 +46,14 @@
         <span class="detail-value">
           {% if sheet.status == "open" %}<span class="badge badge-open">Open</span>
           {% elif sheet.status == "submitted" %}<span class="badge badge-submitted">Submitted</span>
-          {% elif sheet.status == "approved" %}<span class="badge badge-approved">Approved</span>
+          {% elif sheet.status == "approved" %}
+            {% if sheet.published_at %}<span class="badge badge-approved">Published ✓</span>
+            {% else %}<span class="badge badge-approved">Approved</span>{% endif %}
           {% elif sheet.status == "rejected" %}<span class="badge badge-rejected">Rejected</span>
           {% endif %}
         </span>
       </div>
+      <div class="detail-row"><span class="detail-label">Revision</span><span class="detail-value">{{ sheet.revision }}</span></div>
     </div>
   </div>
   <div class="card">
@@ -45,8 +63,13 @@
       <div class="detail-row"><span class="detail-label">Submitted At</span><span class="detail-value">{{ sheet.submitted_at|date:"d M Y H:i"|default:"—" }}</span></div>
       <div class="detail-row"><span class="detail-label">Approved By</span><span class="detail-value">{{ sheet.approved_by.get_full_name|default:"—" }}</span></div>
       <div class="detail-row"><span class="detail-label">Approved At</span><span class="detail-value">{{ sheet.approved_at|date:"d M Y H:i"|default:"—" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Published By</span><span class="detail-value">{{ sheet.published_by.get_full_name|default:"—" }}</span></div>
+      <div class="detail-row"><span class="detail-label">Published At</span><span class="detail-value">{{ sheet.published_at|date:"d M Y H:i"|default:"—" }}</span></div>
       {% if sheet.rejection_note %}
       <div class="detail-row"><span class="detail-label">Rejection Note</span><span class="detail-value" style="color:var(--danger);">{{ sheet.rejection_note }}</span></div>
+      {% endif %}
+      {% if sheet.last_revision_note %}
+      <div class="detail-row"><span class="detail-label">Last Revision Note</span><span class="detail-value" style="color:var(--warning);">{{ sheet.last_revision_note }}</span></div>
       {% endif %}
     </div>
   </div>
