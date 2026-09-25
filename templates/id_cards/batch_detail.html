@@ -1,0 +1,52 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Batch {{ batch.batch_number }}{% endblock %}
+{% block breadcrumb %}ID Cards / Batches / {{ batch.batch_number }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Batch {{ batch.batch_number }}</h1>
+    <p>{{ batch.total_selected }} selected · {{ batch.generated_count }} generated · {{ batch.skipped_count }} skipped · {{ batch.generated_by.get_full_name|default:"—" }}</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'id_cards:print_preview' %}?batch={{ batch.pk }}">Print preview</a>
+    <a class="btn btn-ghost" href="{% url 'id_cards:print_pdf' %}?batch={{ batch.pk }}&mode=duplex&back_order=mirrored">Download duplex PDF</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+{% if skips %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><div class="card-title">Skipped students ({{ batch.skipped_count }})</div></div>
+  <ul class="status-list">
+    {% for code, data in skips.items %}
+    <li class="status-row"><span class="s-pill pill-rose">{{ data.label }}</span><span class="s-label">{{ data.students|join:", " }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Cards in this batch ({{ cards|length }})</div>
+    <div class="ph-right" style="gap:6px">
+      <a class="btn btn-ghost" href="{% url 'id_cards:print_pdf' %}?batch={{ batch.pk }}&mode=front">Front</a>
+      <a class="btn btn-ghost" href="{% url 'id_cards:print_pdf' %}?batch={{ batch.pk }}&mode=back&back_order=direct">Back</a>
+    </div>
+  </div>
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>Card</th><th>Student</th><th>Status</th><th>Expiry</th><th></th></tr></thead>
+    <tbody>
+      {% for card in cards %}
+      <tr>
+        <td style="font-family:var(--mono);color:var(--ochre)">{{ card.card_number }}</td>
+        <td>{{ card.student.get_full_name }}<div style="font-size:11px;color:var(--tx3)">{{ card.student.academic_profile.student_number|default:"" }}</div></td>
+        <td><span class="badge badge-amber">{{ card.get_status_display }}</span></td>
+        <td>{{ card.expiry_date|default:"—" }}</td>
+        <td><a href="{% url 'id_cards:card_detail' card.pk %}">View →</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:28px">No cards generated in this batch.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

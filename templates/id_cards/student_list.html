@@ -1,0 +1,78 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Students{% endblock %}
+{% block breadcrumb %}ID Cards / Students{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Students &amp; Readiness</h1>
+    <p>Photo status, eligibility, and drill-down lists for card generation</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'id_cards:generate_batch' %}" class="btn btn-primary">Batch Generation</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--blue-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div><div class="kpi-val">{{ stats.total_students }}</div><div class="kpi-label">Total</div></div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--teal)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--teal-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="kpi-val">{{ stats.ready_for_generation }}</div><div class="kpi-label">Ready</div></div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--ochre)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--ochre-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div></div><div class="kpi-val">{{ stats.photos_pending }}</div><div class="kpi-label">Photo Pending</div></div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--rose)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--rose-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div></div><div class="kpi-val">{{ stats.photos_rejected }}</div><div class="kpi-label">Photo Rejected</div></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header">
+    <div class="card-title">Filter</div>
+    <a href="{% url 'id_cards:reports' %}" class="card-action">Reports →</a>
+  </div>
+  <div style="padding:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <a class="btn btn-ghost" href="{% url 'id_cards:student_list' %}">All ({{ stats.total_students }})</a>
+    {% for key, label in flag_labels.items %}
+    <a class="btn btn-ghost {% if flag == key %}btn-primary{% endif %}" href="{% url 'id_cards:student_list' %}?flag={{ key }}">{{ label }}</a>
+    {% endfor %}
+    <form method="get" style="display:flex;gap:6px;align-items:center;margin-left:auto">
+      {% if flag %}<input type="hidden" name="flag" value="{{ flag }}">{% endif %}
+      <input type="text" name="q" value="{{ search }}" placeholder="Search name / ID / email" style="width:220px">
+      <button class="btn btn-ghost" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>Student</th><th>ID / Email</th><th>Programme</th><th>Photo</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for student in students %}
+      <tr>
+        <td>{{ student.get_full_name }}</td>
+        <td>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ student.academic_profile.student_number|default:"—" }}</div>
+          <div style="font-size:11px;color:var(--tx3)">{{ student.email }}</div>
+        </td>
+        <td>
+          {% with prog=student.academic_profile.program %}
+            {{ prog.name|default:"—" }}
+            <div style="font-size:11px;color:var(--tx3)">{{ prog.department.name|default:"" }}</div>
+          {% endwith %}
+        </td>
+        <td>
+          {% with photo=student.id_photo %}
+            {% if not photo %}<span class="badge badge-inactive">Missing</span>
+            {% elif photo.status == "approved" %}<span class="badge badge-active">Approved</span>
+            {% elif photo.status == "rejected" %}<span class="badge badge-inactive">Rejected</span>
+            {% else %}<span class="badge badge-amber">Pending</span>{% endif %}
+          {% endwith %}
+        </td>
+        <td>
+          {% if student.pk in live_card_ids %}<span class="badge badge-active">Live card</span>
+          {% else %}<span class="badge">—</span>{% endif %}
+        </td>
+        <td><a href="{% url 'id_cards:generate_single' student.pk %}" class="btn btn-ghost">Generate</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:32px">No students match this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Print Preview{% endblock %}
+{% block breadcrumb %}ID Cards / Print Preview{% endblock %}
+{% block extra_head %}
+<style>
+  .idc-sheet { position:relative; width:100%; max-width:200px; line-height:0; }
+  .idc-sheet img { width:100%; border-radius:6px; border:1px solid var(--border); }
+  .idc-sheet .idc-cap { line-height:1.3; font-size:10px; color:var(--tx3); margin-top:4px; }
+</style>
+{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Print Preview — {{ total }} card{{ total|pluralize }}</h1>
+    <p>Check alignment, then download the print-ready PDF.</p>
+  </div>
+  <div class="ph-right">
+    <form method="get" action="{% url 'id_cards:print_preview' %}" style="display:flex;gap:6px;align-items:center">
+      {% for pair in query_pairs %}{% if pair.0 != 'mode' %}<input type="hidden" name="{{ pair.0 }}" value="{{ pair.1 }}">{% endif %}{% endfor %}
+      <select name="mode" onchange="this.form.submit()">
+        <option value="combined" {% if mode == 'combined' %}selected{% endif %}>Front + back (side by side)</option>
+        <option value="front" {% if mode == 'front' %}selected{% endif %}>Front only</option>
+        <option value="back" {% if mode == 'back' %}selected{% endif %}>Back only</option>
+        <option value="duplex" {% if mode == 'duplex' %}selected{% endif %}>Front + back (duplex)</option>
+      </select>
+    </form>
+    <a class="btn btn-primary" href="{% url 'id_cards:print_pdf' %}?{{ query }}&mode={{ mode }}&back_order=mirrored"
+       {% if not previews %}onclick="return false"{% endif %}>Download PDF</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<p style="font-size:12px;color:var(--tx2);margin-bottom:14px">
+  Cards are laid out on A4 sheets (2×5) with crop marks.
+  {% if mode == 'combined' %}
+  The front sits on the left and the back directly beside it on the right, so
+  each student's face and back stay adjacent on a single sheet.
+  {% else %}
+  In duplex mode the backs are mirrored so a top-edge flip aligns them with the fronts.
+  Back-order option:
+  <a href="{% url 'id_cards:print_pdf' %}?{{ query }}&mode={{ mode }}&back_order=mirrored">mirrored (recommended)</a>
+  ·
+  <a href="{% url 'id_cards:print_pdf' %}?{{ query }}&mode={{ mode }}&back_order=direct">direct</a>
+  {% endif %}
+</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px">
+  {% for item in previews %}
+  <div class="card" style="padding:12px">
+    {% if mode == 'combined' %}
+    <div class="idc-sheet">
+      <img src="{{ item.combined }}" alt="Combined front + back of {{ item.card.card_number }}">
+      <div class="idc-cap">{{ item.card.card_number }} — front + back · {{ item.card.student.get_full_name }}</div>
+    </div>
+    {% else %}
+    <div class="idc-sheet">
+      <img src="{{ item.front }}" alt="Front of {{ item.card.card_number }}">
+      <div class="idc-cap">{{ item.card.card_number }} — front · {{ item.card.student.get_full_name }}</div>
+    </div>
+    {% endif %}
+    {% if mode == 'back' or mode == 'duplex' %}
+    <div class="idc-sheet" style="margin-top:10px">
+      <img src="{{ item.back }}" alt="Back of {{ item.card.card_number }}">
+      <div class="idc-cap">back</div>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="card" style="grid-column:1/-1"><div style="text-align:center;padding:36px;color:var(--tx3)">Selected cards could not be rendered.</div></div>
+  {% endfor %}
+</div>
+
+<p style="margin-top:20px;font-size:12px;color:var(--tx3)">
+  Previews are generated at 300&nbsp;dpi from the exact bytes that go into the PDF.
+</p>
+
+<style>select,input,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}</style>
+{% endblock %}

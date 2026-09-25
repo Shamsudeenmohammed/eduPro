@@ -1,0 +1,38 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Audit Log{% endblock %}
+{% block breadcrumb %}ID Cards / Audit Log{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Audit Log</h1><p>Last 300 entries — every photo, generation, print, issue, replace and verification is recorded</p></div>
+  <div class="ph-right">
+    <a class="btn btn-ghost {% if not action %}btn-primary{% endif %}" href="{% url 'id_cards:audit_log' %}">All</a>
+    {% for value, label in action_choices %}
+    <a class="btn btn-ghost {% if action == value %}btn-primary{% endif %}" href="{% url 'id_cards:audit_log' %}?action={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Object</th><th>Description</th></tr></thead>
+    <tbody>
+      {% for entry in logs %}
+      <tr>
+        <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">{{ entry.created_at|date:"d M Y H:i:s" }}</td>
+        <td>{{ entry.actor.get_full_name|default:"System" }}</td>
+        <td><span class="badge badge-amber">{{ entry.get_action_display }}</span></td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--tx2)">
+          {% if entry.card %}{{ entry.card.card_number }}
+          {% elif entry.batch %}{{ entry.batch.batch_number }}
+          {% elif entry.template %}{{ entry.template.name }}
+          {% elif entry.photo %}photo #{{ entry.photo.pk }}
+          {% else %}—{% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--tx2)">{{ entry.description|truncatechars:160 }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:28px">No audit entries{% if action %} for this action{% endif %}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

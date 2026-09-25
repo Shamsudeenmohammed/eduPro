@@ -1,0 +1,141 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Overview{% endblock %}
+{% block breadcrumb %}ID Cards / Dashboard{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Student ID Card Management</h1>
+    <p>{{ institution.name|default:"Institution" }} — generation, printing, verification &amp; replacements</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'id_cards:student_list' %}" class="btn btn-ghost">Students</a>
+    <a href="{% url 'id_cards:generate_batch' %}" class="btn btn-ghost">Batch Generation</a>
+    <a href="{% url 'id_cards:print_preview' %}" class="btn btn-ghost">Print</a>
+    {% if is_admin_user %}<a href="{% url 'id_cards:settings' %}" class="btn btn-primary">Settings</a>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div>
+    <div class="kpi-top"><div class="kpi-icon" style="background:var(--blue-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div></div>
+    <div class="kpi-val">{{ stats.total_students }}</div>
+    <div class="kpi-label">Total Students</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--blue)" data-pct="100"></div></div>
+  </div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--teal)"></div>
+    <div class="kpi-top"><div class="kpi-icon" style="background:var(--teal-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div></div>
+    <div class="kpi-val">{{ stats.ready_for_generation }}</div>
+    <div class="kpi-label">Ready to Generate</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--teal)" data-pct="{{ stats.ready_pct|default:0 }}"></div></div>
+  </div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--ochre)"></div>
+    <div class="kpi-top"><div class="kpi-icon" style="background:var(--ochre-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div></div>
+    <div class="kpi-val">{{ pending_photos }}</div>
+    <div class="kpi-label">Photos Pending Review</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--ochre)" data-pct="60"></div></div>
+  </div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--rose)"></div>
+    <div class="kpi-top"><div class="kpi-icon" style="background:var(--rose-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div></div>
+    <div class="kpi-val">{{ stats.replacement_required }}</div>
+    <div class="kpi-label">Replacements Needed</div>
+    <div class="kpi-bar"><div class="kpi-bar-fill" style="background:var(--rose)" data-pct="40"></div></div>
+  </div>
+</div>
+
+<div class="body-grid">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Readiness Overview</div>
+        <div class="ph-right" style="gap:6px">
+          <a href="{% url 'id_cards:reports' %}" class="btn btn-ghost">Reports</a>
+          <a href="{% url 'id_cards:export_csv' %}?kind=readiness" class="btn btn-ghost">CSV</a>
+        </div>
+      </div>
+      <ul class="status-list">
+        <li class="status-row"><span class="s-label">Students with photos uploaded</span><span class="s-pill pill-green">{{ stats.photos_uploaded }}</span></li>
+        <li class="status-row"><span class="s-label">Photos approved</span><span class="s-pill">{{ stats.photos_approved }}</span></li>
+        <li class="status-row"><span class="s-label">Photos pending</span><span class="s-pill pill-amber">{{ stats.photos_pending }}</span></li>
+        <li class="status-row"><span class="s-label">Photos rejected</span><span class="s-pill pill-rose">{{ stats.photos_rejected }}</span></li>
+        <li class="status-row"><span class="s-label">Photos missing</span><span class="s-pill">{{ stats.photos_missing }}</span></li>
+        <li class="status-row"><span class="s-label">Cards already generated (live)</span><span class="s-pill pill-green">{{ stats.already_generated }}</span></li>
+        <li class="status-row"><span class="s-label">Printed</span><span class="s-pill">{{ stats.printed }}</span></li>
+        <li class="status-row"><span class="s-label">Issued</span><span class="s-pill pill-green">{{ stats.issued }}</span></li>
+        <li class="status-row"><span class="s-label">Expired / Lost / Damaged</span><span class="s-pill pill-rose">{{ stats.expired }} / {{ stats.expired|add:stats.replacement_required|default:0 }}</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Photo Review</div>
+        <a href="{% url 'id_cards:photo_review' %}" class="card-action">Review now →</a>
+      </div>
+      <div class="actions-list">
+        <a href="{% url 'id_cards:photo_review' %}" class="action-row">
+          <div class="ar-left"><div class="ar-ico" style="background:var(--ochre-dim)"><svg width="13" height="13" fill="none" stroke="var(--ochre)" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div></div>
+          <div><div class="ar-label">Photos waiting for approval</div></div>
+          <span class="ar-count pill-amber">{{ pending_photos }}</span>
+          <span class="ar-arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Batches</div>
+        <a href="{% url 'id_cards:batch_list' %}" class="card-action">All batches →</a>
+      </div>
+      <div class="table-wrap"><table class="reg-table">
+        <thead><tr><th>Batch</th><th>Cards</th><th>Skipped</th><th>By</th><th>When</th><th></th></tr></thead>
+        <tbody>
+          {% for batch in recent_batches %}
+          <tr><td style="font-family:var(--mono);color:var(--ochre)">{{ batch.batch_number }}</td>
+            <td>{{ batch.generated_count }}</td>
+            <td>{{ batch.skipped_count }}</td>
+            <td>{{ batch.generated_by.get_full_name|default:"—" }}</td>
+            <td>{{ batch.generated_at|date:"d M Y H:i" }}</td>
+            <td><a href="{% url 'id_cards:batch_detail' batch.pk %}">View →</a></td>
+          </tr>
+          {% empty %}<tr><td colspan="6">No batches yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Quick Actions</div></div>
+      <div class="actions-list">
+        <a href="{% url 'id_cards:student_list' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--blue-dim)"><svg width="13" height="13" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div><div class="ar-label">Students &amp; readiness</div><span class="ar-arrow">→</span></a>
+        <a href="{% url 'id_cards:generate_batch' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--teal-dim)"><svg width="13" height="13" fill="none" stroke="var(--teal)" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div></div><div class="ar-label">Generate cards (single / batch)</div><span class="ar-arrow">→</span></a>
+        <a href="{% url 'id_cards:card_list' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--ochre-dim)"><svg width="13" height="13" fill="none" stroke="var(--ochre)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div></div><div class="ar-label">All cards</div><span class="ar-arrow">→</span></a>
+        <a href="{% url 'id_cards:replacement_list' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--rose-dim)"><svg width="13" height="13" fill="none" stroke="var(--rose)" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></div></div><div class="ar-label">Replacement requests</div><span class="ar-count pill-amber">{{ pending_replacements }}</span><span class="ar-arrow">→</span></a>
+        <a href="{% url 'id_cards:audit_log' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--purple-dim,var(--ochre-dim))"><svg width="13" height="13" fill="none" stroke="var(--accent2)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div></div><div class="ar-label">Audit trail</div><span class="ar-arrow">→</span></a>
+        {% if is_admin_user %}
+        <a href="{% url 'id_cards:template_list' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--blue-dim)"><svg width="13" height="13" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div></div><div class="ar-label">Card templates ({{ active_templates }} active)</div><span class="ar-arrow">→</span></a>
+        <a href="{% url 'id_cards:settings' %}" class="action-row"><div class="ar-left"><div class="ar-ico" style="background:var(--ochre-dim)"><svg width="13" height="13" fill="none" stroke="var(--ochre)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00-.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div></div><div class="ar-label">Settings</div><span class="ar-arrow">→</span></a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if is_admin_user %}
+    <div class="card">
+      <div class="card-header"><div class="card-title">Maintenance</div></div>
+      <div class="actions-list">
+        <form method="post" action="{% url 'id_cards:run_expiry' %}" style="display:contents">
+          {% csrf_token %}
+          <button type="submit" class="action-row" style="width:100%">
+            <div class="ar-left"><div class="ar-ico" style="background:var(--rose-dim)"><svg width="13" height="13" fill="none" stroke="var(--rose)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div></div>
+            <div class="ar-label">Run expiry check now</div><span class="ar-arrow">→</span>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>select,input,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}select:focus,input:focus,textarea:focus{outline:none;border-color:var(--ochre)}textarea{resize:vertical}</style>
+{% endblock %}

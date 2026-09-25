@@ -1,0 +1,74 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Templates{% endblock %}
+{% block extra_head %}
+<style>
+  .status-switch {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 3px 6px; font-family: var(--font); font-size: 11.5px;
+    cursor: pointer; transition: border-color .15s; margin-left: 6px;
+  }
+  .status-switch:hover, .status-switch:focus { border-color: var(--accent); outline: none; }
+</style>
+{% endblock %}
+{% block breadcrumb %}ID Cards / Templates{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Card Templates</h1><p>Designs used for card fronts and backs — archived templates keep a copy on every existing card</p></div>
+  <div class="ph-right"><a href="{% url 'id_cards:template_create' %}" class="btn btn-primary">New Template</a></div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>Name</th><th>Status</th><th>Default</th><th>Size</th><th>Front fields</th><th>Validity</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for template in templates %}
+      <tr>
+        <td><strong>{{ template.name }}</strong></td>
+        <td>
+          <span class="badge {% if template.status == 'active' %}badge-active{% elif template.status == 'archived' %}badge-inactive{% else %}badge-amber{% endif %}">{{ template.get_status_display }}</span>
+          <form method="post" action="{% url 'id_cards:template_set_status' template.pk %}" class="status-switch-form" style="display:inline">
+            {% csrf_token %}
+            <select name="status" class="status-switch" aria-label="Change status for {{ template.name }}">
+              {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if template.status == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td>{% if template.is_default %}<span class="badge badge-active">Default</span>{% else %}—{% endif %}</td>
+        <td style="font-family:var(--mono);font-size:11px">{{ template.card_width_mm }} × {{ template.card_height_mm }} mm</td>
+        <td style="font-size:11px;color:var(--tx2)">
+          {% for f in template.front_fields|slice:":6" %}{{ f }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </td>
+        <td>{{ template.validity_years }} yr</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <a class="btn btn-ghost" href="{% url 'id_cards:template_edit' template.pk %}">Edit</a>
+          <a class="btn btn-ghost" href="{% url 'id_cards:template_duplicate' template.pk %}">Copy</a>
+          {% if template.status == 'active' and not template.is_default %}
+          <form method="post" action="{% url 'id_cards:template_set_default' template.pk %}">
+            {% csrf_token %}<button class="btn btn-ghost">Set default</button>
+          </form>
+          {% endif %}
+          {% if template.status != 'archived' %}
+          <form method="post" action="{% url 'id_cards:template_archive' template.pk %}">
+            {% csrf_token %}<button class="btn btn-ghost" style="color:var(--rose)">Archive</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:28px">No templates yet — create one to start generating cards.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+<script>
+(function () {
+  document.querySelectorAll('.status-switch-form').forEach(function (form) {
+    var select = form.querySelector('.status-switch');
+    if (!select) return;
+    select.addEventListener('change', function () { form.submit(); });
+  });
+})();
+</script>
+{% endblock %}

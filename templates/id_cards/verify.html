@@ -1,0 +1,74 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>{{ page_title }} — eduPro</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d0f14;color:#e8eaf0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .wrap{width:100%;max-width:520px}
+  .brand{text-align:center;margin-bottom:22px;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#7a8099}
+  .card{background:#161920;border:1px solid #2a2f3d;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+  .head{padding:26px 28px;text-align:center;border-bottom:1px solid #2a2f3d}
+  .head .ico{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:24px}
+  .ok .ico{background:rgba(52,211,153,.14)}
+  .bad .ico{background:rgba(248,113,113,.14)}
+  .head h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+  .ok h1{color:#34d399}.bad h1{color:#f87171}
+  .head p{font-size:12.5px;color:#7a8099;margin-top:6px}
+  .body{padding:22px 28px 26px}
+  .rows{display:flex;flex-direction:column;gap:0}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13.5px}
+  .row:last-child{border-bottom:none}
+  .row dt{color:#7a8099;font-weight:500}
+  .row dd{font-family:ui-monospace,monospace;font-size:12.5px;text-align:right;max-width:60%}
+  .foot{text-align:center;padding:16px;font-size:11.5px;color:#515970;border-top:1px solid #2a2f3d;background:#14171d}
+  .foot a{color:#f59e0b;text-decoration:none}
+  .file-end{font-size:12px;color:#515970;text-align:center;margin-top:18px;font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">EduPortal — Student ID</div>
+  <div class="card {% if result.valid %}ok{% else %}bad{% endif %}">
+    <div class="head">
+      <div class="ico">{% if result.valid %}✓{% else %}✕{% endif %}</div>
+      <h1>{% if not result.found %}Card Not Found{% elif result.valid %}Card Verified{% else %}{{ result.reason }}{% endif %}</h1>
+      <p>{% if result.valid %}This card is currently valid.{% else %}This card did not pass verification.{% endif %}</p>
+    </div>
+    <dl class="body rows">
+      {% if result.payload.student_name %}
+      <div class="row"><dt>Student</dt><dd>{{ result.payload.student_name }}</dd></div>
+      {% endif %}
+      {% if result.payload.student_number %}
+      <div class="row"><dt>Student ID</dt><dd>{{ result.payload.student_number }}</dd></div>
+      {% endif %}
+      {% if result.payload.institution %}
+      <div class="row"><dt>Institution</dt><dd>{{ result.payload.institution }}</dd></div>
+      {% endif %}
+      {% if result.payload.programme %}
+      <div class="row"><dt>Programme</dt><dd>{{ result.payload.programme }}</dd></div>
+      {% endif %}
+      {% if result.payload.department %}
+      <div class="row"><dt>Department</dt><dd>{{ result.payload.department }}</dd></div>
+      {% endif %}
+      {% if result.payload.card_number %}
+      <div class="row"><dt>Card number</dt><dd>{{ result.payload.card_number }}</dd></div>
+      {% endif %}
+      {% if result.payload.issue_date %}
+      <div class="row"><dt>Issued</dt><dd>{{ result.payload.issue_date }}</dd></div>
+      {% endif %}
+      {% if result.payload.expiry_date %}
+      <div class="row"><dt>Expires</dt><dd>{{ result.payload.expiry_date }}</dd></div>
+      {% endif %}
+      {% if result.payload.status %}
+      <div class="row"><dt>Status</dt><dd>{{ result.payload.status }}</dd></div>
+      {% endif %}
+    </dl>
+    <div class="foot"><a href="/">Return to EduPortal</a></div>
+  </div>
+  <div class="file-end">verification · eduPro · {{ token|truncatechars:20 }}</div>
+</div>
+</body>
+</html>

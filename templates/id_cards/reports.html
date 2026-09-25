@@ -1,0 +1,51 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Reports{% endblock %}
+{% block breadcrumb %}ID Cards / Reports{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>ID Card Reports</h1><p>{{ institution.name }}</p></div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'id_cards:export_csv' %}?kind=readiness">Export readiness CSV</a>
+    <a class="btn btn-ghost" href="{% url 'id_cards:export_csv' %}?kind=cards">Export cards CSV</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-accent" style="background:var(--blue)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--blue-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0"/><path d="M20 8v6M17 11h6"/></svg></div></div><div class="kpi-val">{{ stats.total_students }}</div><div class="kpi-label">Students</div></div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--teal)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--teal-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--teal)" stroke-width="1.8"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="kpi-val">{{ stats.photos_approved }}</div><div class="kpi-label">Photos Approved</div></div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--ochre)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--ochre-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--ochre)" stroke-width="1.8"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg></div></div><div class="kpi-val">{{ stats.ready_for_generation }}</div><div class="kpi-label">Ready to Generate</div></div>
+  <div class="kpi"><div class="kpi-accent" style="background:var(--rose)"></div><div class="kpi-top"><div class="kpi-icon" style="background:var(--rose-dim)"><svg fill="none" viewBox="0 0 24 24" stroke="var(--rose)" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div><div class="kpi-val">{{ stats.expired }}</div><div class="kpi-label">Expired Cards</div></div>
+</div>
+
+<div class="bottom-grid">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Readiness breakdown</div></div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Students</span><span class="s-pill pill-muted">{{ stats.total_students }}</span></li>
+      <li class="status-row"><span class="s-label">Profiles complete</span><span class="s-pill pill-green">{{ stats.profiles_complete }}</span></li>
+      <li class="status-row"><span class="s-label">Photos uploaded</span><span class="s-pill pill-amber">{{ stats.photos_uploaded }}</span></li>
+      <li class="status-row"><span class="s-label">Photos pending review</span><span class="s-pill pill-amber">{{ stats.photos_pending }}</span></li>
+      <li class="status-row"><span class="s-label">Photos approved</span><span class="s-pill pill-green">{{ stats.photos_approved }}</span></li>
+      <li class="status-row"><span class="s-label">Photos rejected</span><span class="s-pill pill-rose">{{ stats.photos_rejected }}</span></li>
+      <li class="status-row"><span class="s-label">Photos missing</span><span class="s-pill pill-muted">{{ stats.photos_missing }}</span></li>
+      <li class="status-row"><span class="s-label">Ready to generate</span><span class="s-pill pill-green">{{ stats.ready_for_generation }}</span></li>
+      <li class="status-row"><span class="s-label">Already generated (live)</span><span class="s-pill pill-amber">{{ stats.already_generated }}</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Lifecycle status</div></div>
+    <ul class="status-list">
+      {% for value, label, count in status_rows %}
+      <li class="status-row">
+        <span class="s-label">{{ label }}</span>
+        <span class="s-pill {% if value == 'active' %}pill-green{% elif value in 'expired replaced cancelled' %}pill-rose{% else %}pill-amber{% endif %}">{{ count }}</span>
+      </li>
+      {% endfor %}
+      <li class="status-row"><span class="s-label">Photo-required replacements (expired/lost/damaged)</span><span class="s-pill pill-rose">{{ stats.replacement_required }}</span></li>
+    </ul>
+  </div>
+</div>
+
+{% endblock %}

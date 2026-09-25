@@ -1,0 +1,63 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Generate Card{% endblock %}
+{% block breadcrumb %}ID Cards / Generate{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Generate ID Card</h1><p>{{ student.get_full_name }}</p></div>
+  <div class="ph-right">
+    <a href="{% url 'id_cards:student_list' %}" class="btn btn-ghost">← Students</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="body-grid">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Eligibility Check</div></div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Name</span><span class="s-val">{{ student.get_full_name }}</span></li>
+      <li class="status-row"><span class="s-label">Student ID</span><span class="s-val">{{ student.academic_profile.student_number|default:"—" }}</span></li>
+      <li class="status-row"><span class="s-label">Programme</span><span class="s-val">{{ student.academic_profile.program.name|default:"—" }}</span></li>
+      <li class="status-row"><span class="s-label">Department</span><span class="s-val">{{ student.academic_profile.program.department.name|default:"—" }}</span></li>
+      <li class="status-row"><span class="s-label">Photo status</span>
+        <span class="s-pill {% if photo and photo.status == 'approved' %}pill-green{% elif photo and photo.status == 'rejected' %}pill-rose{% elif photo %}pill-amber{% else %}pill-muted{% endif %}">
+          {% if not photo %}NOT UPLOADED{% else %}{{ photo.get_status_display|upper }}{% endif %}
+        </span>
+      </li>
+      <li class="status-row"><span class="s-label">Result</span>
+        <span class="s-pill {% if preflight_code == 'ready' %}pill-green{% else %}pill-rose{% endif %}">{{ preflight_label }}</span>
+      </li>
+    </ul>
+    {% if preflight_reasons %}
+    <ul style="padding:0 16px 14px;font-size:12px;color:var(--tx2)">
+      {% for reason in preflight_reasons %}<li style="margin:4px 0">• {{ reason }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Action</div></div>
+    <div style="padding:16px">
+      {% if can_generate %}
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:12px">
+        This student is eligible. Generating now creates a card with a unique
+        number and prints a fresh verification QR code.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-primary" style="width:100%;justify-content:center">Generate card now</button>
+      </form>
+      {% else %}
+      <p style="font-size:12px;color:var(--tx2)">
+        Card generation is not possible until the issues above are resolved
+        (e.g. photo approved, profile completed, or a prior live card replaced).
+      </p>
+      {% endif %}
+      {% if photo %}
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <img src="{{ photo.image.url }}" alt="Photo" style="width:84px;height:98px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Settings{% endblock %}
+{% block breadcrumb %}ID Cards / Settings{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>ID Card Settings</h1><p>Defaults for {{ settings_obj.institution.name }}</p></div>
+</div>
+{% endblock %}
+{% block content %}
+<form method="post" style="max-width:720px;display:flex;flex-direction:column;gap:16px">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Card validity &amp; numbering</div></div>
+    <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      {% include "id_cards/_field.html" with field=form.validity_years %}
+      {% include "id_cards/_field.html" with field=form.card_number_prefix %}
+      {% include "id_cards/_field.html" with field=form.verification_token_length %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Workflow &amp; verification</div></div>
+    <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      {% include "id_cards/_field.html" with field=form.require_photo_approval %}
+      {% include "id_cards/_field.html" with field=form.allow_student_replacement_requests %}
+      {% include "id_cards/_field.html" with field=form.verification_requires_login %}
+      {% include "id_cards/_field.html" with field=form.auto_renewal_enabled %}
+    </div>
+    {% if settings_obj.auto_renewal_enabled %}<p style="font-size:12px;color:var(--tx3);padding:0 16px 8px">Renewal is handled by a periodic job; run it from the dashboard to expire old cards and issue renewals.</p>{% endif %}
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:8px">
+    <a href="{% url 'id_cards:dashboard' %}" class="btn btn-ghost">Cancel</a>
+    <button class="btn btn-primary" style="justify-content:center">Save settings</button>
+  </div>
+</form>
+<style>
+  input[type=text],input[type=number],select,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}
+  input:focus,select:focus{outline:none;border-color:var(--ochre)}
+  .form-group{display:flex;flex-direction:column;gap:6px}label{font-size:10.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--tx3)}
+</style>
+{% endblock %}

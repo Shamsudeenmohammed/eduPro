@@ -1,0 +1,41 @@
+{% extends "admin_base.html" %}{% block title %}Confirm Retake Fee Payment{% endblock %}
+{% block breadcrumb %}Finance / Retake Fees / Mark Paid{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Confirm Retake Fee Payment</h1>
+    <p>Mark the retake fee as paid for {{ retake_fee.student.get_full_name }}</p>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="max-width:600px">
+  <div class="card-header"><span class="card-title">Payment Details</span></div>
+  <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+      <div><span style="font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);display:block;margin-bottom:4px">Student</span><strong>{{ retake_fee.student.get_full_name }}</strong></div>
+      <div><span style="font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);display:block;margin-bottom:4px">Email</span>{{ retake_fee.student.email }}</div>
+      <div><span style="font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);display:block;margin-bottom:4px">Course</span>{{ retake_fee.course.code }} — {{ retake_fee.course.name }}</div>
+      <div><span style="font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);display:block;margin-bottom:4px">Session</span>{{ retake_fee.session }}</div>
+      <div><span style="font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);display:block;margin-bottom:4px">Amount</span><span style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--tx1)">{{ retake_fee.amount }}</span></div>
+      <div><span style="font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);display:block;margin-bottom:4px">Status</span>{% if retake_fee.is_paid %}<span class="status-pill status-approved">Already Paid</span>{% else %}<span class="status-pill status-pending">Unpaid</span>{% endif %}</div>
+    </div>
+    <hr style="border-color:var(--border);margin:4px 0">
+    <form method="post" style="display:flex;flex-direction:column;gap:12px">
+      {% csrf_token %}
+      <div>
+        <label style="display:block;font-size:10.5px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Notes (optional)</label>
+        <textarea name="notes" rows="3" placeholder="Payment reference, method, etc." style="width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12px;resize:vertical;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <a href="{% url 'finance:retake_fee_list' %}" class="btn btn-ghost">Cancel</a>
+        {% if not retake_fee.is_paid %}
+          <button type="submit" class="btn btn-primary" style="background:var(--teal);color:#0b0d11;font-weight:700">Confirm Payment</button>
+        {% else %}
+          <button type="button" class="btn btn-primary" style="background:var(--surface2);color:var(--tx2);cursor:not-allowed" disabled>Already Paid</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

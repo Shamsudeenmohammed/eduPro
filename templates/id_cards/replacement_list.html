@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Replacement Requests{% endblock %}
+{% block breadcrumb %}ID Cards / Replacements{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Replacement Requests</h1><p>Lost / damaged / stolen — approve to generate a new card and invalidate the old one</p></div>
+  <div class="ph-right">
+    {% for value, label in status_choices %}
+    <a class="btn btn-ghost {% if status_filter == value %}btn-primary{% endif %}" href="{% url 'id_cards:replacement_list' %}?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:16px">
+  {% for req in requests %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">{{ req.student.get_full_name }} — {{ req.get_reason_display }}</div>
+      <span class="badge {% if req.status == 'pending' %}badge-amber{% elif req.status == 'completed' %}badge-active{% else %}badge-inactive{% endif %}">{{ req.get_status_display }}</span>
+    </div>
+    <ul class="status-list">
+      <li class="status-row"><span class="s-label">Student ID</span><span class="s-val">{{ req.student.academic_profile.student_number|default:"—" }}</span></li>
+      <li class="status-row"><span class="s-label">Card replaced</span><span class="s-val">{{ req.card.card_number|default:"—" }}</span></li>
+      <li class="status-row"><span class="s-label">Requested</span><span class="s-val">{{ req.requested_at|date:"d M Y H:i" }}</span></li>
+      {% if req.details %}<li class="status-row"><span class="s-label">Details</span><span class="s-label" style="text-align:right;color:var(--tx1)">{{ req.details }}</span></li>{% endif %}
+      {% if req.rejection_reason %}<li class="status-row"><span class="s-label">Rejection</span><span class="s-label" style="text-align:right;color:var(--rose)">{{ req.rejection_reason }}</span></li>{% endif %}
+      {% if req.replacement_card %}<li class="status-row"><span class="s-label">New card</span><span class="s-val">{{ req.replacement_card.card_number }}</span></li>{% endif %}
+    </ul>
+    {% if req.status == 'pending' %}
+    <div style="padding:14px;display:flex;gap:8px;align-items:flex-start">
+      <form method="post" action="{% url 'id_cards:replacement_approve' req.pk %}" style="display:contents">
+        {% csrf_token %}<button class="btn btn-primary">Approve &amp; generate</button>
+      </form>
+      <form method="post" action="{% url 'id_cards:replacement_reject' req.pk %}" style="flex:1;display:flex;gap:8px">
+        {% csrf_token %}{{ reject_form.reason }}
+        <button class="btn btn-ghost" style="color:var(--rose)">Reject</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="card"><div style="padding:36px;text-align:center;color:var(--tx3)">No replacement requests with status “{{ status_filter }}”.</div></div>
+  {% endfor %}
+</div>
+<style>textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px;min-height:44px;resize:vertical}</style>
+{% endblock %}

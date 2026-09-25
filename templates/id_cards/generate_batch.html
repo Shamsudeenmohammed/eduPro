@@ -1,0 +1,82 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Batch Generation{% endblock %}
+{% block breadcrumb %}ID Cards / Batch Generation{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Batch Generation</h1><p>Preflight preview, then generate cards for many students at once</p></div>
+  <div class="ph-right">
+    <a href="{% url 'id_cards:batch_list' %}" class="btn btn-ghost">Batches</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><div class="card-title">1 — Filter students</div></div>
+  <div style="padding:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <form method="get" style="display:flex;gap:6px;align-items:center">
+      <input type="text" name="q" value="{{ search }}" placeholder="Search name / ID / email" style="width:240px">
+      <button class="btn btn-ghost" type="submit">Filter</button>
+    </form>
+    <span style="margin-left:auto;font-size:12px;color:var(--tx2)">
+      {{ preview|length }} students shown · {{ ready_count }} ready to generate
+    </span>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">2 — Select students (preflight report)</div>
+      <a class="card-action" onclick="document.querySelectorAll('.batch-check').forEach(e=>e.checked=true)">Select all ready</a>
+    </div>
+    <div class="table-wrap"><table class="reg-table">
+      <thead><tr><th style="width:36px"></th><th>Student</th><th>Photo</th><th>Result</th><th>Reasons</th></tr></thead>
+      <tbody>
+        {% for item in preview %}
+        <tr {% if item.ready %}style="background:rgba(52,211,153,.04)"{% endif %}>
+          <td><input type="checkbox" class="batch-check" name="students" value="{{ item.student.pk }}"
+                     {% if item.ready %}checked{% else %}disabled{% endif %}></td>
+          <td>
+            <div>{{ item.student.get_full_name }}</div>
+            <div style="font-size:11px;color:var(--tx3)">{{ item.student.academic_profile.student_number|default:"—" }}</div>
+          </td>
+          <td>
+            {% with photo=item.student.id_photo %}
+              {% if not photo %}<span class="badge badge-inactive">Missing</span>
+              {% elif photo.status == "approved" %}<span class="badge badge-active">Approved</span>
+              {% elif photo.status == "rejected" %}<span class="badge badge-inactive">Rejected</span>
+              {% else %}<span class="badge badge-amber">Pending</span>{% endif %}
+            {% endwith %}
+          </td>
+          <td><span class="badge {% if item.ready %}badge-active{% else %}badge-inactive{% endif %}">{{ item.label }}</span></td>
+          <td style="font-size:11px;color:var(--tx3)">{{ item.reasons|join:" · " }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:28px">Use the search box to find students.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><div class="card-title">3 — Options &amp; generate</div></div>
+    <div style="padding:14px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Template</label>
+        <select name="template">
+          <option value="">— Institution default —</option>
+          {% for tpl in templates %}<option value="{{ tpl.pk }}">{{ tpl.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px">Notes</label>
+        <input type="text" name="notes" placeholder="Optional batch notes">
+      </div>
+      <button class="btn btn-primary" style="min-width:180px;justify-content:center">Generate selected cards</button>
+    </div>
+  </div>
+</form>
+
+<style>select,input,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}select:focus,input:focus{outline:none;border-color:var(--ochre)}</style>
+{% endblock %}

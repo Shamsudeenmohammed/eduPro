@@ -1,0 +1,57 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Photo Review{% endblock %}
+{% block breadcrumb %}ID Cards / Photo Review{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Passport Photo Review</h1><p>Approve or reject student photographs before card generation</p></div>
+  <div class="ph-right">
+    {% for value, label in status_choices %}
+    <a class="btn btn-ghost {% if status_filter == value %}btn-primary{% endif %}" href="{% url 'id_cards:photo_review' %}?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+  {% for photo in photos %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">{{ photo.student.get_full_name }}</div>
+      <span class="badge {% if photo.status == 'approved' %}badge-active{% elif photo.status == 'rejected' %}badge-inactive{% else %}badge-amber{% endif %}">{{ photo.get_status_display }}</span>
+    </div>
+    <div style="display:flex;gap:14px;padding:14px">
+      <img src="{{ photo.image.url }}" alt="Passport photo"
+           style="width:96px;height:112px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--tx2);flex:1">
+        <div><span class="s-label">Student ID:</span> {{ photo.student.academic_profile.student_number|default:"—" }}</div>
+        <div><span class="s-label">Programme:</span> {{ photo.student.academic_profile.program.name|default:"—" }}</div>
+        <div><span class="s-label">Submitted:</span> {{ photo.submitted_at|date:"d M Y H:i" }}</div>
+        {% if photo.reviewed_by %}
+        <div><span class="s-label">Reviewed:</span> {{ photo.reviewed_by.get_full_name|default:"—" }}</div>
+        {% endif %}
+        {% if photo.rejection_reason %}
+        <div style="margin-top:6px;color:var(--rose)"><span class="s-label">Reason:</span> {{ photo.rejection_reason }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% if photo.status == "pending" %}
+    <div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:8px">
+      <form method="post" action="{% url 'id_cards:photo_approve' photo.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-primary" style="width:100%;justify-content:center">Approve</button>
+      </form>
+      <form method="post" action="{% url 'id_cards:photo_reject' photo.pk %}" style="display:contents">
+        {% csrf_token %}
+        {{ reject_form.reason }}
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--rose)">Reject with reason</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="card" style="grid-column:1/-1">
+    <div class="empty-state" style="padding:48px;text-align:center;color:var(--tx3)">No photos with status “{{ status_filter }}”.</div>
+  </div>
+  {% endfor %}
+</div>
+<style>select,input,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}textarea{resize:vertical;min-height:52px}</style>
+{% endblock %}

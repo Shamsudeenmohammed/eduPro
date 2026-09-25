@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — Batches{% endblock %}
+{% block breadcrumb %}ID Cards / Batches{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>Generation Batches</h1><p>History of bulk generation runs</p></div>
+  <div class="ph-right"><a href="{% url 'id_cards:generate_batch' %}" class="btn btn-primary">New Batch</a></div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>Batch</th><th>Status</th><th>Generated</th><th>Skipped</th><th>Selected</th><th>By</th><th>When</th><th></th></tr></thead>
+    <tbody>
+      {% for batch in batches %}
+      <tr>
+        <td style="font-family:var(--mono);color:var(--ochre)">{{ batch.batch_number }}</td>
+        <td><span class="badge badge-amber">{{ batch.get_status_display }}</span></td>
+        <td>{{ batch.generated_count }}</td>
+        <td>{% if batch.skipped_count %}<span class="badge badge-inactive">{{ batch.skipped_count }}</span>{% else %}0{% endif %}</td>
+        <td>{{ batch.total_selected }}</td>
+        <td>{{ batch.generated_by.get_full_name|default:"—" }}</td>
+        <td>{{ batch.generated_at|date:"d M Y H:i" }}</td>
+        <td><a href="{% url 'id_cards:batch_detail' batch.pk %}">View →</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:28px">No batches created yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

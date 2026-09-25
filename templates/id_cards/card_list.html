@@ -1,0 +1,49 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — All Cards{% endblock %}
+{% block breadcrumb %}ID Cards / Cards{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>All ID Cards</h1><p>Browse, filter and print generated cards</p></div>
+  <div class="ph-right">
+    <a href="{% url 'id_cards:export_csv' %}?kind=cards" class="btn btn-ghost">Export CSV</a>
+    <a href="{% url 'id_cards:generate_batch' %}" class="btn btn-primary">Generate</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><div class="card-title">Filter</div></div>
+  <div style="padding:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <a class="btn btn-ghost {% if not status_filter %}btn-primary{% endif %}" href="{% url 'id_cards:card_list' %}">All</a>
+    {% for value, label in status_choices %}
+    <a class="btn btn-ghost {% if status_filter == value %}btn-primary{% endif %}" href="{% url 'id_cards:card_list' %}?status={{ value }}">{{ label }}</a>
+    {% endfor %}
+    <form method="get" style="display:flex;gap:6px;margin-left:auto">
+      {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      <input type="text" name="q" value="{{ search }}" placeholder="Card no / name / student ID" style="width:240px">
+      <button class="btn btn-ghost" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>Card number</th><th>Student</th><th>Status</th><th>Issued</th><th>Expires</th><th>Batch</th><th></th></tr></thead>
+    <tbody>
+      {% for card in cards %}
+      <tr>
+        <td style="font-family:var(--mono);color:var(--ochre)">{{ card.card_number }}</td>
+        <td>{{ card.student.get_full_name }}<div style="font-size:11px;color:var(--tx3)">{{ card.student.academic_profile.student_number|default:"" }}</div></td>
+        <td><span class="badge {% if card.status == 'active' %}badge-active{% elif card.status == 'expired' or card.status == 'replaced' or card.status == 'cancelled' %}badge-inactive{% else %}badge-amber{% endif %}">{{ card.get_status_display }}</span></td>
+        <td>{{ card.issue_date|default:"—" }}</td>
+        <td>{{ card.expiry_date|default:"—" }}</td>
+        <td>{{ card.batch.batch_number|default:"—" }}</td>
+        <td><a href="{% url 'id_cards:card_detail' card.pk %}">View →</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:28px">No cards found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+<style>select,input,textarea{background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}input:focus{outline:none;border-color:var(--ochre)}</style>
+{% endblock %}

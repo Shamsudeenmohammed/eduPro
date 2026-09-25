@@ -1,0 +1,120 @@
+{% extends "admin_base.html" %}{% block title %}ID Cards — {{ card.card_number }}{% endblock %}
+{% block breadcrumb %}ID Cards / Cards / {{ card.card_number }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1 style="font-family:var(--mono)">{{ card.card_number }}</h1>
+    <p>{{ card.student.get_full_name }} — {{ card.student.academic_profile.student_number|default:"—" }} · {{ card.institution.name }}</p>
+  </div>
+  <div class="ph-right">
+    <a class="btn btn-ghost" href="{% url 'id_cards:card_image' card.pk 'combined' %}" target="_blank">Download image (front + back)</a>
+    <a class="btn btn-primary" href="{% url 'id_cards:print_preview' %}?cards={{ card.pk }}">Print</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="body-grid">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Card status</div>
+        <span class="badge {% if card.status == 'active' %}badge-active{% elif card.status in 'expired replaced cancelled' %}badge-inactive{% else %}badge-amber{% endif %}">{{ card.get_status_display }}</span>
+      </div>
+      <ul class="status-list">
+        <li class="status-row"><span class="s-label">Student</span><span class="s-val">{{ card.student.get_full_name }}</span></li>
+        <li class="status-row"><span class="s-label">Student ID</span><span class="s-val">{{ card.student.academic_profile.student_number|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Programme</span><span class="s-val">{{ card.student.academic_profile.program.name|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Template</span><span class="s-val">{{ card.template.name|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Batch</span><span class="s-val">{{ card.batch.batch_number|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Issue date</span><span class="s-val">{{ card.issue_date|default:"—" }}</span></li>
+        <li class="status-row"><span class="s-label">Expiry date</span><span class="s-val">{{ card.expiry_date|default:"—" }}</span></li>
+        {% if card.replaced_by %}<li class="status-row"><span class="s-label">Replaced by</span><span class="s-val">{{ card.replaced_by.card_number }}</span></li>{% endif %}
+        {% if card.cancel_reason %}<li class="status-row"><span class="s-label">Cancel reason</span><span class="s-val" style="color:var(--rose)">{{ card.cancel_reason }}</span></li>{% endif %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Verification QR</div></div>
+      <div style="padding:14px;display:flex;align-items:center;gap:14px">
+        <div style="text-align:center">
+          <a href="{% url 'id_cards:verify_card' card.verification_token %}" target="_blank">{{ card.verification_token|truncatechars:24 }}</a>
+        </div>
+        <div style="font-size:11px;color:var(--tx2)">
+          {% if card.is_verified %}This card currently passes public verification.
+          {% else %}This card does not currently verify (check status / expiry / replacement).{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Lifecycle actions</div></div>
+      <div class="actions-list">
+        <form method="post" action="{% url 'id_cards:card_action' card.pk 'print' %}" style="display:contents">
+          {% csrf_token %}<button class="action-row" style="width:100%"><div class="ar-label">Mark printed</div><span class="ar-arrow">→</span></button>
+        </form>
+        {% if can_issue %}
+        <form method="post" action="{% url 'id_cards:card_action' card.pk 'issue' %}" style="display:contents">
+          {% csrf_token %}<button class="action-row" style="width:100%"><div class="ar-label">Issue (activate QR)</div><span class="ar-arrow">→</span></button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'id_cards:card_action' card.pk 'lost' %}" style="display:contents">
+          {% csrf_token %}<button class="action-row" style="width:100%"><div class="ar-label" style="color:var(--rose)">Mark lost</div><span class="ar-arrow">→</span></button>
+        </form>
+        <form method="post" action="{% url 'id_cards:card_action' card.pk 'damaged' %}" style="display:contents">
+          {% csrf_token %}<button class="action-row" style="width:100%"><div class="ar-label" style="color:var(--rose)">Mark damaged</div><span class="ar-arrow">→</span></button>
+        </form>
+        <form method="post" action="{% url 'id_cards:card_action' card.pk 'cancel' %}" style="display:contents">
+          {% csrf_token %}<input type="text" name="reason" placeholder="Cancel reason (required)" style="margin-bottom:6px">
+          <button class="action-row" style="width:100%"><div class="ar-label" style="color:var(--rose)">Cancel card</div><span class="ar-arrow">→</span></button>
+        </form>
+
+        {% if card.status == 'active' %}
+        <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
+          <form method="post" action="{% url 'id_cards:card_action' card.pk 'replace' %}" style="display:flex;flex-direction:column;gap:6px">
+            {% csrf_token %}
+            <select name="reason">
+              {% for value, label in replacement_form.fields.reason.choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+            <input type="text" name="notes" placeholder="Notes (optional)">
+            <button class="btn btn-ghost" style="justify-content:center;color:var(--ochre)">Replace card (new card, old invalidated)</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if replacement_requests %}
+    <div class="card">
+      <div class="card-header"><div class="card-title">Replacement requests</div></div>
+      <ul class="status-list">
+        {% for req in replacement_requests %}
+        <li class="status-row"><span class="s-label">{{ req.get_reason_display }}</span>
+          <span class="s-pill {% if req.status == 'pending' %}pill-amber{% elif req.status == 'completed' %}pill-green{% else %}pill-rose{% endif %}">{{ req.get_status_display }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-header"><div class="card-title">Audit trail (last 50)</div></div>
+  <div class="table-wrap"><table class="reg-table">
+    <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Detail</th></tr></thead>
+    <tbody>
+      {% for entry in audit_logs %}
+      <tr><td style="font-family:var(--mono);font-size:11px">{{ entry.created_at|date:"d M Y H:i" }}</td>
+        <td>{{ entry.actor.get_full_name|default:"System" }}</td>
+        <td><span class="badge badge-amber">{{ entry.get_action_display }}</span></td>
+        <td style="font-size:12px;color:var(--tx2)">{{ entry.description }}</td></tr>
+      {% empty %}<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:20px">No audit entries.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<style>select,input,textarea{width:100%;background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-family:var(--font);font-size:12.5px}select:focus,input:focus{outline:none;border-color:var(--ochre)}</style>
+{% endblock %}

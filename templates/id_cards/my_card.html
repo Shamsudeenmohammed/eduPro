@@ -1,0 +1,140 @@
+{% extends "students/base.html" %}{% block title %}My ID Card{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left"><h1>My ID Card</h1></div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="grid g2">
+  <!-- Live card card -->
+  <div class="card fade-up delay-1">
+    {% if card %}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="card-title">Current ID Card</div>
+      <span class="pill {% if card.status == 'active' %}pill-green{% elif card.status in 'expired replaced cancelled' %}pill-red{% else %}pill-yellow{% endif %}">{{ card.get_status_display }}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;font-size:.9rem">
+      <div><div style="color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Card number</div><strong style="font-family:var(--mono)">{{ card.card_number }}</strong></div>
+      <div><div style="color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Programme</div><strong>{{ card.student.academic_profile.program.name|default:"—" }}</strong></div>
+      <div><div style="color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Issued</div>{{ card.issue_date|default:"—" }}</div>
+      <div><div style="color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Expires</div>{{ card.expiry_date|default:"—" }}</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <a class="btn btn-primary btn-sm" target="_blank" href="{% url 'id_cards:digital_card' 'combined' %}">Download image (front + back)</a>
+      <a class="btn btn-secondary btn-sm" target="_blank" href="{% url 'id_cards:digital_card' 'front' %}">Front</a>
+      <a class="btn btn-secondary btn-sm" target="_blank" href="{% url 'id_cards:digital_card' 'back' %}">Back</a>
+      <a class="btn btn-secondary btn-sm" target="_blank" href="{% url 'id_cards:verify_card' card.verification_token %}">Verify QR</a>
+    </div>
+    {% else %}
+    <div class="card-title">ID Card</div>
+    <div class="empty-state" style="padding:26px 0">
+      <p>No ID card has been generated for you yet. Upload your passport photo below so the ID office can prepare one.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Photo upload card -->
+  <div class="card fade-up delay-2">
+    <div class="card-title">Passport Photograph</div>
+    {% if photo %}
+    <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">
+      <img src="{{ photo.image.url }}" alt="Passport photo" style="width:76px;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:.85rem;color:var(--muted)">
+        <div style="margin-bottom:4px">
+          <span class="pill {% if photo.status == 'approved' %}pill-green{% elif photo.status == 'rejected' %}pill-red{% else %}pill-yellow{% endif %}">{{ photo.get_status_display }}</span>
+        </div>
+        <div>Submitted {{ photo.submitted_at|date:"d M Y" }}</div>
+        {% if photo.rejection_reason %}<div style="color:var(--danger);margin-top:6px;font-size:.8rem">Reason: {{ photo.rejection_reason }}</div>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:16px">You haven't uploaded a passport photo yet.</div>
+    {% endif %}
+    {% if photo_locked %}
+    <p style="font-size:.85rem;color:var(--muted);margin-top:14px">
+      Your photograph is approved and locked. To use a new photograph, file a
+      <a href="#replacement" style="color:var(--accent);text-decoration:underline">card replacement</a>
+      request below.
+    </p>
+    {% else %}
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="upload_photo">
+      <div class="form-group">
+        <label>New photograph</label>
+        <input type="file" name="photo" accept="image/jpeg,image/png" class="form-control" required>
+        <div class="form-errors">{{ photo_form.photo.errors }}</div>
+      </div>
+      <button class="btn btn-primary" type="submit">Upload</button>
+      <p style="font-size:.75rem;color:var(--muted);margin-top:8px">JPG or PNG, max 4 MB, clear front-facing shot. Re-uploading replaces your current photo.</p>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:18px">
+  <!-- Replacement card -->
+  <div class="card fade-up delay-3" id="replacement" style="scroll-margin-top:70px">
+    <div class="card-title">Replace a Card</div>
+    {% if can_replace %}
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">Lost, stolen or damaged? Request a replacement. Once approved, your current card is invalidated and a new one is generated.</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="request_replacement">
+      <div class="form-group">
+        <label>Reason</label>
+        {{ replacement_form.reason }}
+      </div>
+      <div class="form-group">
+        <label>Details (optional)</label>
+        {{ replacement_form.details }}
+      </div>
+      <button class="btn btn-danger" type="submit">Request replacement</button>
+    </form>
+    {% else %}
+    <p style="font-size:.85rem;color:var(--muted)">
+      {% if not card %}You need a live card before you can request a replacement.{% else %}Replacement requests aren't available for your current card state.{% endif %}
+    </p>
+    {% endif %}
+    {% if replacements %}
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">My requests</div>
+      {% for req in replacements %}
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+        <span>{{ req.get_reason_display }}</span>
+        <span class="pill {% if req.status == 'pending' %}pill-yellow{% elif req.status == 'completed' %}pill-green{% else %}pill-red{% endif %}">{{ req.get_status_display }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- History card -->
+  <div class="card fade-up delay-4">
+    <div class="card-title">Card History</div>
+    {% if history %}
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% for c in history %}
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem">
+        <span style="font-family:var(--mono)">{{ c.card_number }}</span>
+        <span class="pill {% if c.status in 'expired replaced cancelled' %}pill-red{% else %}pill-blue{% endif %}">{{ c.get_status_display }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:20px 0"><p>No previous cards.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .form-group label{display:block;font-size:.78rem;font-weight:500;color:var(--muted);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase}
+  .form-group .form-control{margin-bottom:4px}
+  .form-group { margin-bottom: 16px; }
+  .form-group select,.form-group textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:.9rem;font-family:inherit;outline:none}
+  .form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+  .form-group textarea{resize:vertical;min-height:90px}
+  .form-errors{font-size:.8rem;color:var(--danger);margin-top:5px}
+</style>
+{% endblock %}
