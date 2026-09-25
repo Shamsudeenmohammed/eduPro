@@ -1,323 +1,128 @@
-{% load static role_tags %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>User Management · eduPro</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0d0f14;--surface:#161920;--surface2:#1e222d;--muted:#7a8099;
-  --border:#2a2f3d;--accent:#f59e0b;--accent2:#a78bfa;--success:#34d399;
-  --danger:#f87171;--text:#e8eaf0;
-  --font:'DM Sans',system-ui,sans-serif;--mono:'DM Sans',monospace;
-  --radius:10px;--r2:12px;
-  --blue:#60a5fa;--blue-dim:rgba(96,165,250,0.1);
-  --ochre:#f59e0b;--ochre-dim:rgba(245,158,11,0.12);
-  --teal:#34d399;--teal-dim:rgba(52,211,153,0.1);
-  --rose:#f87171;--rose-dim:rgba(248,113,113,0.1);
-  --tx1:#e8eaf0;--tx2:#7a8099;--tx3:#515970;
-  --surface3:#222632;--border2:rgba(255,255,255,0.11);
-  --r:10px;
-}
-html,body{height:100%}
-body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;min-height:100vh;font-size:13px;line-height:1.5;overflow-x:hidden}
-
-.sidebar{width:230px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
-.sidebar-logo{padding:22px 18px 18px;font-size:21px;font-weight:800;color:var(--accent);letter-spacing:-.5px;border-bottom:1px solid var(--border)}
-.sidebar-logo span{color:var(--accent2)}
-.sidebar-nav{padding:14px 0;flex:1}
-.nav-section{padding:8px 18px 3px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:500;transition:all .15s;border-left:3px solid transparent}
-.nav-item:hover{color:var(--text);background:var(--surface2)}
-.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(245,158,11,.08)}
-.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
-.nav-item.active svg{opacity:1}
-.sidebar-user{padding:14px 18px;border-top:1px solid var(--border);font-size:13px}
-.sidebar-user .name{font-weight:600;color:var(--text)}
-.role-badge-container{display:flex;flex-direction:column;gap:4px;margin-top:4px}
-.role-badge{display:inline-block;align-self:flex-start;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(245,158,11,.15);color:var(--accent)}
-.logout-link{display:block;margin-top:8px;color:var(--muted);font-size:13px;text-decoration:none}
-.logout-link:hover{color:var(--danger)}
-
-/* ── SIDEBAR OVERLAY (mobile) ── */
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
-.sidebar-overlay.open{display:block}
-.hamburger{display:none;background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px}
-
-.main-wrap{flex:1;margin-left:230px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-@media(max-width:768px){.main-wrap{margin-left:0}.sidebar{transform:translateX(-100%);transition:transform .25s ease;z-index:100}.sidebar.open{transform:translateX(0)}.hamburger{display:flex}.page-heading{font-size:16px}.topbar{padding:10px 14px}}
-@media(max-width:640px){.content{padding:12px 8px}.topbar{padding:10px 10px}.page-heading{font-size:14px}}
-@media(max-width:480px){.content{padding:8px 5px}.topbar{padding:6px 8px}.page-heading{font-size:12px}}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.page-heading{font-size:19px;font-weight:700;color:var(--text)}
-.topbar-right{display:flex;align-items:center;gap:8px}
-.tb-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--muted);font-size:12px;cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--font)}
-.tb-pill:hover{color:var(--text);border-color:var(--border);background:var(--border)}
-.tb-pill svg{width:13px;height:13px}
-.tb-avatar{width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0}
-.content{flex:1;padding:24px 28px}
-
-.messages-wrap{margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
-.msg-item{padding:10px 14px;border-radius:var(--r);font-size:12.5px;display:flex;align-items:center;gap:8px;border:1px solid}
-.msg-success{background:rgba(62,207,178,0.07);border-color:rgba(62,207,178,0.2);color:var(--teal)}
-.msg-error{background:rgba(224,95,117,0.07);border-color:rgba(224,95,117,0.2);color:var(--rose)}
-.msg-warning{background:rgba(232,168,76,0.07);border-color:rgba(232,168,76,0.2);color:var(--ochre)}
-.msg-info{background:rgba(91,156,246,0.07);border-color:rgba(91,156,246,0.2);color:var(--blue)}
-
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-.ph-left h1{font-size:21px;font-weight:700;letter-spacing:-0.4px;color:var(--tx1);line-height:1.2}
-.ph-left p{font-size:12.5px;color:var(--tx2);margin-top:3px}
-.ph-right{display:flex;gap:8px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;border:none;transition:all 0.15s;white-space:nowrap}
-.btn svg{width:14px;height:14px;flex-shrink:0}
-.btn-primary{background:var(--ochre);color:#0b0d11}
-.btn-primary:hover{background:#d97706}
-.btn-ghost{background:var(--surface2);color:var(--tx1);border:1px solid var(--border2)}
-.btn-ghost:hover{background:var(--surface3);border-color:rgba(255,255,255,0.18)}
-
-.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;font-family:var(--mono);letter-spacing:0.3px}
-.badge-amber{background:var(--ochre-dim);color:var(--accent)}
-.badge-active{background:var(--teal-dim);color:var(--success)}
-.badge-inactive{background:var(--rose-dim);color:var(--danger)}
-.badge-admin{background:rgba(167,139,250,.15);color:var(--accent2)}
-.badge-teacher{background:var(--ochre-dim);color:var(--accent)}
-.badge-student{background:var(--teal-dim);color:var(--success)}
-
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
-.search-bar{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.search-input{flex:1;min-width:200px;padding:8px 14px;border:1px solid var(--border);border-radius:var(--r);font-size:12.5px;font-family:var(--font);outline:none;background:var(--surface2);color:var(--tx1);transition:border-color 0.15s}
-.search-input:focus{border-color:var(--accent)}
-.search-input::placeholder{color:var(--tx3)}
-.filter-select{padding:8px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-family:var(--font);outline:none;background:var(--surface2);color:var(--tx1);cursor:pointer}
-.filter-select:focus{border-color:var(--accent)}
-
-.data-table{width:100%;border-collapse:collapse}
-.data-table th{padding:8px 16px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--tx3);border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
-.data-table td{padding:10px 16px;font-size:12.5px;border-bottom:1px solid var(--border);color:var(--tx1)}
-.data-table tr:last-child td{border-bottom:none}
-.data-table tr:hover td{background:rgba(255,255,255,0.02)}
-
-.user-cell{display:flex;align-items:center;gap:10px}
-.user-thumb{width:30px;height:30px;border-radius:50%;background:var(--ochre-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.cell-name{font-weight:600;color:var(--tx1)}
-.cell-email{font-size:11px;color:var(--tx3)}
-.action-link{font-size:12px;color:var(--accent);font-weight:600;text-decoration:none;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0}
-.action-link:hover{text-decoration:underline}
-.action-link.danger{color:var(--danger)}
-.action-link.success{color:var(--success)}
-
-.pagination{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--tx3)}
-.page-btns{display:flex;gap:6px}
-.page-btn{padding:5px 12px;border:1px solid var(--border);border-radius:var(--r);text-decoration:none;color:var(--tx2);font-size:12px;font-weight:500;transition:all 0.15s;font-family:var(--font)}
-.page-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--ochre-dim)}
-
-.toast-c{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:6px}
-.toast{padding:10px 14px;border-radius:var(--r);font-size:12.5px;font-weight:500;display:flex;align-items:flex-start;gap:6px;box-shadow:0 4px 24px rgba(0,0,0,.35);max-width:340px;animation:slideIn .25s ease}
-.toast-success{background:rgba(52,211,153,0.1);color:var(--teal);border:1px solid rgba(52,211,153,0.2)}
-.toast-error{background:rgba(248,113,113,0.1);color:var(--rose);border:1px solid rgba(248,113,113,0.2)}
-.toast-info{background:rgba(96,165,250,0.1);color:var(--blue);border:1px solid rgba(96,165,250,0.2)}
-.toast-close{margin-left:auto;background:none;border:none;cursor:pointer;opacity:.55;font-size:14px;line-height:1;padding:0;color:inherit}
-@keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
-{% include "components/sidebar_collapse.css.html" %}
-</style>
-<link rel="stylesheet" href="{% static 'css/responsive.css' %}">
-</head>
-<body>
-
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">edu<span>Pro</span></div>
-  <nav class="sidebar-nav" id="sidebarNav" data-role="admin">
-    <button type="button" class="sidebar-menu-toggle" data-menu="platform" aria-expanded="false" aria-controls="sub-platform">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="menu-title">Platform</span>
-      <span class="menu-arrow" aria-hidden="true">▾</span>
-    </button>
-    <div class="sidebar-submenu" id="sub-platform">
-      <a href="{% url 'accounts:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Dashboard</span></a>
-      <a href="{% url 'accounts:user_list' %}" class="nav-item {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}"><span>Users</span></a>
-      <a href="{% url 'academics:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'academics' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Academics</span></a>
-    </div>
-    <button type="button" class="sidebar-menu-toggle" data-menu="account" aria-expanded="false" aria-controls="sub-account">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span class="menu-title">Account</span>
-      <span class="menu-arrow" aria-hidden="true">▾</span>
-    </button>
-    <div class="sidebar-submenu" id="sub-account">
-      <a href="{% url 'accounts:profile' %}" class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><span>My Profile</span></a>
-      <a href="{% url 'accounts:change_password' %}" class="nav-item {% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><span>Change Password</span></a>
-    </div>
-  </nav>
-  <div class="sidebar-user">
-    <div class="name">{{ request.user.get_full_name }}</div>
-    <div class="role-badge-container">
-      <span class="role-badge">Admin</span>
-    </div>
-    <form method="post" action="{% url 'accounts:logout' %}">
-      {% csrf_token %}
-      <button type="submit" class="logout-link" style="background:none;border:none;cursor:pointer;font-family:var(--font);width:100%;text-align:left;font-size:13px">↩ Sign out</button>
-    </form>
+{% extends "admin_base.html" %}
+{% block title %}User Management{% endblock %}
+{% block breadcrumb %}Platform / Users{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>User Management</h1>
+    <p>{{ page_obj.paginator.count }} total user{{ page_obj.paginator.count|pluralize }}</p>
   </div>
-</aside>
-
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<div class="main-wrap">
-  <header class="topbar">
-    <div class="topbar-left">
-      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="page-heading">User Management</div>
+  <div class="ph-right">
+    <a href="{% url 'accounts:register' %}" class="btn btn-primary">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add User
+    </a>
+    <a href="{% url 'accounts:bulk_student_upload' %}" class="btn btn-ghost">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Bulk Upload
+    </a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px">
+  <form method="get" style="display:flex;gap:10px;padding:14px;flex-wrap:wrap;align-items:end">
+    <div style="flex:1;min-width:240px">
+      <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">Search</label>
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or email…" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);width:100%;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
     </div>
-    <div class="topbar-right">
-      <a href="{% url 'accounts:register' %}" class="tb-pill">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add User
-      </a>
-      <a href="{% url 'accounts:bulk_student_upload' %}" class="tb-pill">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Bulk Upload
-      </a>
-      <a href="{% url 'accounts:profile' %}" class="tb-avatar">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</a>
+    <div>
+      <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">Role</label>
+      <select name="role" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''">
+        <option value="">All Roles</option>
+        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+        <option value="teacher" {% if role_filter == 'teacher' %}selected{% endif %}>Teacher</option>
+        <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Student</option>
+      </select>
     </div>
-  </header>
-
-  <div class="content">
-    {% if messages %}
-    <div class="messages-wrap">
-      {% for msg in messages %}
-      <div class="msg-item msg-{{ msg.tags }}">{{ msg }}</div>
-      {% endfor %}
+    <div>
+      <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">Status</label>
+      <select name="status" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''">
+        <option value="">All Status</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
     </div>
-    {% endif %}
+    <button type="submit" class="btn btn-ghost" style="font-size:12px;padding:6px 14px">Filter</button>
+    {% if search_query or role_filter or status_filter %}<a href="{% url 'accounts:user_list' %}" class="btn btn-ghost" style="font-size:12px;padding:6px 14px">Clear</a>{% endif %}
+  </form>
+</div>
 
-    <div class="page-header">
-      <div class="ph-left">
-        <h1>User Management</h1>
-        <p>{{ page_obj.paginator.count }} total user{{ page_obj.paginator.count|pluralize }}</p>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="search-bar">
-        <input type="text" class="search-input" id="search-input" placeholder="Search name or email…" />
-        <select class="filter-select" id="role-filter">
-          <option value="">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="teacher">Teacher</option>
-          <option value="student">Student</option>
-        </select>
-        <select class="filter-select" id="status-filter">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
-
-      <div style="overflow-x:auto">
-        <table class="data-table" id="user-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Joined</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for u in page_obj %}
-            <tr data-role="{{ u.role }}" data-status="{% if u.is_active %}active{% else %}inactive{% endif %}">
-              <td>
-                <div class="user-cell">
-                  <div class="user-thumb">{{ u.first_name|slice:":1"|upper }}{{ u.last_name|slice:":1"|upper }}</div>
-                  <div>
-                    <div class="cell-name">{{ u.get_full_name }}</div>
-                    <div class="cell-email">{{ u.email }}</div>
-                  </div>
-                </div>
-              </td>
-              <td><span class="badge badge-{{ u.role }}">{{ u.role|title }}</span></td>
-              <td style="color:var(--tx3);font-size:12px">{{ u.date_joined|date:"N j, Y" }}</td>
-              <td><span class="badge {% if u.is_active %}badge-active{% else %}badge-inactive{% endif %}">{% if u.is_active %}Active{% else %}Inactive{% endif %}</span></td>
-              <td style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <a href="{% url 'accounts:user_detail' u.pk %}" class="action-link">Edit</a>
-                <form method="post" action="{% url 'accounts:toggle_user_active' u.pk %}" style="display:inline">
-                  {% csrf_token %}
-                  <button type="submit" class="action-link {% if u.is_active %}danger{% else %}success{% endif %}"
-                    onclick="return confirm('{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.get_full_name }}?')">
-                    {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
-                  </button>
-                </form>
-              </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:32px">No users found.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      {% if page_obj.has_other_pages %}
-      <div class="pagination">
-        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-        <div class="page-btns">
-          {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="page-btn">← Prev</a>{% endif %}
-          {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-btn">Next →</a>{% endif %}
-        </div>
-      </div>
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Users</div>
+    {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table" id="user-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th class="sortable">Role</th>
+          <th class="sortable">Joined</th>
+          <th class="sortable">Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in page_obj %}
+        <tr data-role="{{ u.role }}" data-status="{% if u.is_active %}active{% else %}inactive{% endif %}">
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:30px;height:30px;border-radius:50%;background:var(--ochre-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">{{ u.first_name|slice:":1"|upper }}{{ u.last_name|slice:":1"|upper }}</div>
+              <div>
+                <div style="font-weight:600">{{ u.get_full_name }}</div>
+                <div style="font-size:11px;color:var(--tx3)">{{ u.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if u.role == 'admin' %}
+              <span class="badge badge-purple">{{ u.role|title }}</span>
+            {% elif u.role == 'teacher' %}
+              <span class="badge badge-amber">{{ u.role|title }}</span>
+            {% else %}
+              <span class="badge" style="background:var(--teal-dim);color:var(--success)">{{ u.role|title }}</span>
+            {% endif %}
+          </td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ u.date_joined|date:"M d, Y" }}</td>
+          <td>
+            {% if u.is_active %}
+              <span class="status-pill status-approved">Active</span>
+            {% else %}
+              <span class="status-pill status-rejected">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right">
+            <a href="{% url 'accounts:user_detail' u.pk %}" class="btn btn-ghost btn-icon">Edit</a>
+            <form method="post" action="{% url 'accounts:toggle_user_active' u.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost btn-icon {% if u.is_active %}{% else %}{% endif %}" style="{% if u.is_active %}background:rgba(248,113,113,0.15);color:var(--danger);border-color:rgba(248,113,113,0.25){% else %}background:rgba(52,211,153,0.15);color:var(--success);border-color:rgba(52,211,153,0.25){% endif %}" onclick="return confirm('{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.get_full_name|escapejs }}?')">
+                {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:24px">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:12px 18px;border-top:1px solid var(--border)">
+    <div class="pagination" style="margin:0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+      {% if page_obj.has_previous %}
+        <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">‹</a>
+      {% endif %}
+      <span class="page-link current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">&raquo;</a>
       {% endif %}
     </div>
   </div>
+  {% endif %}
 </div>
-
-<div class="toast-c" id="toast-c" aria-live="polite">
-  {% for message in messages %}
-  <div class="toast toast-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}" role="alert">
-    <span>{{ message }}</span><button class="toast-close" onclick="this.parentElement.remove()">✕</button>
-  </div>
-  {% endfor %}
-</div>
-
-<script>
-(function(){
-  var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay'),hb=document.getElementById('hamburger');
-  if(hb&&sb){
-    function openSb(){sb.classList.add('open');ov.classList.add('open');document.body.style.overflow='hidden';}
-    function closeSb(){sb.classList.remove('open');ov.classList.remove('open');document.body.style.overflow='';}
-    hb.addEventListener('click',openSb);
-    ov.addEventListener('click',closeSb);
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSb();});
-  }
-
-  var searchInput=document.getElementById('search-input');
-  var roleFilter=document.getElementById('role-filter');
-  var statusFilter=document.getElementById('status-filter');
-  var rows=document.querySelectorAll('#user-table tbody tr[data-role]');
-  function filterTable(){
-    var q=searchInput.value.toLowerCase();
-    var role=roleFilter.value;
-    var status=statusFilter.value;
-    rows.forEach(function(row){
-      var text=row.textContent.toLowerCase();
-      var matchQ=!q||text.includes(q);
-      var matchR=!role||row.dataset.role===role;
-      var matchS=!status||row.dataset.status===status;
-      row.style.display=(matchQ&&matchR&&matchS)?'':'none';
-    });
-  }
-  searchInput.addEventListener('input',filterTable);
-  roleFilter.addEventListener('change',filterTable);
-  statusFilter.addEventListener('change',filterTable);
-  document.querySelectorAll('.toast').forEach(function(t){
-    setTimeout(function(){t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.remove();},420);},5000);
-  });
-})();
-</script>
-<script>{% include "components/sidebar_collapse.js.html" %}</script>
-</body>
-</html>
+{% endblock %}

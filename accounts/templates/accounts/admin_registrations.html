@@ -1,253 +1,137 @@
-{% extends "academics/base.html" %}
-{% block extra_head %}
-<style>
-  .admin-hero {
-    background: linear-gradient(135deg, #161920 0%, #1b2130 60%, #232838 100%);
-    border: 1px solid var(--border);
-    border-radius: 14px; padding: 2rem 2.5rem; margin-bottom: 2rem;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
-  }
-  .admin-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; color: var(--text); }
-  .admin-hero p  { margin: 0; color: var(--muted); font-size: .9rem; }
-  .admin-hero::after { content: ""; background: var(--accent); height: 3px; width: 48px; border-radius: 2px; }
-
-  .filter-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
-  .ftab {
-    padding: .32rem .9rem; border-radius: 99px; font-size: .82rem; font-weight: 600;
-    border: 1.5px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer;
-    transition: all .15s;
-  }
-  .ftab:hover { color: var(--text); border-color: var(--accent); }
-  .ftab.active, .ftab.active:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  .search-wrap { margin-left: auto; }
-  .search-wrap input {
-    padding: .4rem .9rem; border-radius: 99px; border: 1.5px solid var(--border);
-    background: var(--surface2); color: var(--text);
-    font-size: .85rem; outline: none; transition: border-color .15s; width: 220px;
-  }
-  .search-wrap input::placeholder { color: var(--muted); }
-  .search-wrap input:focus { border-color: var(--accent); }
-
-  .reg-table-wrap {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-  }
-  table.reg-table { width: 100%; border-collapse: collapse; }
-  table.reg-table th {
-    font-size: .75rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .05em; color: var(--muted); background: var(--surface2);
-    padding: .7rem 1.1rem; border-bottom: 1px solid var(--border); white-space: nowrap;
-  }
-  table.reg-table td {
-    padding: .85rem 1.1rem; font-size: .88rem;
-    border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle;
-  }
-  table.reg-table tbody tr { transition: none; }
-  table.reg-table tr:last-child td { border-bottom: none; }
-  table.reg-table tbody tr:hover { background: transparent; }
-  table.reg-table tbody tr:hover td { background: var(--surface2); }
-
-  .student-name { font-weight: 700; color: var(--text); }
-  .student-email { font-size: .78rem; color: var(--muted); }
-
-  .course-code { font-weight: 800; color: var(--accent2); font-size: .88rem; }
-  .semester-label { font-size: .78rem; color: var(--muted); }
-
-  .status-badge {
-    font-size: .72rem; font-weight: 700; padding: .22rem .75rem; border-radius: 99px;
-  }
-  .s-pending  { background: rgba(251,191,36,0.15);  color: var(--warning); }
-  .s-approved { background: rgba(52,211,153,0.15);  color: var(--success); }
-  .s-rejected { background: rgba(248,113,113,0.15); color: var(--danger); }
-
-  .action-cell { display: flex; gap: .5rem; flex-wrap: nowrap; }
-  .btn-approve {
-    background: #10b981; color: #fff; border: none;
-    padding: .35rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 700;
-    cursor: pointer; transition: background .15s;
-  }
-  .btn-approve:hover { background: #059669; }
-  .btn-reject {
-    background: var(--danger); color: #fff; border: none;
-    padding: .35rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 700;
-    cursor: pointer; transition: background .15s;
-  }
-  .btn-reject:hover { background: #dc2626; }
-
-  .pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
-  .pagination a, .pagination span {
-    padding: .4rem .85rem; border-radius: 8px; font-size: .85rem; font-weight: 600;
-    border: 1.5px solid var(--border); text-decoration: none; color: var(--text);
-    background: var(--surface2); transition: all .15s;
-  }
-  .pagination a:hover   { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .pagination span.current { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  /* Modal */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
-    z-index: 9999; align-items: center; justify-content: center;
-  }
-  .modal-overlay.active { display: flex; }
-  .modal-box {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 2rem; max-width: 440px; width: 90%; box-shadow: var(--shadow);
-  }
-  .modal-box h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: .75rem; color: var(--text); }
-  .modal-box p  { font-size: .88rem; color: var(--muted); margin-bottom: 1rem; }
-  .modal-box textarea {
-    width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
-    background: var(--surface2); color: var(--text);
-    padding: .65rem .9rem; font-size: .9rem; resize: vertical; margin-bottom: 1rem;
-  }
-  .modal-box textarea::placeholder { color: var(--muted); }
-  .modal-box textarea:focus { border-color: var(--danger); outline: none; }
-  .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; }
-  .btn-mod-cancel { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: .55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
-  .btn-mod-cancel:hover { background: var(--border); }
-  .btn-mod-reject { background: var(--danger); color: #fff; border: none; padding: .55rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; }
-  .btn-mod-reject:hover { background: #dc2626; }
-
-  .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
-
-  @media (max-width: 768px) {
-    table.reg-table thead { display: none; }
-    table.reg-table td { display: block; padding: .4rem 1rem; }
-    table.reg-table td::before { content: attr(data-label)': '; font-weight: 700; color: var(--muted); }
-    table.reg-table tr { border-bottom: 2px solid var(--border); display: block; padding: .5rem 0; }
-  }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="admin-hero">
-  <div>
-    <h1>{{ page_title }}</h1>
+{% extends "admin_base.html" %}
+{% block title %}Course Registration Requests{% endblock %}
+{% block breadcrumb %}Academics / Registration Requests{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Course Registration Requests</h1>
     <p>Review and manage student course registration requests</p>
   </div>
-</div>
-
-<div class="filter-bar" id="filterBar">
-  <button class="ftab active" data-filter="all">All</button>
-  <button class="ftab" data-filter="pending">Pending</button>
-  <button class="ftab" data-filter="approved">Approved</button>
-  <button class="ftab" data-filter="rejected">Rejected</button>
-  <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="🔍 Search student or course…">
+  <div class="ph-right">
+    <a href="{% url 'accounts:admin_registrations' %}" class="btn btn-ghost" style="font-size:12px;padding:6px 14px">All</a>
   </div>
 </div>
-
-<div class="reg-table-wrap">
-  {% if page_obj %}
-  <table class="reg-table" id="regTable">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Student</th>
-        <th>Course</th>
-        <th>Semester</th>
-        <th>Requested</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for reg in page_obj %}
-      <tr data-status="{{ reg.status }}"
-          data-name="{{ reg.student.get_full_name|lower }}"
-          data-course="{{ reg.offering.course.code|lower }}">
-        <td data-label="#">{{ forloop.counter }}</td>
-        <td data-label="Student">
-          <div class="student-name">{{ reg.student.get_full_name }}</div>
-          <div class="student-email">{{ reg.student.email }}</div>
-        </td>
-        <td data-label="Course">
-          <div class="course-code">{{ reg.offering.course.code }}</div>
-          <div style="font-size:.82rem;color:var(--muted);">{{ reg.offering.course.title|truncatechars:35 }}</div>
-          {% if reg.is_retake %}
-            <span style="display:inline-block;margin-top:4px;font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.25)">RETAK</span>
-          {% endif %}
-        </td>
-        <td data-label="Semester">
-          <div style="font-weight:600;font-size:.87rem;">{{ reg.offering.semester }}</div>
-          <div class="semester-label">{{ reg.offering.semester.session }}</div>
-        </td>
-        <td data-label="Requested">
-          <div style="font-size:.85rem;">{{ reg.created_at|date:"M d, Y" }}</div>
-          <div style="font-size:.75rem;color:var(--muted);">{{ reg.created_at|timesince }} ago</div>
-        </td>
-        <td data-label="Status">
-          <span class="status-badge s-{{ reg.status }}">{{ reg.status|capfirst }}</span>
-          {% if reg.reviewed_by %}
-            <div style="font-size:.73rem;color:var(--muted);margin-top:.25rem;">by {{ reg.reviewed_by.get_full_name }}</div>
-          {% endif %}
-          {% if reg.is_retake and reg.status == 'pending' and reg.id in unpaid_reg_ids %}
-            <div style="font-size:.7rem;margin-top:4px;color:var(--danger);font-weight:600">Retake fee unpaid</div>
-          {% endif %}
-        </td>
-        <td data-label="Actions">
-          {% if reg.status == 'pending' %}
-          <div class="action-cell">
-            <form method="post" action="{% url 'accounts:approve_registration' pk=reg.pk %}" style="display:inline;">
-              {% csrf_token %}
-              <button type="submit" class="btn-approve">✓ Approve</button>
-            </form>
-            <button type="button" class="btn-reject"
-                    onclick="openRejectModal('{% url 'accounts:reject_registration' pk=reg.pk %}', '{{ reg.student.get_full_name }}', '{{ reg.offering.course.code }}')">
-              ✗ Reject
-            </button>
-          </div>
-          {% else %}
-          <span style="font-size:.8rem;color:var(--muted);">—</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="7">
-          <div class="empty-state">
-            <div style="font-size:2.5rem;margin-bottom:.75rem;">📋</div>
-            <p>No registration requests found.</p>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="empty-state"><p>No registration requests.</p></div>
-  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px">
+  <form method="get" style="display:flex;gap:10px;padding:14px;flex-wrap:wrap;align-items:end">
+    <div>
+      <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">Status</label>
+      <select name="status" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font)">
+        <option value="">All</option>
+        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+        <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">Search</label>
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Student name, email, or course…" style="background:var(--surface2);color:var(--tx1);border:1px solid var(--border2);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);width:260px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--ochre)'" onblur="this.style.borderColor=''" />
+    </div>
+    <button type="submit" class="btn btn-ghost" style="font-size:12px;padding:6px 14px">Filter</button>
+    {% if search_query or status_filter %}<a href="{% url 'accounts:admin_registrations' %}" class="btn btn-ghost" style="font-size:12px;padding:6px 14px">Clear</a>{% endif %}
+  </form>
 </div>
 
-{% if page_obj.has_other_pages %}
-<div class="pagination">
-  {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}">← Prev</a>
-  {% endif %}
-  {% for num in page_obj.paginator.page_range %}
-    {% if page_obj.number == num %}
-      <span class="current">{{ num }}</span>
-    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'4' %}
-      <a href="?page={{ num }}">{{ num }}</a>
-    {% endif %}
-  {% endfor %}
-  {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}">Next →</a>
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">Registration Requests</div>
+    {% if page_obj.paginator.num_pages > 1 %}<span style="font-family:var(--mono);font-size:10px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% endif %}
+  </div>
+  <div style="overflow-x:auto">
+    <table class="data-table" id="regTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th class="sortable">Student</th>
+          <th class="sortable">Course</th>
+          <th class="sortable">Semester</th>
+          <th class="sortable">Requested</th>
+          <th class="sortable">Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reg in page_obj %}
+        <tr data-status="{{ reg.status }}">
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ forloop.counter }}</td>
+          <td>
+            <div style="font-weight:600">{{ reg.student.get_full_name }}</div>
+            <div style="font-size:11px;color:var(--tx3)">{{ reg.student.email }}</div>
+          </td>
+          <td>
+            <div style="font-weight:600;color:var(--accent2)">{{ reg.offering.course.code }}</div>
+            <div style="font-size:11px;color:var(--tx2)">{{ reg.offering.course.title|truncatechars:35 }}</div>
+            {% if reg.is_retake %}
+              <span class="badge badge-purple" style="margin-top:4px;font-size:9px;padding:1px 6px">RETAKE</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight:500">{{ reg.offering.semester }}</div>
+            <div style="font-size:11px;color:var(--tx3)">{{ reg.offering.semester.session }}</div>
+          </td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ reg.created_at|date:"M d, Y" }}</td>
+          <td>
+            {% if reg.status == 'pending' %}
+              <span class="status-pill status-pending">Pending</span>
+            {% elif reg.status == 'approved' %}
+              <span class="status-pill status-approved">Approved</span>
+            {% else %}
+              <span class="status-pill status-rejected">Rejected</span>
+            {% endif %}
+            {% if reg.reviewed_by %}
+              <div style="font-size:10px;color:var(--tx3);margin-top:4px">by {{ reg.reviewed_by.get_full_name }}</div>
+            {% endif %}
+            {% if reg.is_retake and reg.status == 'pending' and reg.id in unpaid_reg_ids %}
+              <div style="font-size:10px;color:var(--danger);margin-top:4px;font-weight:600">⚠ Retake fee unpaid</div>
+            {% endif %}
+          </td>
+          <td style="text-align:right">
+            {% if reg.status == 'pending' %}
+              <form method="post" action="{% url 'accounts:approve_registration' pk=reg.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-icon" style="background:var(--teal);color:#0b0d11;font-weight:700">✓ Approve</button>
+              </form>
+              <button type="button" class="btn btn-ghost btn-icon" onclick="openRejectModal('{% url 'accounts:reject_registration' pk=reg.pk %}', '{{ reg.student.get_full_name|escapejs }}', '{{ reg.offering.course.code|escapejs }}')" style="background:rgba(248,113,113,0.15);color:var(--danger);border-color:rgba(248,113,113,0.25)">✗ Reject</button>
+            {% else %}
+              <span style="font-size:11px;color:var(--tx3);font-family:var(--mono)">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:24px">No registration requests found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:12px 18px;border-top:1px solid var(--border)">
+    <div class="pagination" style="margin:0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+      {% if page_obj.has_previous %}
+        <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">&laquo;</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">‹</a>
+      {% endif %}
+      <span class="page-link current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="page-link">&raquo;</a>
+      {% endif %}
+    </div>
+  </div>
   {% endif %}
 </div>
-{% endif %}
 
 <!-- Reject modal -->
-<div class="modal-overlay" id="rejectModal">
-  <div class="modal-box">
-    <h3>❌ Reject Registration</h3>
-    <p id="rejectMeta">Rejecting registration request.</p>
+<div class="modal-overlay" id="rejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+  <div class="modal-box" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:1.5rem;max-width:440px;width:90%;box-shadow:var(--shadow)">
+    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.75rem;color:var(--tx1)">❌ Reject Registration</h3>
+    <p id="rejectMeta" style="font-size:.88rem;color:var(--tx2);margin-bottom:1rem">Rejecting registration request.</p>
     <form method="post" id="rejectForm">
       {% csrf_token %}
-      <textarea name="rejection_note" rows="3" placeholder="Reason for rejection (optional)…"></textarea>
-      <div class="modal-actions">
-        <button type="button" class="btn-mod-cancel" onclick="closeRejectModal()">Cancel</button>
-        <button type="submit" class="btn-mod-reject">Confirm Reject</button>
+      <textarea name="rejection_note" rows="3" placeholder="Reason for rejection (optional)…" style="width:100%;border:1px solid var(--border2);border-radius:var(--r);background:var(--surface2);color:var(--tx1);padding:8px 10px;font-family:var(--font);font-size:13px;resize:vertical;margin-bottom:1rem;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--danger)'" onblur="this.style.borderColor=''"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeRejectModal()">Cancel</button>
+        <button type="submit" class="btn" style="background:var(--danger);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-weight:700">Confirm Reject</button>
       </div>
     </form>
   </div>
@@ -257,33 +141,20 @@
 function openRejectModal(url, name, code){
   document.getElementById('rejectForm').action = url;
   document.getElementById('rejectMeta').textContent = `Rejecting ${name}'s request for ${code}.`;
-  document.getElementById('rejectModal').classList.add('active');
+  document.getElementById('rejectModal').style.display = 'flex';
 }
 function closeRejectModal(){
-  document.getElementById('rejectModal').classList.remove('active');
+  document.getElementById('rejectModal').style.display = 'none';
 }
 
-// Filter tabs
-document.getElementById('filterBar')?.addEventListener('click', e => {
-  const btn = e.target.closest('.ftab');
-  if(!btn) return;
-  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const f = btn.dataset.filter;
-  filterTable();
+// Close modal on overlay click
+document.getElementById('rejectModal')?.addEventListener('click', e => {
+  if (e.target.id === 'rejectModal') closeRejectModal();
 });
 
-// Search
-document.getElementById('searchInput')?.addEventListener('input', filterTable);
-
-function filterTable(){
-  const activeFilter = document.querySelector('.ftab.active')?.dataset.filter || 'all';
-  const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
-  document.querySelectorAll('#regTable tbody tr').forEach(row => {
-    const matchFilter = activeFilter === 'all' || row.dataset.status === activeFilter;
-    const matchSearch = !q || row.dataset.name?.includes(q) || row.dataset.course?.includes(q);
-    row.style.display = matchFilter && matchSearch ? '' : 'none';
-  });
-}
+// Keyboard ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeRejectModal();
+});
 </script>
 {% endblock %}

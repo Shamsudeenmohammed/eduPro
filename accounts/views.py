@@ -630,13 +630,37 @@ def bulk_student_upload_view(request):
 @login_required
 @admin_required
 def user_list_view(request):
-    qs = EduProUser.objects.select_related("profile").order_by("last_name")
+    from django.db.models import Q
+
+    qs = EduProUser.objects.select_related("profile").order_by("-date_joined")
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        qs = qs.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    role_filter = request.GET.get("role", "").strip()
+    if role_filter in ("admin", "teacher", "student"):
+        qs = qs.filter(role=role_filter)
+
+    status_filter = request.GET.get("status", "").strip()
+    if status_filter == "active":
+        qs = qs.filter(is_active=True)
+    elif status_filter == "inactive":
+        qs = qs.filter(is_active=False)
+
     paginator = Paginator(qs, 25)
     page_obj  = paginator.get_page(request.GET.get("page"))
 
     return render(request, "accounts/user_list.html", {
         "page_title": "User Management",
         "page_obj":   page_obj,
+        "search_query": search_query,
+        "role_filter": role_filter,
+        "status_filter": status_filter,
     })
 
 
@@ -701,14 +725,25 @@ def admin_registration_requests(request):
         .select_related("student", "offering__course", "offering__semester")
         .order_by("-created_at")
     )
+
+    status_filter = request.GET.get("status", "").strip()
+    if status_filter in ("pending", "approved", "rejected"):
+        requests = requests.filter(status=status_filter)
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        requests = requests.filter(
+            Q(student__first_name__icontains=search_query) |
+            Q(student__last_name__icontains=search_query) |
+            Q(student__email__icontains=search_query) |
+            Q(offering__course__code__icontains=search_query) |
+            Q(offering__course__title__icontains=search_query)
+        )
+
     paginator = Paginator(requests, 30)
     page_obj  = paginator.get_page(request.GET.get("page"))
 
     from finance.models import StudentRetakeFee
-    retake_student_courses = set()
-    for r in page_obj:
-        if r.is_retake:
-            retake_student_courses.add((r.student_id, r.offering.course_id))
     unpaid_fees = {
         (rf.student_id, rf.course_id)
         for rf in StudentRetakeFee.objects.filter(
@@ -724,6 +759,8 @@ def admin_registration_requests(request):
         "page_title": "Course Registration Requests",
         "page_obj":   page_obj,
         "unpaid_reg_ids": unpaid_reg_ids,
+        "status_filter": status_filter,
+        "search_query": search_query,
     })
 
 
