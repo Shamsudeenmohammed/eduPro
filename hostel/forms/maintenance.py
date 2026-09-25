@@ -22,3 +22,10 @@ class BedMaintenanceForm(forms.ModelForm):
         self.fields["bed"].queryset = HostelBed.objects.select_related(
             "room__hostel", "room__floor__block"
         ).order_by("room__hostel_id", "room__room_number", "bed_number")
+
+
+class BedMaintenanceEditForm(forms.ModelForm):
+    class Meta:
+        model = BedMaintenance
+        fields = ["status"]
+        widgets = {"status": Widgets.SELECT}

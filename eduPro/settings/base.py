@@ -46,6 +46,7 @@ LOCAL_APPS = [
     "api.apps.ApiConfig",
     "scheduling.apps.SchedulingConfig",
     "notifications.apps.NotificationsConfig",
+    "id_cards.apps.IdCardsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

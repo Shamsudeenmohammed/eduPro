@@ -43,21 +43,55 @@
 </div>
 
 {% if is_admin %}
-<div class="card" style="margin-bottom:18px">
-  <div class="card-header"><span class="card-title">Timetable Health</span>
-    <span class="badge {% if stats.hard_conflicts or stats.unplaced %}badge-inactive{% else %}badge-active{% endif %}">
+<div class="card health-card" style="margin-bottom:18px">
+  <div class="card-header">
+    <div class="card-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Timetable Health
+    </div>
+    <span class="health-badge {% if stats.hard_conflicts or stats.unplaced %}health-warning{% else %}health-ok{% endif %}">
       {% if stats.hard_conflicts or stats.unplaced %}needs attention{% else %}healthy{% endif %}
     </span>
   </div>
-  <div class="dash-stats">
-    <div class="dash-stat"><strong>{{ stats.placed }}</strong><span>sessions placed</span></div>
-    <div class="dash-stat"><strong>{{ stats.offerings_covered }}</strong><span>offerings covered</span></div>
-    <div class="dash-stat"><strong>{{ stats.lecturers_teaching }}</strong><span>lecturers teaching</span></div>
-    <div class="dash-stat"><strong>{{ stats.rooms_in_use }}</strong><span>rooms in use</span></div>
-    <div class="dash-stat"><strong class="{% if stats.hard_conflicts %}txt-danger{% endif %}">{{ stats.hard_conflicts }}</strong><span>hard conflicts</span></div>
-    <div class="dash-stat"><strong class="{% if stats.unplaced %}txt-danger{% endif %}">{{ stats.unplaced }}</strong><span>unplaced sessions</span></div>
-    <div class="dash-stat"><strong>{{ stats.under_review }}</strong><span>in review</span></div>
-    <div class="dash-stat"><strong>{{ stats.correction_required }}</strong><span>needs revision</span></div>
+  <div class="health-grid">
+    <div class="health-stat {% if stats.placed %}has-data{% endif %}">
+      <div class="health-value">{{ stats.placed }}</div>
+      <div class="health-label">Sessions Placed</div>
+      <div class="health-bar"><span style="width: {% widthratio stats.placed stats.total_sessions 100 %}%"></span></div>
+    </div>
+    <div class="health-stat {% if stats.offerings_covered %}has-data{% endif %}">
+      <div class="health-value">{{ stats.offerings_covered }}</div>
+      <div class="health-label">Offerings Covered</div>
+      <div class="health-bar"><span style="width: {% widthratio stats.offerings_covered stats.total_offerings 100 %}%"></span></div>
+    </div>
+    <div class="health-stat {% if stats.lecturers_teaching %}has-data{% endif %}">
+      <div class="health-value">{{ stats.lecturers_teaching }}</div>
+      <div class="health-label">Lecturers Teaching</div>
+      <div class="health-bar"><span style="width: {% widthratio stats.lecturers_teaching stats.total_lecturers 100 %}%"></span></div>
+    </div>
+    <div class="health-stat {% if stats.rooms_in_use %}has-data{% endif %}">
+      <div class="health-value">{{ stats.rooms_in_use }}</div>
+      <div class="health-label">Rooms in Use</div>
+      <div class="health-bar"><span style="width: {% widthratio stats.rooms_in_use stats.total_rooms 100 %}%"></span></div>
+    </div>
+    <div class="health-stat alert {% if stats.hard_conflicts %}has-alert{% endif %}">
+      <div class="health-value">{{ stats.hard_conflicts }}</div>
+      <div class="health-label">Hard Conflicts</div>
+      {% if stats.hard_conflicts %}<span class="alert-tag">needs review</span>{% endif %}
+    </div>
+    <div class="health-stat alert {% if stats.unplaced %}has-alert{% endif %}">
+      <div class="health-value">{{ stats.unplaced }}</div>
+      <div class="health-label">Unplaced Sessions</div>
+      {% if stats.unplaced %}<span class="alert-tag">unplaced</span>{% endif %}
+    </div>
+    <div class="health-stat {% if stats.under_review %}has-data{% endif %}">
+      <div class="health-value">{{ stats.under_review }}</div>
+      <div class="health-label">In Review</div>
+    </div>
+    <div class="health-stat {% if stats.correction_required %}has-data{% endif %}">
+      <div class="health-value">{{ stats.correction_required }}</div>
+      <div class="health-label">Needs Revision</div>
+    </div>
   </div>
 </div>
 {% endif %}

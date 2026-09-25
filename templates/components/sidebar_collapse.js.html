@@ -44,6 +44,12 @@
     });
   }
 
+  // ---- Single active link helper (shared with AJAX nav) ----
+  function setActiveLink(link) {
+    nav.querySelectorAll('a.nav-item.active').forEach(function (el) { el.classList.remove('active'); });
+    if (link) link.classList.add('active');
+  }
+
   toggles.forEach(function (btn) {
     btn.addEventListener('click', function () {
       if (btn.classList.contains('open')) { setState(btn, false, true); }
@@ -72,4 +78,25 @@
   } else {
     restore();
   }
+
+  // Highlight active link on load (server-rendered active class should already be there,
+  // but this ensures it's set correctly even if the template misses it).
+  var currentPath = window.location.pathname;
+  nav.querySelectorAll('.nav-item[href]').forEach(function (link) {
+    var href = link.getAttribute('href');
+    if (href && (href === currentPath || (href !== '/' && currentPath.startsWith(href)))) {
+      setActiveLink(link);
+      // Also expand parent submenus
+      var parentSub = link.closest('.sidebar-submenu');
+      while (parentSub) {
+        var toggle = nav.querySelector('.sidebar-menu-toggle[aria-controls="' + parentSub.id + '"]');
+        if (toggle) openExclusive(toggle);
+        var container = parentSub.parentNode;
+        parentSub = container && container.closest ? container.closest('.sidebar-submenu') : null;
+      }
+    }
+  });
+
+  // Expose for AJAX navigation script
+  window.sidebarSetActive = setActiveLink;
 })();

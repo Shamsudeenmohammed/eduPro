@@ -1409,7 +1409,7 @@
 }
 .card-action:hover { color: var(--sch-amber); text-decoration: none; }
 
-/* ── Dashboard schedule-health stat grid ─────────────────────────────────── */
+/* ── Dashboard schedule-health stat grid (legacy) ─────────────────────────── */
 
 .dash-stats {
   display: grid;
@@ -1444,6 +1444,117 @@
 }
 
 .txt-danger { color: var(--sch-rose) !important; }
+
+/* ── Health Card (new design) ──────────────────────────────────────────────── */
+
+.health-card {
+  border: 1px solid var(--sch-line);
+  border-radius: var(--sch-r2);
+  overflow: hidden;
+  background: var(--sch-panel);
+  box-shadow: var(--sch-shadow-sm);
+}
+
+.health-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--sch-line);
+  background: linear-gradient(180deg, var(--sch-panel-2), var(--sch-panel));
+}
+
+.health-card .card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sch-ink);
+}
+.health-card .card-title svg { color: var(--sch-amber); flex-shrink: 0; }
+
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 999px;
+}
+.health-ok { background: rgba(47, 212, 167, 0.14); color: var(--sch-teal); border: 1px solid rgba(47, 212, 167, 0.25); }
+.health-warning { background: rgba(245, 166, 35, 0.14); color: var(--sch-amber); border: 1px solid rgba(245, 166, 35, 0.25); }
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+.health-stat {
+  position: relative;
+  padding: 14px 16px;
+  background: var(--sch-panel-2);
+  border: 1px solid var(--sch-line);
+  border-radius: var(--sch-r);
+  transition: border-color 0.15s, background 0.15s;
+}
+.health-stat:hover { border-color: var(--sch-line-strong); background: var(--sch-panel-3); }
+.health-stat.has-data { border-left: 3px solid var(--sch-teal); }
+.health-stat.alert { border-left: 3px solid var(--sch-rose); }
+.health-stat.alert.has-alert { background: rgba(255, 107, 129, 0.05); }
+
+.health-value {
+  font-family: var(--sch-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sch-ink);
+}
+.health-stat.alert .health-value { color: var(--sch-rose); }
+
+.health-label {
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--sch-ink-2);
+}
+
+.health-bar {
+  margin-top: 10px;
+  height: 4px;
+  background: var(--sch-panel);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.health-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--sch-teal), var(--sch-amber));
+  border-radius: 2px;
+  transition: width 0.6s ease-out;
+}
+
+.alert-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--sch-rose);
+  background: rgba(255, 107, 129, 0.12);
+  border: 1px solid rgba(255, 107, 129, 0.2);
+  border-radius: 999px;
+}
 
 /* ── Attendance week-grid scrolling (enhanced by scheduling.js) ──────────── */
 

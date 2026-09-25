@@ -32,6 +32,8 @@ from .staff import (  # noqa: F401
     maintenance,
     maintenance_complete,
     maintenance_create,
+    maintenance_delete,
+    maintenance_edit,
     outstanding_balances,
     policy,
     reports,

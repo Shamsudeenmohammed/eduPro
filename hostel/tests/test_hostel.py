@@ -645,6 +645,48 @@ class MaintenanceIncidentTests(HostelBaseTestCase):
                 bed=self.bed_a, reason="Whatever", reported_by=self.officer
             )
 
+    def test_update_status_reopens_and_completes_record(self):
+        record = BedMaintenanceService.start_maintenance(
+            bed=self.bed_a, reason="Loose rail", reported_by=self.officer
+        )
+
+        BedMaintenanceService.update_status(
+            record, BedMaintenance.Status.COMPLETED, actor=self.officer
+        )
+        record.refresh_from_db()
+        self.assertEqual(record.status, BedMaintenance.Status.COMPLETED)
+        self.assertIsNotNone(record.ended_at)
+        self.refresh_bed(self.bed_a)
+        self.assertEqual(self.bed_a.state, HostelBed.BedState.AVAILABLE)
+
+        BedMaintenanceService.update_status(
+            record, BedMaintenance.Status.ONGOING, actor=self.officer
+        )
+        record.refresh_from_db()
+        self.assertEqual(record.status, BedMaintenance.Status.ONGOING)
+        self.assertIsNone(record.ended_at)
+        self.assertIsNone(record.completed_by)
+        self.refresh_bed(self.bed_a)
+        self.assertEqual(self.bed_a.state, HostelBed.BedState.MAINTENANCE)
+
+    def test_delete_maintenance_releases_bed_only_when_last_ongoing_record_is_deleted(self):
+        first = BedMaintenanceService.start_maintenance(
+            bed=self.bed_a, reason="First repair", reported_by=self.officer
+        )
+        second = BedMaintenanceService.start_maintenance(
+            bed=self.bed_a, reason="Second repair", reported_by=self.officer
+        )
+
+        BedMaintenanceService.delete_maintenance(first, actor=self.officer)
+        self.assertFalse(BedMaintenance.objects.filter(pk=first.pk).exists())
+        self.refresh_bed(self.bed_a)
+        self.assertEqual(self.bed_a.state, HostelBed.BedState.MAINTENANCE)
+
+        BedMaintenanceService.delete_maintenance(second, actor=self.officer)
+        self.assertFalse(BedMaintenance.objects.filter(pk=second.pk).exists())
+        self.refresh_bed(self.bed_a)
+        self.assertEqual(self.bed_a.state, HostelBed.BedState.AVAILABLE)
+
     def test_incident_report_and_resolve(self):
         student = self._student("m3@school.edu")
         alloc = self.allocate(student=student, bed=self.bed_a)
@@ -687,6 +729,23 @@ class AuthorizationTests(HostelBaseTestCase):
                          "maintenance", "incidents", "policy"):
             resp = self.client.get(reverse(f"hostel:{url_name}"))
             self.assertEqual(resp.status_code, 200)
+
+    def test_student_cannot_edit_or_delete_maintenance(self):
+        record = BedMaintenanceService.start_maintenance(
+            bed=self.bed_a, reason="Unauthorized edit", reported_by=self.officer
+        )
+        student = self._student("z-maintenance@school.edu")
+        self.login(student)
+
+        response = self.client.get(
+            reverse("hostel:maintenance_edit", args=[record.pk])
+        )
+        self.assertIn(response.status_code, (302, 403))
+        response = self.client.post(
+            reverse("hostel:maintenance_delete", args=[record.pk])
+        )
+        self.assertIn(response.status_code, (302, 403))
+        self.assertTrue(BedMaintenance.objects.filter(pk=record.pk).exists())
 
     def test_student_cannot_approve_application(self):
         student = self._student("z2@school.edu")
@@ -740,6 +799,47 @@ class AuthorizationTests(HostelBaseTestCase):
 # ═══════════════════════════════════════════════════════════════════════
 
 class ViewRouteTests(HostelBaseTestCase):
+
+    def test_maintenance_edit_and_delete_routes(self):
+        record = BedMaintenanceService.start_maintenance(
+            bed=self.bed_a, reason="Damaged mattress", reported_by=self.officer
+        )
+        self.client.force_login(self.officer)
+
+        response = self.client.get(reverse("hostel:maintenance"))
+        self.assertContains(response, reverse("hostel:maintenance_edit", args=[record.pk]))
+        self.assertContains(response, reverse("hostel:maintenance_delete", args=[record.pk]))
+
+        response = self.client.get(
+            reverse("hostel:maintenance_edit", args=[record.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit Maintenance Record")
+
+        response = self.client.post(
+            reverse("hostel:maintenance_edit", args=[record.pk]),
+            {"status": BedMaintenance.Status.COMPLETED},
+        )
+        self.assertEqual(response.status_code, 302)
+        record.refresh_from_db()
+        self.assertEqual(record.status, BedMaintenance.Status.COMPLETED)
+
+        response = self.client.post(
+            reverse("hostel:maintenance_delete", args=[record.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(BedMaintenance.objects.filter(pk=record.pk).exists())
+
+    def test_maintenance_delete_requires_post(self):
+        record = BedMaintenanceService.start_maintenance(
+            bed=self.bed_a, reason="Damaged mattress", reported_by=self.officer
+        )
+        self.client.force_login(self.officer)
+        response = self.client.get(
+            reverse("hostel:maintenance_delete", args=[record.pk])
+        )
+        self.assertEqual(response.status_code, 405)
+        self.assertTrue(BedMaintenance.objects.filter(pk=record.pk).exists())
 
     def test_hostel_list_renders_for_student(self):
         student = self._student("v1@school.edu")

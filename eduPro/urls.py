@@ -44,6 +44,9 @@ urlpatterns = [
     path("messages/", include("messaging.urls", namespace="messaging")),
     path("api/", include("api.urls", namespace="api")),
 
+    # ID card module
+    path("id-cards/", include("id_cards.urls", namespace="id_cards")),
+
     # Academic Intelligence Calendar & Scheduling
     path("scheduling/", include("scheduling.urls", namespace="scheduling")),
 

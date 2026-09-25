@@ -2,68 +2,73 @@
 {% block extra_head %}
 <style>
   .admin-hero {
-    background: linear-gradient(135deg, #1c1917 0%, #292524 60%, #44403c 100%);
-    border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem;
-    color: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    background: linear-gradient(135deg, #161920 0%, #1b2130 60%, #232838 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 2rem 2.5rem; margin-bottom: 2rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
   }
-  .admin-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; }
-  .admin-hero p  { margin: 0; opacity: .7; font-size: .9rem; }
+  .admin-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; color: var(--text); }
+  .admin-hero p  { margin: 0; color: var(--muted); font-size: .9rem; }
+  .admin-hero::after { content: ""; background: var(--accent); height: 3px; width: 48px; border-radius: 2px; }
 
   .filter-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
   .ftab {
     padding: .32rem .9rem; border-radius: 99px; font-size: .82rem; font-weight: 600;
-    border: 1.5px solid #e5e7eb; background: #fff; color: #374151; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer;
     transition: all .15s;
   }
-  .ftab.active, .ftab:hover { background: #292524; color: #fff; border-color: #292524; }
+  .ftab:hover { color: var(--text); border-color: var(--accent); }
+  .ftab.active, .ftab.active:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   .search-wrap { margin-left: auto; }
   .search-wrap input {
-    padding: .4rem .9rem; border-radius: 99px; border: 1.5px solid #e5e7eb;
+    padding: .4rem .9rem; border-radius: 99px; border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text);
     font-size: .85rem; outline: none; transition: border-color .15s; width: 220px;
   }
-  .search-wrap input:focus { border-color: #6366f1; }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-wrap input:focus { border-color: var(--accent); }
 
   .reg-table-wrap {
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
   }
   table.reg-table { width: 100%; border-collapse: collapse; }
   table.reg-table th {
     font-size: .75rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .05em; color: #6b7280; background: #f9fafb;
-    padding: .7rem 1.1rem; border-bottom: 1px solid #e5e7eb; white-space: nowrap;
+    letter-spacing: .05em; color: var(--muted); background: var(--surface2);
+    padding: .7rem 1.1rem; border-bottom: 1px solid var(--border); white-space: nowrap;
   }
   table.reg-table td {
     padding: .85rem 1.1rem; font-size: .88rem;
-    border-bottom: 1px solid #f3f4f6; color: #374151; vertical-align: middle;
+    border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle;
   }
   table.reg-table tbody tr { transition: none; }
   table.reg-table tr:last-child td { border-bottom: none; }
   table.reg-table tbody tr:hover { background: transparent; }
-  table.reg-table tbody tr:hover td { background: #f9fafb; }
+  table.reg-table tbody tr:hover td { background: var(--surface2); }
 
-  .student-name { font-weight: 700; color: #1e293b; }
-  .student-email { font-size: .78rem; color: #9ca3af; }
+  .student-name { font-weight: 700; color: var(--text); }
+  .student-email { font-size: .78rem; color: var(--muted); }
 
-  .course-code { font-weight: 800; color: #4f46e5; font-size: .88rem; }
-  .semester-label { font-size: .78rem; color: #9ca3af; }
+  .course-code { font-weight: 800; color: var(--accent2); font-size: .88rem; }
+  .semester-label { font-size: .78rem; color: var(--muted); }
 
   .status-badge {
     font-size: .72rem; font-weight: 700; padding: .22rem .75rem; border-radius: 99px;
   }
-  .s-pending  { background: #fef9c3; color: #b45309; }
-  .s-approved { background: #dcfce7; color: #16a34a; }
-  .s-rejected { background: #fee2e2; color: #dc2626; }
+  .s-pending  { background: rgba(251,191,36,0.15);  color: var(--warning); }
+  .s-approved { background: rgba(52,211,153,0.15);  color: var(--success); }
+  .s-rejected { background: rgba(248,113,113,0.15); color: var(--danger); }
 
   .action-cell { display: flex; gap: .5rem; flex-wrap: nowrap; }
   .btn-approve {
-    background: #22c55e; color: #fff; border: none;
+    background: #10b981; color: #fff; border: none;
     padding: .35rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 700;
     cursor: pointer; transition: background .15s;
   }
-  .btn-approve:hover { background: #16a34a; }
+  .btn-approve:hover { background: #059669; }
   .btn-reject {
-    background: #ef4444; color: #fff; border: none;
+    background: var(--danger); color: #fff; border: none;
     padding: .35rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 700;
     cursor: pointer; transition: background .15s;
   }
@@ -72,39 +77,44 @@
   .pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
   .pagination a, .pagination span {
     padding: .4rem .85rem; border-radius: 8px; font-size: .85rem; font-weight: 600;
-    border: 1.5px solid #e5e7eb; text-decoration: none; color: #374151;
-    transition: all .15s;
+    border: 1.5px solid var(--border); text-decoration: none; color: var(--text);
+    background: var(--surface2); transition: all .15s;
   }
-  .pagination a:hover   { background: #4f46e5; color: #fff; border-color: #4f46e5; }
-  .pagination span.current { background: #1c1917; color: #fff; border-color: #1c1917; }
+  .pagination a:hover   { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pagination span.current { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   /* Modal */
   .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
     z-index: 9999; align-items: center; justify-content: center;
   }
   .modal-overlay.active { display: flex; }
   .modal-box {
-    background: #fff; border-radius: 16px; padding: 2rem; max-width: 440px; width: 90%;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 2rem; max-width: 440px; width: 90%; box-shadow: var(--shadow);
   }
-  .modal-box h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: .75rem; }
-  .modal-box p  { font-size: .88rem; color: #6b7280; margin-bottom: 1rem; }
+  .modal-box h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: .75rem; color: var(--text); }
+  .modal-box p  { font-size: .88rem; color: var(--muted); margin-bottom: 1rem; }
   .modal-box textarea {
-    width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px;
+    width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--surface2); color: var(--text);
     padding: .65rem .9rem; font-size: .9rem; resize: vertical; margin-bottom: 1rem;
   }
-  .modal-box textarea:focus { border-color: #ef4444; outline: none; }
+  .modal-box textarea::placeholder { color: var(--muted); }
+  .modal-box textarea:focus { border-color: var(--danger); outline: none; }
   .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; }
-  .btn-mod-cancel { background: #f3f4f6; color: #374151; border: none; padding: .55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
-  .btn-mod-reject { background: #ef4444; color: #fff; border: none; padding: .55rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; }
+  .btn-mod-cancel { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: .55rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  .btn-mod-cancel:hover { background: var(--border); }
+  .btn-mod-reject { background: var(--danger); color: #fff; border: none; padding: .55rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; }
+  .btn-mod-reject:hover { background: #dc2626; }
 
-  .empty-state { text-align: center; padding: 3rem; color: #6b7280; }
+  .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
 
   @media (max-width: 768px) {
     table.reg-table thead { display: none; }
     table.reg-table td { display: block; padding: .4rem 1rem; }
-    table.reg-table td::before { content: attr(data-label)': '; font-weight: 700; color: #6b7280; }
-    table.reg-table tr { border-bottom: 2px solid #e5e7eb; display: block; padding: .5rem 0; }
+    table.reg-table td::before { content: attr(data-label)': '; font-weight: 700; color: var(--muted); }
+    table.reg-table tr { border-bottom: 2px solid var(--border); display: block; padding: .5rem 0; }
   }
 </style>
 {% endblock %}
@@ -153,7 +163,7 @@
         </td>
         <td data-label="Course">
           <div class="course-code">{{ reg.offering.course.code }}</div>
-          <div style="font-size:.82rem;color:#374151;">{{ reg.offering.course.title|truncatechars:35 }}</div>
+          <div style="font-size:.82rem;color:var(--muted);">{{ reg.offering.course.title|truncatechars:35 }}</div>
           {% if reg.is_retake %}
             <span style="display:inline-block;margin-top:4px;font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:4px;background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.25)">RETAK</span>
           {% endif %}
@@ -164,15 +174,15 @@
         </td>
         <td data-label="Requested">
           <div style="font-size:.85rem;">{{ reg.created_at|date:"M d, Y" }}</div>
-          <div style="font-size:.75rem;color:#9ca3af;">{{ reg.created_at|timesince }} ago</div>
+          <div style="font-size:.75rem;color:var(--muted);">{{ reg.created_at|timesince }} ago</div>
         </td>
         <td data-label="Status">
           <span class="status-badge s-{{ reg.status }}">{{ reg.status|capfirst }}</span>
           {% if reg.reviewed_by %}
-            <div style="font-size:.73rem;color:#9ca3af;margin-top:.25rem;">by {{ reg.reviewed_by.get_full_name }}</div>
+            <div style="font-size:.73rem;color:var(--muted);margin-top:.25rem;">by {{ reg.reviewed_by.get_full_name }}</div>
           {% endif %}
           {% if reg.is_retake and reg.status == 'pending' and reg.id in unpaid_reg_ids %}
-            <div style="font-size:.7rem;margin-top:4px;color:#ef4444;font-weight:600">Retake fee unpaid</div>
+            <div style="font-size:.7rem;margin-top:4px;color:var(--danger);font-weight:600">Retake fee unpaid</div>
           {% endif %}
         </td>
         <td data-label="Actions">
@@ -188,7 +198,7 @@
             </button>
           </div>
           {% else %}
-          <span style="font-size:.8rem;color:#9ca3af;">—</span>
+          <span style="font-size:.8rem;color:var(--muted);">—</span>
           {% endif %}
         </td>
       </tr>

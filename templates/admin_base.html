@@ -198,6 +198,54 @@ canvas.spark{display:block;width:100%;height:28px}
 .code-tag{font-family:var(--mono);font-size:11px;color:var(--ochre);background:var(--ochre-dim);padding:2px 7px;border-radius:4px;border:1px solid rgba(232,168,76,0.2)}
 .status-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;font-family:var(--mono);letter-spacing:0.3px}
 
+/* ── DATA TABLE (generic) ── */
+.data-table thead th{
+  position:sticky; top:0; z-index:1;
+  background:var(--surface);
+  border-bottom:2px solid var(--border);
+  padding:10px 12px;
+  font-size:10.5px; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.7px;
+  color:var(--tx3); cursor:pointer; user-select:none;
+  white-space:nowrap;
+}
+.data-table thead th:hover{background:var(--surface2)}
+.data-table thead th.sortable::after{
+  content:"▲"; margin-left:6px; font-size:0.8em; color:var(--muted);
+  transition:transform .2s;
+}
+.data-table thead th.sortable.desc::after{transform:rotate(180deg); content:"▼"}
+.data-table tbody tr{transition:background .12s}
+.data-table tbody tr:hover{background:rgba(255,255,255,0.02)}
+.data-table tbody td{
+  padding:11px 12px; font-size:12.5px;
+  border-bottom:1px solid var(--border); vertical-align:middle;
+  white-space:nowrap;
+}
+.data-table tbody td:last-child{text-align:right}
+
+/* status pills */
+.status-pill{
+  display:inline-block; padding:2px 10px; border-radius:999px;
+  font-size:10px; font-weight:600; font-family:var(--mono);
+  letter-spacing:0.3px;
+}
+.status-approved{background:rgba(52,211,153,.15); color:var(--success)}
+.status-pending{background:rgba(245,158,11,.15); color:var(--accent)}
+.status-review{background:rgba(96,165,250,.15); color:var(--info)}
+.status-rejected{background:rgba(248,113,113,.12); color:var(--danger)}
+.status-waitlist{background:rgba(167,139,250,.15); color:var(--accent2)}
+.status-withdrawn{background:var(--surface2); color:var(--muted); border:1px solid var(--border)}
+
+/* compact action button */
+.btn-icon{padding:4px 8px; font-size:11px}
+
+/* responsive */
+@media(max-width:900px){
+  .data-table{display:block; width:100%; overflow-x:auto}
+  .data-table thead{display:table-header-group}
+}
+
 /* ── DEPT PROGRESS ── */
 .prog-list{list-style:none;padding:10px 18px;display:flex;flex-direction:column;gap:12px}
 .prog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
@@ -428,6 +476,89 @@ canvas.spark{display:block;width:100%;height:28px}
 </script>
 
 <script>{% include "components/sidebar_collapse.js.html" %}</script>
+
+<script>
+(() => {
+  const tbody = document.querySelector('.data-table tbody');
+  if (!tbody) return;
+  document.querySelectorAll('.data-table thead th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const idx = Array.from(th.parentNode.children).indexOf(th);
+      const desc = th.classList.toggle('desc');
+      document.querySelectorAll('.data-table thead th.desc').forEach(h => { if (h !== th) h.classList.remove('desc'); });
+      const rows = Array.from(tbody.rows);
+      rows.sort((a, b) => {
+        const A = a.cells[idx].innerText.trim();
+        const B = b.cells[idx].innerText.trim();
+        return desc ? (A < B ? 1 : A > B ? -1 : 0) : (A > B ? 1 : A < B ? -1 : 0);
+      });
+      tbody.append(...rows);
+    });
+  });
+})();
+</script>
+
+<script>
+/* ── AJAX Sidebar Navigation + Single Active Link ────────────────────── */
+(function () {
+  'use strict';
+  const content = document.querySelector('.content');
+  const sidebarNav = document.getElementById('sidebarNav');
+  if (!content || !sidebarNav) return;
+
+  // 1) Ensure only ONE link has .active at any time
+  function setActiveLink(link) {
+    sidebarNav.querySelectorAll('a.nav-item.active').forEach(el => el.classList.remove('active'));
+    if (link) link.classList.add('active');
+  }
+
+  // 2) Handle sidebar link clicks via AJAX
+  sidebarNav.addEventListener('click', async (e) => {
+    const link = e.target.closest('a.nav-item[href]');
+    if (!link) return;
+    if (link.target === '_blank' || link.hasAttribute('data-no-ajax')) return;
+    if (link.href === window.location.href) return; // same page
+
+    e.preventDefault();
+    const url = link.href;
+
+    try {
+      const res = await fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      });
+      if (!res.ok) throw new Error('Network error');
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const newContent = doc.querySelector('.content');
+      if (newContent) {
+        content.innerHTML = newContent.innerHTML;
+        history.pushState(null, '', url);
+        setActiveLink(link);
+        // Re-init widgets (tables, charts) if needed
+        if (window.initPageWidgets) window.initPageWidgets();
+      } else {
+        window.location.href = url; // fallback
+      }
+    } catch (err) {
+      console.error(err);
+      window.location.href = url;
+    }
+  });
+
+  // 3) On initial load, set active based on current URL
+  const currentPath = window.location.pathname;
+  sidebarNav.querySelectorAll('a.nav-item[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && (href === currentPath || (href !== '/' && currentPath.startsWith(href)))) {
+      setActiveLink(link);
+    }
+  });
+
+  // 4) Handle browser back/forward
+  window.addEventListener('popstate', () => location.reload());
+})();
+</script>
 
 {% block extra_js %}{% endblock %}
 </body>

@@ -42,6 +42,7 @@ class StaffResponsibility(models.TextChoices):
     """
     TEACHER              = "teacher",              _("Teacher")
     HOD                  = "hod",                  _("Head of Department")
+    ID_CARD_OFFICER      = "id_card_officer",      _("ID Card Officer")
     DEAN                 = "dean",                 _("Dean / Faculty Head")
     PROGRAM_COORDINATOR  = "program_coordinator",  _("Program Coordinator")
     ADMISSIONS_OFFICER   = "admissions_officer",   _("Admissions Officer")

@@ -10,8 +10,8 @@
   <span class="menu-arrow" aria-hidden="true">▾</span>
 </button>
 <div class="sidebar-submenu" id="sub-people">
-  <a href="{% url 'accounts:user_list' %}" class="nav-item {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}"><span>All Users</span></a>
-  <a href="{% url 'accounts:admin_registrations' %}" class="nav-item {% if 'registrations' in request.resolver_match.url_name %}active{% endif %}">
+  <a href="{% url 'accounts:user_list' %}" class="nav-item {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'user_list' %}active{% endif %}"><span>All Users</span></a>
+  <a href="{% url 'accounts:admin_registrations' %}" class="nav-item {% if request.resolver_match.namespace == 'accounts' and 'registrations' in request.resolver_match.url_name %}active{% endif %}">
     <span>Registrations</span>
     {% if pending_registrations|default:0 %}<span class="badge badge-amber" style="margin-left:auto;">{{ pending_registrations }}</span>{% endif %}
   </a>
@@ -23,9 +23,33 @@
   <span class="menu-arrow" aria-hidden="true">▾</span>
 </button>
 <div class="sidebar-submenu" id="sub-academics">
-  <a href="{% url 'academics:course_list' %}" class="nav-item {% if 'course_list' in request.resolver_match.url_name %}active{% endif %}"><span>Courses</span></a>
-  <a href="{% url 'academics:enrolment_list' %}" class="nav-item {% if 'enrolment' in request.resolver_match.url_name %}active{% endif %}"><span>Enrolments</span></a>
-  <a href="{% url 'academics:result_sheet_admin_list' %}" class="nav-item {% if request.resolver_match.url_name == 'result_sheet_admin_list' %}active{% endif %}"><span>Result Sheets</span></a>
+  <a href="{% url 'academics:course_list' %}" class="nav-item {% if request.resolver_match.namespace == 'academics' and 'course_list' in request.resolver_match.url_name %}active{% endif %}"><span>Courses</span></a>
+  <a href="{% url 'academics:enrolment_list' %}" class="nav-item {% if request.resolver_match.namespace == 'academics' and 'enrolment' in request.resolver_match.url_name %}active{% endif %}"><span>Enrolments</span></a>
+  <a href="{% url 'academics:result_sheet_admin_list' %}" class="nav-item {% if request.resolver_match.namespace == 'academics' and request.resolver_match.url_name == 'result_sheet_admin_list' %}active{% endif %}"><span>Result Sheets</span></a>
+</div>
+
+<button type="button" class="sidebar-menu-toggle" data-menu="idcards" aria-expanded="false" aria-controls="sub-idcards">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><path stroke-linecap="round" d="M6.5 13.5c.5-1 2-1 3 0M12 8.5h5M12 12h5M12 15.5h5"/></svg>
+  <span class="menu-title">ID Cards</span>
+  {% if id_card_pending_photos|default:0 %}<span class="badge badge-amber" style="margin-left:auto;">{{ id_card_pending_photos }}</span>{% endif %}
+  <span class="menu-arrow" aria-hidden="true">▾</span>
+</button>
+<div class="sidebar-submenu" id="sub-idcards">
+  <a href="{% url 'id_cards:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Dashboard</span></a>
+  <a href="{% url 'id_cards:student_list' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and 'student_list' in request.resolver_match.url_name or request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'generate_single' %}active{% endif %}"><span>Students &amp; Readiness</span></a>
+  <a href="{% url 'id_cards:photo_review' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and 'photo' in request.resolver_match.url_name %}active{% endif %}">
+    <span>Photo Review</span>
+    {% if id_card_pending_photos|default:0 %}<span class="badge badge-amber" style="margin-left:auto;">{{ id_card_pending_photos }}</span>{% endif %}
+  </a>
+  <a href="{% url 'id_cards:card_list' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'card_list' or request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'card_detail' or request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'card_image' %}active{% endif %}"><span>Cards</span></a>
+  <a href="{% url 'id_cards:generate_batch' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'generate_batch' %}active{% endif %}"><span>Batch Generation</span></a>
+  <a href="{% url 'id_cards:batch_list' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'batch_list' or request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'batch_detail' %}active{% endif %}"><span>Batches</span></a>
+  <a href="{% url 'id_cards:print_preview' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and 'print' in request.resolver_match.url_name %}active{% endif %}"><span>Print</span></a>
+  <a href="{% url 'id_cards:replacement_list' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and 'replacement' in request.resolver_match.url_name %}active{% endif %}"><span>Replacements</span></a>
+  <a href="{% url 'id_cards:reports' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'reports' %}active{% endif %}"><span>Reports</span></a>
+  <a href="{% url 'id_cards:audit_log' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'audit_log' %}active{% endif %}"><span>Audit Log</span></a>
+  <a href="{% url 'id_cards:template_list' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and 'template' in request.resolver_match.url_name %}active{% endif %}"><span>Templates</span></a>
+  <a href="{% url 'id_cards:settings' %}" class="nav-item {% if request.resolver_match.namespace == 'id_cards' and request.resolver_match.url_name == 'settings' %}active{% endif %}"><span>Settings</span></a>
 </div>
 
 <button type="button" class="sidebar-menu-toggle" data-menu="finance" aria-expanded="false" aria-controls="sub-finance">
@@ -35,10 +59,10 @@
 </button>
 <div class="sidebar-submenu" id="sub-finance">
   <a href="{% url 'finance:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'finance' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Finance Dashboard</span></a>
-  <a href="{% url 'finance:fee_structures' %}" class="nav-item {% if request.resolver_match.url_name == 'fee_structures' %}active{% endif %}"><span>Fee Structures</span></a>
-  <a href="{% url 'finance:student_fees' %}" class="nav-item {% if request.resolver_match.url_name == 'student_fees' %}active{% endif %}"><span>Student Fees</span></a>
-  <a href="{% url 'finance:retake_fee_list' %}" class="nav-item {% if request.resolver_match.url_name == 'retake_fee_list' %}active{% endif %}"><span>Retake Fees</span></a>
-  <a href="{% url 'finance:payroll' %}" class="nav-item {% if request.resolver_match.url_name == 'payroll' %}active{% endif %}"><span>Payroll</span></a>
+  <a href="{% url 'finance:fee_structures' %}" class="nav-item {% if request.resolver_match.namespace == 'finance' and request.resolver_match.url_name == 'fee_structures' %}active{% endif %}"><span>Fee Structures</span></a>
+  <a href="{% url 'finance:student_fees' %}" class="nav-item {% if request.resolver_match.namespace == 'finance' and request.resolver_match.url_name == 'student_fees' %}active{% endif %}"><span>Student Fees</span></a>
+  <a href="{% url 'finance:retake_fee_list' %}" class="nav-item {% if request.resolver_match.namespace == 'finance' and request.resolver_match.url_name == 'retake_fee_list' %}active{% endif %}"><span>Retake Fees</span></a>
+  <a href="{% url 'finance:payroll' %}" class="nav-item {% if request.resolver_match.namespace == 'finance' and request.resolver_match.url_name == 'payroll' %}active{% endif %}"><span>Payroll</span></a>
 </div>
 
 <button type="button" class="sidebar-menu-toggle" data-menu="hostel" aria-expanded="false" aria-controls="sub-hostel">
@@ -54,11 +78,11 @@
     <span class="menu-arrow" aria-hidden="true">▾</span>
   </button>
   <div class="sidebar-submenu" id="sub-hostel-accommodation">
-    <a href="{% url 'hostel:hostels' %}" class="nav-item {% if request.resolver_match.url_name == 'hostels' or request.resolver_match.url_name == 'hostel_edit' or request.resolver_match.url_name == 'hostel_create' %}active{% endif %}"><span>Hostels</span></a>
-    <a href="{% url 'hostel:blocks' %}" class="nav-item {% if request.resolver_match.url_name == 'blocks' %}active{% endif %}"><span>Blocks</span></a>
-    <a href="{% url 'hostel:floors' %}" class="nav-item {% if request.resolver_match.url_name == 'floors' %}active{% endif %}"><span>Floors</span></a>
-    <a href="{% url 'hostel:rooms' %}" class="nav-item {% if request.resolver_match.url_name == 'rooms' %}active{% endif %}"><span>Rooms</span></a>
-    <a href="{% url 'hostel:beds' %}" class="nav-item {% if request.resolver_match.url_name == 'beds' %}active{% endif %}"><span>Beds &amp; Availability</span></a>
+    <a href="{% url 'hostel:hostels' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'hostels' or request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'hostel_edit' or request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'hostel_create' %}active{% endif %}"><span>Hostels</span></a>
+    <a href="{% url 'hostel:blocks' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'blocks' %}active{% endif %}"><span>Blocks</span></a>
+    <a href="{% url 'hostel:floors' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'floors' %}active{% endif %}"><span>Floors</span></a>
+    <a href="{% url 'hostel:rooms' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'rooms' %}active{% endif %}"><span>Rooms</span></a>
+    <a href="{% url 'hostel:beds' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'beds' %}active{% endif %}"><span>Beds &amp; Availability</span></a>
   </div>
 
   <button type="button" class="sidebar-menu-toggle" data-menu="hostel-residents" aria-expanded="false" aria-controls="sub-hostel-residents">
@@ -66,15 +90,15 @@
     <span class="menu-arrow" aria-hidden="true">▾</span>
   </button>
   <div class="sidebar-submenu" id="sub-hostel-residents">
-    <a href="{% url 'hostel:applications' %}" class="nav-item {% if request.resolver_match.url_name == 'applications' %}active{% endif %}">
+    <a href="{% url 'hostel:applications' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'applications' %}active{% endif %}">
       <span>Applications</span>
       {% if pending_applications|default:0 %}<span class="badge badge-amber" style="margin-left:auto;">{{ pending_applications }}</span>{% endif %}
     </a>
-    <a href="{% url 'hostel:allocations' %}" class="nav-item {% if request.resolver_match.url_name == 'allocations' %}active{% endif %}"><span>Allocations</span></a>
-    <a href="{% url 'hostel:residents' %}" class="nav-item {% if request.resolver_match.url_name == 'residents' %}active{% endif %}"><span>Residents</span></a>
-    <a href="{% url 'hostel:checkins' %}" class="nav-item {% if request.resolver_match.url_name == 'checkins' %}active{% endif %}"><span>Check-ins</span></a>
-    <a href="{% url 'hostel:checkouts' %}" class="nav-item {% if request.resolver_match.url_name == 'checkouts' %}active{% endif %}"><span>Check-outs</span></a>
-    <a href="{% url 'hostel:transfers' %}" class="nav-item {% if request.resolver_match.url_name == 'transfers' %}active{% endif %}"><span>Transfers</span></a>
+    <a href="{% url 'hostel:allocations' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'allocations' %}active{% endif %}"><span>Allocations</span></a>
+    <a href="{% url 'hostel:residents' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'residents' %}active{% endif %}"><span>Residents</span></a>
+    <a href="{% url 'hostel:checkins' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'checkins' %}active{% endif %}"><span>Check-ins</span></a>
+    <a href="{% url 'hostel:checkouts' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'checkouts' %}active{% endif %}"><span>Check-outs</span></a>
+    <a href="{% url 'hostel:transfers' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'transfers' %}active{% endif %}"><span>Transfers</span></a>
   </div>
 
   <button type="button" class="sidebar-menu-toggle" data-menu="hostel-operations" aria-expanded="false" aria-controls="sub-hostel-operations">
@@ -82,8 +106,8 @@
     <span class="menu-arrow" aria-hidden="true">▾</span>
   </button>
   <div class="sidebar-submenu" id="sub-hostel-operations">
-    <a href="{% url 'hostel:maintenance' %}" class="nav-item {% if request.resolver_match.url_name == 'maintenance' %}active{% endif %}"><span>Maintenance</span></a>
-    <a href="{% url 'hostel:incidents' %}" class="nav-item {% if request.resolver_match.url_name == 'incidents' %}active{% endif %}"><span>Incidents</span></a>
+    <a href="{% url 'hostel:maintenance' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'maintenance' %}active{% endif %}"><span>Maintenance</span></a>
+    <a href="{% url 'hostel:incidents' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'incidents' %}active{% endif %}"><span>Incidents</span></a>
   </div>
 
   <button type="button" class="sidebar-menu-toggle" data-menu="hostel-finance" aria-expanded="false" aria-controls="sub-hostel-finance">
@@ -91,8 +115,8 @@
     <span class="menu-arrow" aria-hidden="true">▾</span>
   </button>
   <div class="sidebar-submenu" id="sub-hostel-finance">
-    <a href="{% url 'hostel:fee_configs' %}" class="nav-item {% if request.resolver_match.url_name == 'fee_configs' %}active{% endif %}"><span>Hostel Fees</span></a>
-    <a href="{% url 'hostel:outstanding_balances' %}" class="nav-item {% if request.resolver_match.url_name == 'outstanding_balances' %}active{% endif %}"><span>Outstanding Balances</span></a>
+    <a href="{% url 'hostel:fee_configs' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'fee_configs' %}active{% endif %}"><span>Hostel Fees</span></a>
+    <a href="{% url 'hostel:outstanding_balances' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'outstanding_balances' %}active{% endif %}"><span>Outstanding Balances</span></a>
   </div>
 
   <button type="button" class="sidebar-menu-toggle" data-menu="hostel-reports" aria-expanded="false" aria-controls="sub-hostel-reports">
@@ -100,7 +124,7 @@
     <span class="menu-arrow" aria-hidden="true">▾</span>
   </button>
   <div class="sidebar-submenu" id="sub-hostel-reports">
-    <a href="{% url 'hostel:reports' %}" class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}"><span>Hostel Reports</span></a>
+    <a href="{% url 'hostel:reports' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'reports' %}active{% endif %}"><span>Hostel Reports</span></a>
   </div>
 
   <button type="button" class="sidebar-menu-toggle" data-menu="hostel-settings" aria-expanded="false" aria-controls="sub-hostel-settings">
@@ -108,8 +132,8 @@
     <span class="menu-arrow" aria-hidden="true">▾</span>
   </button>
   <div class="sidebar-submenu" id="sub-hostel-settings">
-    <a href="{% url 'hostel:policy' %}" class="nav-item {% if request.resolver_match.url_name == 'policy' %}active{% endif %}"><span>Hostel Policies</span></a>
-    <a href="{% url 'hostel:amenities' %}" class="nav-item {% if request.resolver_match.url_name == 'amenities' %}active{% endif %}"><span>Amenities</span></a>
+    <a href="{% url 'hostel:policy' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'policy' %}active{% endif %}"><span>Hostel Policies</span></a>
+    <a href="{% url 'hostel:amenities' %}" class="nav-item {% if request.resolver_match.namespace == 'hostel' and request.resolver_match.url_name == 'amenities' %}active{% endif %}"><span>Amenities</span></a>
   </div>
 </div>
 
@@ -119,9 +143,9 @@
   <span class="menu-arrow" aria-hidden="true">▾</span>
 </button>
 <div class="sidebar-submenu" id="sub-admissions">
-  <a href="{% url 'portal:admissions_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'admissions_dashboard' %}active{% endif %}"><span>Admissions Dashboard</span></a>
-  <a href="{% url 'portal:application_list' %}" class="nav-item {% if request.resolver_match.url_name == 'application_list' %}active{% endif %}"><span>Applications</span></a>
-  <a href="{% url 'portal:cycle_list' %}" class="nav-item {% if request.resolver_match.url_name == 'cycle_list' %}active{% endif %}"><span>Cycles</span></a>
+  <a href="{% url 'portal:admissions_dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'portal' and request.resolver_match.url_name == 'admissions_dashboard' %}active{% endif %}"><span>Admissions Dashboard</span></a>
+  <a href="{% url 'portal:application_list' %}" class="nav-item {% if request.resolver_match.namespace == 'portal' and request.resolver_match.url_name == 'application_list' %}active{% endif %}"><span>Applications</span></a>
+  <a href="{% url 'portal:cycle_list' %}" class="nav-item {% if request.resolver_match.namespace == 'portal' and request.resolver_match.url_name == 'cycle_list' %}active{% endif %}"><span>Cycles</span></a>
 </div>
 
 <button type="button" class="sidebar-menu-toggle" data-menu="services" aria-expanded="false" aria-controls="sub-services">
@@ -132,7 +156,7 @@
 <div class="sidebar-submenu" id="sub-services">
   <a href="{% url 'analytics:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'analytics' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Analytics</span></a>
   <a href="{% url 'operations:announcements' %}" class="nav-item {% if request.resolver_match.namespace == 'operations' and request.resolver_match.url_name == 'announcements' %}active{% endif %}"><span>Announcements</span></a>
-  <a href="{% url 'operations:ticket_admin' %}" class="nav-item {% if request.resolver_match.url_name == 'ticket_admin' %}active{% endif %}"><span>Tickets</span></a>
+  <a href="{% url 'operations:ticket_admin' %}" class="nav-item {% if request.resolver_match.namespace == 'operations' and request.resolver_match.url_name == 'ticket_admin' %}active{% endif %}"><span>Tickets</span></a>
   <a href="{% url 'feedback:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'feedback' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Feedback</span></a>
 </div>
 
@@ -144,11 +168,11 @@
 <div class="sidebar-submenu" id="sub-scheduling">
   <a href="{% url 'scheduling:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Command Center</span></a>
   <a href="{% url 'scheduling:calendar' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and request.resolver_match.url_name == 'calendar' %}active{% endif %}"><span>Academic Calendar</span></a>
-  <a href="{% url 'scheduling:schedule_list' %}" class="nav-item {% if 'schedule' in request.resolver_match.url_name %}active{% endif %}"><span>Schedules</span></a>
-  <a href="{% url 'scheduling:room_list' %}" class="nav-item {% if request.resolver_match.url_name == 'room_list' or request.resolver_match.url_name == 'room_detail' %}active{% endif %}"><span>Rooms</span></a>
-  <a href="{% url 'scheduling:slot_list' %}" class="nav-item {% if request.resolver_match.url_name == 'slot_list' %}active{% endif %}"><span>Time Slots</span></a>
-  <a href="{% url 'scheduling:availability_list' %}" class="nav-item {% if 'availability' in request.resolver_match.url_name %}active{% endif %}"><span>Lecturer Availability</span></a>
-  <a href="{% url 'scheduling:settings' %}" class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"><span>Scheduling Settings</span></a>
+  <a href="{% url 'scheduling:schedule_list' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and 'schedule' in request.resolver_match.url_name %}active{% endif %}"><span>Schedules</span></a>
+  <a href="{% url 'scheduling:room_list' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and request.resolver_match.url_name == 'room_list' or request.resolver_match.namespace == 'scheduling' and request.resolver_match.url_name == 'room_detail' %}active{% endif %}"><span>Rooms</span></a>
+  <a href="{% url 'scheduling:slot_list' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and request.resolver_match.url_name == 'slot_list' %}active{% endif %}"><span>Time Slots</span></a>
+  <a href="{% url 'scheduling:availability_list' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and 'availability' in request.resolver_match.url_name %}active{% endif %}"><span>Lecturer Availability</span></a>
+  <a href="{% url 'scheduling:settings' %}" class="nav-item {% if request.resolver_match.namespace == 'scheduling' and request.resolver_match.url_name == 'settings' %}active{% endif %}"><span>Scheduling Settings</span></a>
 </div>
 
 <button type="button" class="sidebar-menu-toggle" data-menu="system" aria-expanded="false" aria-controls="sub-system">
@@ -157,9 +181,9 @@
   <span class="menu-arrow" aria-hidden="true">▾</span>
 </button>
 <div class="sidebar-submenu" id="sub-system">
-  <a href="{% url 'api:root' %}" class="nav-item {% if 'api' in request.resolver_match.namespace %}active{% endif %}"><span>API</span></a>
+  <a href="{% url 'api:root' %}" class="nav-item {% if request.resolver_match.namespace == 'api' %}active{% endif %}"><span>API</span></a>
   <a href="{% url 'admin:index' %}" class="nav-item"><span>Django Admin</span></a>
-  <a href="{% url 'core:audit_logs' %}" class="nav-item {% if 'audit_log' in request.resolver_match.url_name %}active{% endif %}"><span>Audit Logs</span></a>
-  <a href="{% url 'accounts:profile' %}" class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><span>My Profile</span></a>
-  <a href="{% url 'accounts:change_password' %}" class="nav-item {% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><span>Change Password</span></a>
+  <a href="{% url 'core:audit_logs' %}" class="nav-item {% if request.resolver_match.namespace == 'core' and 'audit_log' in request.resolver_match.url_name %}active{% endif %}"><span>Audit Logs</span></a>
+  <a href="{% url 'accounts:profile' %}" class="nav-item {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'profile' %}active{% endif %}"><span>My Profile</span></a>
+  <a href="{% url 'accounts:change_password' %}" class="nav-item {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'change_password' %}active{% endif %}"><span>Change Password</span></a>
 </div>

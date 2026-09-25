@@ -16,6 +16,7 @@ from hostel import services
 from hostel.forms import (
     AllocationForm,
     AmenityForm,
+    BedMaintenanceEditForm,
     BedMaintenanceForm,
     CheckInForm,
     HostelBlockForm,
@@ -505,6 +506,47 @@ def maintenance_create(request):
         "form": form,
         "page_title": "Start Bed Maintenance",
     })
+
+
+@login_required
+@hostel_staff_required
+@require_http_methods(["GET", "POST"])
+def maintenance_edit(request, pk):
+    record = get_object_or_404(
+        BedMaintenance.objects.select_related("bed__room__hostel"), pk=pk
+    )
+    form = BedMaintenanceEditForm(request.POST or None, instance=record)
+    if request.method == "POST" and form.is_valid():
+        try:
+            services.BedMaintenanceService.update_status(
+                record,
+                form.cleaned_data["status"],
+                actor=request.user,
+            )
+        except services.HostelServiceError as exc:
+            _service_message(request, exc)
+        else:
+            messages.success(request, f"Maintenance record for {record.bed} updated.")
+            return redirect("hostel:maintenance")
+    return render(request, "hostel/hostel_maintenance_form.html", {
+        "form": form,
+        "record": record,
+        "page_title": "Edit Maintenance Record",
+    })
+
+
+@login_required
+@hostel_staff_required
+@require_POST
+def maintenance_delete(request, pk):
+    record = get_object_or_404(BedMaintenance, pk=pk)
+    try:
+        services.BedMaintenanceService.delete_maintenance(record, actor=request.user)
+    except services.HostelServiceError as exc:
+        _service_message(request, exc)
+    else:
+        messages.success(request, "Maintenance record deleted.")
+    return redirect("hostel:maintenance")
 
 
 @login_required

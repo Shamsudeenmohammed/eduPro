@@ -5,8 +5,8 @@
 
   <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
     <div>
-      <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">Start Maintenance</h2>
-      <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">Mark a bed as under maintenance</p>
+      <h2 style="color:var(--text);font-weight:700;margin:0 0 .3rem 0;">{% if record %}Edit Maintenance Record{% else %}Start Maintenance{% endif %}</h2>
+      <p style="color:var(--text);opacity:.6;margin:0;font-size:.9rem;">{% if record %}Update the maintenance status{% else %}Mark a bed as under maintenance{% endif %}</p>
     </div>
     <a href="{% url 'hostel:maintenance' %}" style="color:var(--ochre);text-decoration:none;font-size:.85rem;">&larr; Back to Maintenance</a>
   </div>
@@ -42,7 +42,7 @@
         {% endfor %}
       </div>
 
-      <button type="submit" class="btn btn-success btn-sm" style="padding:.5rem 1.5rem;">Start Maintenance</button>
+      <button type="submit" class="btn btn-success btn-sm" style="padding:.5rem 1.5rem;">{% if record %}Save Changes{% else %}Start Maintenance{% endif %}</button>
     </form>
   </div>
 

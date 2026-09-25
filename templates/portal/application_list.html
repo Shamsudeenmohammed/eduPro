@@ -44,7 +44,16 @@
   </div>
   <div style="overflow-x:auto">
     <table class="data-table">
-      <thead><tr><th>Ref</th><th>Applicant</th><th>Program</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th class="sortable">Ref</th>
+          <th class="sortable">Applicant</th>
+          <th class="sortable">Program</th>
+          <th class="sortable">Status</th>
+          <th class="sortable">Date</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         {% for app in page_obj %}
         <tr>
@@ -52,14 +61,15 @@
           <td style="font-weight:600"><a href="{% url 'portal:application_detail' app.pk %}" style="color:inherit;text-decoration:none">{{ app.get_full_name }}</a></td>
           <td style="color:var(--tx2);font-size:12px">{{ app.program_applied.name|truncatewords:4 }}</td>
           <td>
-            {% if app.status == 'approved' or app.status == 'accepted' %}<span class="s-pill pill-green">Approved</span>
-            {% elif app.status == 'rejected' %}<span class="s-pill pill-rose">Rejected</span>
-            {% elif app.status == 'reviewing' or app.status == 'review' %}<span class="s-pill pill-amber">Reviewing</span>
-            {% elif app.status == 'withdrawn' %}<span class="s-pill pill-muted">Withdrawn</span>
-            {% else %}<span class="s-pill pill-muted">Pending</span>{% endif %}
+            {% if app.status == 'approved' or app.status == 'accepted' %}<span class="status-pill status-approved">Approved</span>
+            {% elif app.status == 'rejected' %}<span class="status-pill status-rejected">Rejected</span>
+            {% elif app.status == 'reviewing' or app.status == 'review' %}<span class="status-pill status-review">Reviewing</span>
+            {% elif app.status == 'withdrawn' %}<span class="status-pill status-withdrawn">Withdrawn</span>
+            {% elif app.status == 'waitlist' %}<span class="status-pill status-waitlist">Waitlisted</span>
+            {% else %}<span class="status-pill status-pending">Pending</span>{% endif %}
           </td>
           <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ app.created_at|date:"M j, Y" }}</td>
-          <td style="text-align:right"><a href="{% url 'portal:application_detail' app.pk %}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px">View</a></td>
+          <td style="text-align:right"><a href="{% url 'portal:application_detail' app.pk %}" class="btn btn-ghost btn-icon">View</a></td>
         </tr>
         {% empty %}
         <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:24px">No applications found.</td></tr>

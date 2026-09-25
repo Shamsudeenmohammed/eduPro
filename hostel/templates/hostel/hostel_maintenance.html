@@ -36,8 +36,9 @@
         </div>
         <div style="flex:1;min-width:0;">
           <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:99px;
-            {% if record.status == 'ONGOING' %}background:#d97706;color:#fff;
-            {% elif record.status == 'COMPLETED' %}background:#6b7280;color:#fff;
+            {% if record.status == 'ongoing' %}background:#d97706;color:#fff;
+            {% elif record.status == 'completed' %}background:#6b7280;color:#fff;
+            {% else %}background:#475569;color:#fff;
             {% endif %}">{{ record.get_status_display }}</span>
         </div>
         <div style="flex:1.5;min-width:0;">
@@ -46,13 +47,19 @@
         <div style="flex:1.5;min-width:0;">
           <div style="color:var(--text);font-size:.78rem;">{{ record.started_at|date:"M d, Y" }}{% if record.ended_at %} – {{ record.ended_at|date:"M d, Y" }}{% endif %}</div>
         </div>
-        <div style="flex:1.5;display:flex;gap:.4rem;justify-content:flex-end;">
-          {% if record.status == 'ONGOING' %}
+        <div style="flex:1.5;display:flex;gap:.4rem;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+          <a href="{% url 'hostel:maintenance_edit' record.pk %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+          {% if record.status == 'ongoing' %}
             <form method="post" action="{% url 'hostel:maintenance_complete' record.pk %}" style="display:inline;">
               {% csrf_token %}
               <button type="submit" class="btn btn-success btn-sm">Complete</button>
             </form>
           {% endif %}
+          <form method="post" action="{% url 'hostel:maintenance_delete' record.pk %}" style="display:inline;"
+            onsubmit="return confirm('Delete this maintenance record?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+          </form>
         </div>
       </div>
     {% empty %}

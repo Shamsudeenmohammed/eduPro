@@ -8,7 +8,7 @@ other eduPro modules.
 from django import forms
 
 from academics.models import CourseOffering
-from scheduling.constants import EventScope, ScheduleType, SessionType
+from scheduling.constants import EventScope, IsoWeekday, ScheduleType, SessionType
 from scheduling.models import (
     AcademicEvent,
     AcademicSchedule,
@@ -187,6 +187,14 @@ class AcademicScheduleForm(forms.ModelForm):
 
 
 class SchedulingConfigForm(forms.ModelForm):
+    workdays = forms.TypedMultipleChoiceField(
+        coerce=int,
+        choices=IsoWeekday.choices,
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        error_messages={"required": "At least one working day is required."},
+    )
+
     class Meta:
         model = SchedulingConfig
         fields = [

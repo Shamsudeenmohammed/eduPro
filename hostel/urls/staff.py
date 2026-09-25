@@ -36,6 +36,8 @@ from hostel.views import (
     maintenance,
     maintenance_complete,
     maintenance_create,
+    maintenance_delete,
+    maintenance_edit,
     outstanding_balances,
     policy,
     reports,
@@ -88,6 +90,8 @@ urlpatterns = [
     # Maintenance
     path("maintenance/", maintenance, name="maintenance"),
     path("maintenance/create/", maintenance_create, name="maintenance_create"),
+    path("maintenance/<int:pk>/edit/", maintenance_edit, name="maintenance_edit"),
+    path("maintenance/<int:pk>/delete/", maintenance_delete, name="maintenance_delete"),
     path("maintenance/<int:pk>/complete/", maintenance_complete, name="maintenance_complete"),
 
     # Incidents
