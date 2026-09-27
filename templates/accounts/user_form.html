@@ -1,0 +1,85 @@
+{% extends "admin_base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block breadcrumb %}Platform / Users / Add{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>{{ page_title }}</h1>
+    <p>Create a new user account</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">Back to Users</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="max-width:600px">
+  <div class="card-header">
+    <div class="card-title">{{ page_title }}</div>
+  </div>
+  <div style="padding:16px 18px">
+    <form method="post" style="display:flex;flex-direction:column;gap:14px">
+      {% csrf_token %}
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.first_name.label }}</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.last_name.label }}</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.email.label }}</label>
+        {{ form.email }}
+        {% if form.email.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.role.label }}</label>
+          {{ form.role }}
+          {% if form.role.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.role.errors.0 }}</div>{% endif %}
+        </div>
+        <div style="display:flex;align-items:end">
+          <div style="flex:1">
+            <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.is_active.label }}</label>
+            {{ form.is_active }}
+            {% if form.is_active.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.is_active.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.password1.label }}</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.password1.errors.0 }}</div>{% endif %}
+          {% if form.password1.help_text %}<div style="font-size:11px;color:var(--tx3);margin-top:3px">{{ form.password1.help_text }}</div>{% endif %}
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.password2.label }}</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.password2.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div style="color:var(--rose);font-size:12px;padding:8px;background:rgba(248,113,113,0.1);border-radius:var(--r);border:1px solid rgba(248,113,113,0.2)">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary">{{ submit_label|default:"Create User" }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

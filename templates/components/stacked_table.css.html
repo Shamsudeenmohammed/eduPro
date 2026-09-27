@@ -1,0 +1,52 @@
+/* ── Stacked table rows on small screens ──
+   Pairs with data-label attributes on every td. Scoped to .stack-table so it
+   does not fight the generic `table` rules in the base template or in
+   static/css/responsive.css. Desktop output is untouched.
+   NOTE: include this inside a style element. Emitting it raw into the document
+   head makes the HTML parser bail out of head on the angle brackets below. */
+@media (max-width: 768px) {
+  .stack-table { display: block; width: 100%; overflow-x: visible; }
+  .stack-table thead { display: none; }
+  .stack-table tbody, .stack-table tr, .stack-table td { display: block; width: 100%; }
+  .stack-table tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 16px;
+    margin-bottom: 12px;
+  }
+  .stack-table tr:last-child { border-bottom: 1px solid var(--border); }
+  .stack-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 9px 0;
+    border: none;
+    border-bottom: 1px solid rgba(42, 47, 61, .45);
+    text-align: right;
+    font-size: 13px;
+  }
+  .stack-table td:last-child { border-bottom: none; }
+  .stack-table td::before {
+    content: attr(data-label);
+    float: none;
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--muted);
+    text-align: left;
+    padding-right: 12px;
+  }
+}
+
+/* ── Table helpers shared by list templates ── */
+.table-count { font-size: 13px; color: var(--muted); }
+.cell-sub { display: inline-block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.table-foot { padding: 16px 20px; }
+.inline-form { display: inline; }
+.filter-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.empty-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+.empty-link:hover { text-decoration: underline; }
