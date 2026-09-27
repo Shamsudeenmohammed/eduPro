@@ -1,19 +1,23 @@
-{% extends "academics/base.html" %}
+{% extends "admin_base.html" %}
 
 {% block topbar_actions %}
 <a href="{% url 'academics:enrolment_create' %}" class="btn btn-primary btn-sm">+ Enrol Student</a>
 <a href="{% url 'academics:enrolment_bulk' %}" class="btn btn-secondary btn-sm">Bulk Enrol</a>
 {% endblock %}
 
+{% block extra_head %}
+<style>{% include "components/stacked_table.css.html" %}</style>
+{% endblock %}
+
 {% block content %}
 <div class="card">
   <div class="card-header">
     <span class="card-title">Student Enrolments</span>
-    <span style="font-size:13px;color:var(--muted);">{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
+    <span class="table-count">{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
   </div>
   <div class="table-wrap">
     {% if page_obj.object_list %}
-    <table>
+    <table class="stack-table">
       <thead>
         <tr>
           <th>Student</th>
@@ -27,27 +31,27 @@
       <tbody>
         {% for enrol in page_obj %}
         <tr>
-          <td>{{ enrol.student.get_full_name }}<br><span style="font-size:12px;color:var(--muted);">{{ enrol.student.email }}</span></td>
-          <td>
+          <td data-label="Student">{{ enrol.student.get_full_name }}<br><span class="cell-sub">{{ enrol.student.email }}</span></td>
+          <td data-label="Course">
             <a href="{% url 'academics:offering_detail' enrol.offering.pk %}">
               {{ enrol.offering.course.code }}
             </a> — {{ enrol.offering.course.title }}
           </td>
-          <td>{{ enrol.offering.semester }}</td>
-          <td>{{ enrol.enrolled_at|date:"d M Y" }}</td>
-          <td>
+          <td data-label="Semester">{{ enrol.offering.semester }}</td>
+          <td data-label="Enrolled At">{{ enrol.enrolled_at|date:"d M Y" }}</td>
+          <td data-label="Status">
             {% if enrol.is_active %}<span class="badge badge-active">Active</span>
             {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
           </td>
-          <td>
+          <td data-label="Actions">
             {% if enrol.is_active %}
-            <form method="post" action="{% url 'academics:enrolment_deactivate' enrol.pk %}" style="display:inline;">
+            <form method="post" action="{% url 'academics:enrolment_deactivate' enrol.pk %}" class="inline-form">
               {% csrf_token %}
               <button type="submit" class="btn btn-danger btn-sm"
                 onclick="return confirm('Deactivate this enrolment?')">Deactivate</button>
             </form>
             {% else %}
-            <form method="post" action="{% url 'academics:enrolment_activate' enrol.pk %}" style="display:inline;">
+            <form method="post" action="{% url 'academics:enrolment_activate' enrol.pk %}" class="inline-form">
               {% csrf_token %}
               <button type="submit" class="btn btn-primary btn-sm"
                 onclick="return confirm('Activate this enrolment?')">Activate</button>
@@ -60,7 +64,7 @@
     </table>
 
     {% if page_obj.has_other_pages %}
-    <div style="padding:16px 20px;">
+    <div class="table-foot">
       <div class="pagination">
         {% if page_obj.has_previous %}
         <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹</a>

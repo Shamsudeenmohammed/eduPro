@@ -8,7 +8,7 @@
     <p>{{ page_obj.paginator.count }} total user{{ page_obj.paginator.count|pluralize }}</p>
   </div>
   <div class="ph-right">
-    <a href="{% url 'accounts:register' %}" class="btn btn-primary">
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add User
     </a>

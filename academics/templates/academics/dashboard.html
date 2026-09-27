@@ -1,118 +1,46 @@
+{% extends "admin_base.html" %}
 {% load static role_tags academics_tags %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>{{ page_title }} · eduPro</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
+
+{% block title %}{{ page_title|default:"Academics" }} — eduPro{% endblock %}
+
+{% comment %}
+  The whole Academics module used to have its own parallel shell
+  (academics/base.html + components/sidebar_academics.html) with a second,
+  different sidebar and its own "eduPro_sidebar_academics_open" localStorage
+  key. That is why the sidebar kept changing from page to page. Every
+  Academics page now extends admin_base.html, so the module renders the same
+  single admin sidebar and shares one set of groups and one saved state.
+{% endcomment %}
+
+{% block extra_head %}
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* Dashboard-only custom properties. Everything else (sidebar, topbar, cards,
+   badges, buttons, tables, messages, empty states) is owned by
+   admin_base.html + components/ui.css.html so the module looks the same on
+   every page. */
 :root{
-  --bg:#0d0f14;
-  --surface:#161920;
-  --surface2:#1e222d;
-  --muted:#7a8099;
-  --border:#2a2f3d;
-  --accent:#f59e0b;
-  --accent2:#a78bfa;
-  --success:#34d399;
-  --warning:#fbbf24;
-  --danger:#f87171;
-  --info:#60a5fa;
-  --text:#e8eaf0;
   --font:'DM Sans',system-ui,sans-serif;
   --mono:'DM Sans',monospace;
-  --radius:10px;
-  --shadow:0 4px 24px rgba(0,0,0,.35);
-  --ochre:#f59e0b;
-  --ochre2:#d97706;
-  --ochre-dim:rgba(245,158,11,0.12);
-  --teal:#34d399;
-  --teal-dim:rgba(52,211,153,0.1);
-  --rose:#f87171;
-  --rose-dim:rgba(248,113,113,0.1);
-  --blue:#60a5fa;
-  --blue-dim:rgba(96,165,250,0.1);
-  --tx1:#e8eaf0;
-  --tx2:#7a8099;
-  --tx3:#515970;
-  --surface3:#222632;
-  --border2:rgba(255,255,255,0.11);
-  --r:10px;
-  --r2:12px;
+  --info:#60a5fa;
+  --tx1:#e8eaf0; --tx2:#7a8099; --tx3:#515970;
+  --surface3:#222632; --border2:rgba(255,255,255,0.11);
+  --ochre:#f59e0b; --ochre2:#d97706; --ochre-dim:rgba(245,158,11,0.12);
+  --teal:#34d399; --teal-dim:rgba(52,211,153,0.1);
+  --rose:#f87171; --rose-dim:rgba(248,113,113,0.1);
+  --blue:#60a5fa; --blue-dim:rgba(96,165,250,0.1);
+  --r:10px; --r2:12px;
 }
-html,body{height:100%}
-body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;min-height:100vh;font-size:13px;line-height:1.5;overflow-x:hidden}
 
-/* ── SIDEBAR ── */
-.sidebar{width:230px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
-.sidebar-logo{padding:22px 18px 18px;font-size:21px;font-weight:800;color:var(--accent);letter-spacing:-.5px;border-bottom:1px solid var(--border)}
-.sidebar-logo span{color:var(--accent2)}
-.sidebar-nav{padding:14px 0;flex:1}
-.nav-section{padding:8px 18px 3px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;color:var(--muted);text-decoration:none;font-size:13.5px;font-weight:500;transition:all .15s;border-left:3px solid transparent}
-.nav-item:hover{color:var(--text);background:var(--surface2)}
-.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(245,158,11,.08)}
-.nav-icon{font-size:15px;width:17px;text-align:center}
-.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
-.nav-item.active svg{opacity:1}
-.nav-item .badge{margin-left:auto}
-.sidebar-user{padding:14px 18px;border-top:1px solid var(--border);font-size:13px}
-.sidebar-user .name{font-weight:600;color:var(--text)}
-.role-badge-container{display:flex;flex-direction:column;gap:4px;margin-top:4px}
-.role-badge{display:inline-block;align-self:flex-start;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(245,158,11,.15);color:var(--accent)}
-.logout-link{display:block;margin-top:8px;color:var(--muted);font-size:13px;text-decoration:none}
-.logout-link:hover{color:var(--danger)}
-
-/* ── SIDEBAR OVERLAY (mobile) ── */
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99}
-.sidebar-overlay.open{display:block}
-.hamburger{display:none;background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px}
-
-/* ── MAIN ── */
-.main-wrap{flex:1;margin-left:230px;display:flex;flex-direction:column;min-height:100vh;min-width:0}
-@media(max-width:768px){.main-wrap{margin-left:0}.sidebar{transform:translateX(-100%);transition:transform .25s ease;z-index:100}.sidebar.open{transform:translateX(0)}.hamburger{display:flex}.page-heading{font-size:16px}.topbar{padding:10px 14px}}
-@media(max-width:640px){.content{padding:12px 8px}.topbar{padding:10px 10px}.page-heading{font-size:14px}}
-@media(max-width:480px){.content{padding:8px 5px}.topbar{padding:6px 8px}.page-heading{font-size:12px}}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.page-heading{font-size:19px;font-weight:700;color:var(--text)}
-.topbar-right{display:flex;align-items:center;gap:8px}
+/* ── TOPBAR PILLS ── */
 .tb-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--muted);font-size:12px;cursor:pointer;transition:all 0.15s;text-decoration:none;font-family:var(--font)}
 .tb-pill:hover{color:var(--text);border-color:var(--border);background:var(--border)}
 .tb-pill svg{width:13px;height:13px}
 .tb-avatar{width:30px;height:30px;border-radius:50%;background:rgba(245,158,11,.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;flex-shrink:0}
-.content{flex:1;padding:24px 28px}
 
-/* ── MESSAGES ── */
-.messages-wrap{margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
-.msg-item{padding:10px 14px;border-radius:var(--r);font-size:12.5px;display:flex;align-items:center;gap:8px;border:1px solid}
-.msg-success{background:rgba(62,207,178,0.07);border-color:rgba(62,207,178,0.2);color:var(--teal)}
-.msg-error{background:rgba(224,95,117,0.07);border-color:rgba(224,95,117,0.2);color:var(--rose)}
-.msg-warning{background:rgba(232,168,76,0.07);border-color:rgba(232,168,76,0.2);color:var(--ochre)}
-.msg-info{background:rgba(91,156,246,0.07);border-color:rgba(91,156,246,0.2);color:var(--blue)}
-
-/* ── BADGES ── */
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--mono)}
-.badge-amber{background:var(--ochre-dim);color:var(--accent)}
-.badge-active{background:var(--teal-dim);color:var(--success)}
-.badge-inactive{background:var(--rose-dim);color:var(--danger)}
-.badge-purple{background:rgba(167,139,250,.15);color:var(--accent2)}
-.badge-blue{background:var(--blue-dim);color:var(--info)}
-
-/* ── PAGE HEADER ── */
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-.ph-left h1{font-size:21px;font-weight:700;letter-spacing:-0.4px;color:var(--tx1);line-height:1.2}
-.ph-left p{font-size:12.5px;color:var(--tx2);margin-top:3px}
-.ph-right{display:flex;gap:8px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:none;border:none;transition:all 0.15s;white-space:nowrap}
-.btn svg{width:14px;height:14px;flex-shrink:0}
-.btn-primary{background:var(--ochre);color:#0b0d11}
-.btn-primary:hover{background:var(--ochre2)}
-.btn-ghost{background:var(--surface2);color:var(--tx1);border:1px solid var(--border2)}
-.btn-ghost:hover{background:var(--surface3);border-color:rgba(255,255,255,0.18)}
+/* ── CARD EXTRAS (base owns .card / .card-header / .card-title) ── */
+.card-title svg{width:15px;height:15px;color:var(--tx3)}
+.card-action{font-size:11.5px;color:var(--tx3);cursor:pointer;transition:color 0.15s;text-decoration:none}
+.card-action:hover{color:var(--ochre)}
 
 /* ── KPI GRID ── */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
@@ -128,16 +56,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
 .kpi-icon svg{width:17px;height:17px}
 .kpi-val{font-family:var(--mono);font-size:28px;font-weight:500;letter-spacing:-0.5px;line-height:1;color:var(--tx1);margin-bottom:4px}
 .kpi-label{font-size:11px;color:var(--tx2);font-weight:500;text-transform:uppercase;letter-spacing:0.6px}
-.kpi-bar{margin-top:12px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.kpi-bar-fill{height:100%;border-radius:2px;width:0%}
-
-/* ── CARD ── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
-.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:13px;font-weight:700;color:var(--tx1);display:flex;align-items:center;gap:7px}
-.card-title svg{width:15px;height:15px;color:var(--tx3)}
-.card-action{font-size:11.5px;color:var(--tx3);cursor:pointer;transition:color 0.15s;text-decoration:none}
-.card-action:hover{color:var(--ochre)}
 
 /* ── CONTENT GRID ── */
 .content-grid{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
@@ -155,17 +73,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
 .warning-banner{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:var(--r);padding:12px 16px;margin-bottom:20px;font-size:12.5px;color:var(--ochre);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .warning-banner a{color:var(--accent);font-weight:600}
 
-/* ── DATA TABLE ── */
-.data-table{width:100%;border-collapse:collapse}
-.data-table th{padding:8px 16px;text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.7px;color:var(--tx3);border-bottom:1px solid var(--border);background:var(--surface2)}
-.data-table td{padding:10px 16px;font-size:12.5px;border-bottom:1px solid var(--border);color:var(--tx1)}
-.data-table tr:last-child td{border-bottom:none}
-.data-table tr:hover td{background:rgba(255,255,255,0.02)}
-.data-table td .muted{color:var(--tx2);font-size:11px}
+/* ── TABLE CELL SUB-LABEL ── */
+.muted{color:var(--tx2);font-size:11px}
 
 /* ── QUICK GRID ── */
 .quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:14px}
-.quick-link{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px;border:1px solid var(--border);border-radius:var(--r);text-decoration:none;color:var(--tx1);font-size:12px;font-weight:600;text-align:center;transition:all 0.15s;background:var(--surface2)}
+.quick-link{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px;border:1px solid var(--border);border-radius:var(--r);text-decoration:none;color:var(--text);font-size:12px;font-weight:600;text-align:center;transition:all 0.15s;background:var(--surface2)}
 .quick-link:hover{border-color:var(--border2);background:var(--surface3);transform:translateY(-1px)}
 .quick-icon{font-size:20px}
 
@@ -178,134 +91,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
 .alloc-name{font-size:12.5px;font-weight:600;color:var(--tx1)}
 .alloc-meta{font-size:11px;color:var(--tx2);margin-top:1px}
 .alloc-actions{display:flex;gap:6px;flex-shrink:0}
-.btn-sm{font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;text-decoration:none;transition:all 0.15s;font-family:var(--font)}
-.btn-sm-ghost{background:var(--surface2);color:var(--tx2);border:1px solid var(--border)}
-.btn-sm-ghost:hover{background:var(--surface3);color:var(--tx1)}
-
-/* ── EMPTY STATE ── */
-.empty-state{padding:32px;text-align:center;color:var(--tx3);font-size:12.5px}
-.empty-state a{color:var(--accent);font-weight:600}
-{% include "components/sidebar_collapse.css.html" %}
 </style>
-<link rel="stylesheet" href="{% static 'css/responsive.css' %}">
-</head>
-<body>
+{% endblock %}
 
-<!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">edu<span>Pro</span></div>
-  <nav class="sidebar-nav" id="sidebarNav" data-role="academics">
+{% block topbar_actions %}
+{% if request.user|is_admin %}
+<a href="{% url 'academics:offering_create' %}" class="tb-pill">
+  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Schedule
+</a>
+{% endif %}
+<a href="{% url 'accounts:profile' %}" class="tb-avatar" title="{{ request.user.get_full_name }}">
+  {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+</a>
+{% endblock %}
 
-    <button type="button" class="sidebar-menu-toggle" data-menu="platform" aria-expanded="false" aria-controls="sub-platform">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="menu-title">Platform</span>
-      <span class="menu-arrow" aria-hidden="true">▾</span>
-    </button>
-    <div class="sidebar-submenu" id="sub-platform">
-      <a href="{% url 'accounts:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Home</span></a>
-      <a href="{% url 'academics:dashboard' %}" class="nav-item {% if request.resolver_match.namespace == 'academics' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span>Academics</span></a>
-    </div>
-
-    {% if request.user|is_admin %}
-    <button type="button" class="sidebar-menu-toggle" data-menu="administration" aria-expanded="false" aria-controls="sub-administration">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span class="menu-title">Administration</span>
-      <span class="menu-arrow" aria-hidden="true">▾</span>
-    </button>
-    <div class="sidebar-submenu" id="sub-administration">
-      <a href="{% url 'academics:faculty_list' %}" class="nav-item {% if 'faculty' in request.resolver_match.url_name %}active{% endif %}"><span>Faculties</span></a>
-      <a href="{% url 'academics:department_list' %}" class="nav-item {% if 'department' in request.resolver_match.url_name %}active{% endif %}"><span>Departments</span></a>
-      <a href="{% url 'academics:program_list' %}" class="nav-item {% if 'program' in request.resolver_match.url_name %}active{% endif %}"><span>Programs</span></a>
-      <a href="{% url 'academics:course_list' %}" class="nav-item {% if request.resolver_match.url_name in 'course_list,course_detail,course_create,course_edit' %}active{% endif %}"><span>Courses</span></a>
-    </div>
-
-    <button type="button" class="sidebar-menu-toggle" data-menu="scheduling" aria-expanded="false" aria-controls="sub-scheduling">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span class="menu-title">Scheduling</span>
-      <span class="menu-arrow" aria-hidden="true">▾</span>
-    </button>
-    <div class="sidebar-submenu" id="sub-scheduling">
-      <a href="{% url 'academics:session_list' %}" class="nav-item {% if 'session' in request.resolver_match.url_name %}active{% endif %}"><span>Sessions</span></a>
-      <a href="{% url 'academics:semester_list' %}" class="nav-item {% if 'semester' in request.resolver_match.url_name %}active{% endif %}"><span>Semesters</span></a>
-      <a href="{% url 'academics:offering_list' %}" class="nav-item {% if 'offering' in request.resolver_match.url_name %}active{% endif %}"><span>Offerings</span></a>
-      <a href="{% url 'academics:allocation_list' %}" class="nav-item {% if 'allocation' in request.resolver_match.url_name %}active{% endif %}"><span>Allocations</span></a>
-      <a href="{% url 'academics:enrolment_list' %}" class="nav-item {% if 'enrolment' in request.resolver_match.url_name %}active{% endif %}"><span>Enrolments</span></a>
-    </div>
-    {% endif %}
-
-    {% if request.user|is_teacher %}
-    <a href="{% url 'academics:my_courses' %}" class="nav-item {% if request.resolver_match.url_name == 'my_courses' %}active{% endif %}">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-      <span>My Courses</span>
-    </a>
-    {% endif %}
-
-    {% if request.user|is_student %}
-    <a href="{% url 'academics:my_enrolments' %}" class="nav-item {% if request.resolver_match.url_name == 'my_enrolments' %}active{% endif %}">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-      <span>My Courses</span>
-    </a>
-    {% endif %}
-
-    <button type="button" class="sidebar-menu-toggle" data-menu="account" aria-expanded="false" aria-controls="sub-account">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span class="menu-title">Account</span>
-      <span class="menu-arrow" aria-hidden="true">▾</span>
-    </button>
-    <div class="sidebar-submenu" id="sub-account">
-      <a href="{% url 'accounts:profile' %}" class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><span>My Profile</span></a>
-      <a href="{% url 'accounts:change_password' %}" class="nav-item {% if request.resolver_match.url_name == 'change_password' %}active{% endif %}"><span>Change Password</span></a>
-    </div>
-
-  </nav>
-
-  <div class="sidebar-user">
-    <div class="name">{{ request.user.get_full_name }}</div>
-    <div class="role-badge-container">
-      <span class="role-badge">{{ request.user.role|title }}</span>
-    </div>
-    <form method="post" action="{% url 'accounts:logout' %}">
-      {% csrf_token %}
-      <button type="submit" class="logout-link" style="background:none;border:none;cursor:pointer;font-family:var(--font);width:100%;text-align:left;font-size:13px">↩ Sign out</button>
-    </form>
-  </div>
-</aside>
-
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<!-- MAIN -->
-<div class="main-wrap">
-
-  <header class="topbar">
-    <div class="topbar-left">
-      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="page-heading">Academics Dashboard</div>
-    </div>
-    <div class="topbar-right">
-      {% if request.user|is_admin %}
-      <a href="{% url 'academics:offering_create' %}" class="tb-pill">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Schedule
-      </a>
-      {% endif %}
-      <a href="{% url 'accounts:profile' %}" class="tb-avatar" title="{{ request.user.get_full_name }}">
-        {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
-      </a>
-    </div>
-  </header>
-
-  <div class="content">
-
-    {% if messages %}
-    <div class="messages-wrap">
-      {% for msg in messages %}
-      <div class="msg-item msg-{{ msg.tags }}">{{ msg }}</div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
+{% block content %}
     <!-- Session / Semester Banner -->
     {% if current_session or current_semester %}
     <div class="session-banner">
@@ -510,7 +311,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
             <div class="alloc-meta">{{ alloc.offering.semester }} · {{ alloc.offering.level.name }} · {{ alloc.get_role_display }}</div>
           </div>
           <div class="alloc-actions">
-            <a href="{% url 'academics:offering_detail' alloc.offering.pk %}" class="btn-sm btn-sm-ghost">View</a>
+            <a href="{% url 'academics:offering_detail' alloc.offering.pk %}" class="btn btn-secondary btn-sm">View</a>
           </div>
         </div>
         {% empty %}
@@ -574,7 +375,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
             <div class="alloc-meta">{{ enrolment.offering.semester }} · {{ enrolment.offering.course.credit_units }} credits · {{ enrolment.get_status_display }}</div>
           </div>
           <div class="alloc-actions">
-            <a href="{% url 'academics:offering_detail' enrolment.offering.pk %}" class="btn-sm btn-sm-ghost">View</a>
+            <a href="{% url 'academics:offering_detail' enrolment.offering.pk %}" class="btn btn-secondary btn-sm">View</a>
           </div>
         </div>
         {% empty %}
@@ -584,40 +385,4 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx1);display:flex;
     </div>
     {% endif %}
 
-  </div><!-- /content -->
-</div><!-- /main-wrap -->
-
-<script>
-(function(){
-  var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay'),hb=document.getElementById('hamburger');
-  if(hb&&sb){
-    function openSb(){sb.classList.add('open');ov.classList.add('open');document.body.style.overflow='hidden';}
-    function closeSb(){sb.classList.remove('open');ov.classList.remove('open');document.body.style.overflow='';}
-    hb.addEventListener('click',openSb);
-    ov.addEventListener('click',closeSb);
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSb();});
-  }
-
-  document.querySelectorAll('.kpi-bar-fill[data-pct]').forEach(function(el){
-    el.style.width = el.getAttribute('data-pct') + '%';
-  });
-  var secs = 0;
-  var uptimeEl = document.getElementById('uptimeVal');
-  if(uptimeEl){
-    setInterval(function(){
-      secs++;
-      var h = Math.floor(secs/3600);
-      var m = Math.floor((secs%3600)/60);
-      var s = secs % 60;
-      var f = function(n){ return String(n).padStart(2,'0'); };
-      uptimeEl.textContent = f(h)+':'+f(m)+':'+f(s);
-    }, 1000);
-  }
-  document.querySelectorAll('.toast').forEach(function(t){
-    setTimeout(function(){t.style.transition='opacity .4s';t.style.opacity='0';setTimeout(function(){if(t.parentNode)t.remove();},420);},5000);
-  });
-})();
-</script>
-<script>{% include "components/sidebar_collapse.js.html" %}</script>
-</body>
-</html>
+{% endblock %}

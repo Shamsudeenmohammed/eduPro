@@ -271,6 +271,7 @@ canvas.spark{display:block;width:100%;height:28px}
 #uptimeVal{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--tx1)}
 {% include "components/sidebar_collapse.css.html" %}
 </style>
+{% include "components/ui.css.html" %}
 <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 {% block extra_head %}{% endblock %}
 </head>
@@ -305,9 +306,10 @@ canvas.spark{display:block;width:100%;height:28px}
       <button class="hamburger" id="hamburger" aria-label="Toggle menu">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <div class="page-heading">{% block breadcrumb %}Admin Dashboard{% endblock %}</div>
+      <div class="page-heading">{% block breadcrumb %}{{ page_title|default:"Admin Dashboard" }}{% endblock %}</div>
     </div>
     <div class="topbar-right">
+      {% block topbar_actions %}{% endblock %}
       <a href="{% url 'accounts:profile' %}" class="tb-pill">Profile</a>
       <a href="{% url 'admin:index' %}" class="tb-pill">Django Admin</a>
       <a href="{% url 'accounts:profile' %}" class="tb-avatar" title="{{ request.user.get_full_name }}">

@@ -49,6 +49,7 @@ urlpatterns = [
 
     # ── Admin user management ─────────────────────────────────────────────────
     path("users/",             views.user_list_view,    name="user_list"),
+    path("users/create/",      views.admin_create_user, name="user_create"),
     path("users/<int:pk>/",    views.user_detail_view,  name="user_detail"),
     path("users/<int:pk>/toggle-active/", views.toggle_user_active, name="toggle_user_active"),
     path("users/bulk-upload/", views.bulk_student_upload_view, name="bulk_student_upload"),

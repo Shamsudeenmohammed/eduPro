@@ -666,6 +666,30 @@ def user_list_view(request):
 
 @login_required
 @admin_required
+def admin_create_user(request):
+    """
+    Admin view to create a new user with full control over role and active status.
+    """
+    from .forms import AdminUserCreationForm
+
+    if request.method == "POST":
+        form = AdminUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"User {user.get_full_name()} ({user.email}) created successfully.")
+            return redirect("accounts:user_list")
+    else:
+        form = AdminUserCreationForm()
+
+    return render(request, "accounts/user_form.html", {
+        "form": form,
+        "page_title": "Add User",
+        "submit_label": "Create User",
+    })
+
+
+@login_required
+@admin_required
 @require_http_methods(["POST"])
 def toggle_user_active(request, pk):
     user = get_object_or_404(EduProUser, pk=pk)

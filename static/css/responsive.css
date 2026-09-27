@@ -25,7 +25,14 @@ button, input, select, textarea { font-family: inherit; }
 
 @media (max-width: 768px) {
   .content { overflow-x: hidden; }
+  /* Let a <table> scroll sideways on small screens. A display:table box cannot
+     scroll, so the table itself becomes a block — but its children MUST be put
+     back into table layout, otherwise thead/tbody/tr/td collapse out of the
+     table grid and the rows fall apart. */
   table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table thead, table tbody, table tfoot { display: table-row-group; }
+  table tr { display: table-row; }
+  table th, table td { display: table-cell; }
 
   /* toolbar rows soften so nothing gets pushed off-screen */
   .topbar { flex-wrap: wrap; row-gap: 6px; }

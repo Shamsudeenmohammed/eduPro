@@ -1,4 +1,4 @@
-{% extends "academics/base.html" %}
+{% extends "admin_base.html" %}
 
 {% block topbar_actions %}
 {% if user.is_admin or user.is_superuser %}
@@ -6,10 +6,14 @@
 {% endif %}
 {% endblock %}
 
+{% block extra_head %}
+<style>{% include "components/stacked_table.css.html" %}</style>
+{% endblock %}
+
 {% block content %}
 <!-- Filter bar -->
 <div class="filter-bar">
-  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+  <form method="get" class="filter-form">
     <select name="dept" onchange="this.form.submit()">
       <option value="">All Departments</option>
       {% for dept in departments %}
@@ -27,11 +31,11 @@
 <div class="card">
   <div class="card-header">
     <span class="card-title">Course Catalogue</span>
-    <span style="font-size:13px;color:var(--muted);">{{ page_obj.paginator.count }} course{{ page_obj.paginator.count|pluralize }}</span>
+    <span class="table-count">{{ page_obj.paginator.count }} course{{ page_obj.paginator.count|pluralize }}</span>
   </div>
   <div class="table-wrap">
     {% if page_obj.object_list %}
-    <table>
+    <table class="stack-table">
       <thead>
         <tr>
           <th>Code</th>
@@ -45,16 +49,16 @@
       <tbody>
         {% for course in page_obj %}
         <tr>
-          <td><a href="{% url 'academics:course_detail' course.pk %}"><strong>{{ course.code }}</strong></a></td>
-          <td>{{ course.title }}</td>
-          <td>{{ course.department.name|default:"—" }}</td>
-          <td>{{ course.credit_units|default:"—" }}</td>
-          <td>
+          <td data-label="Code"><a href="{% url 'academics:course_detail' course.pk %}"><strong>{{ course.code }}</strong></a></td>
+          <td data-label="Title">{{ course.title }}</td>
+          <td data-label="Department">{{ course.department.name|default:"—" }}</td>
+          <td data-label="Credits">{{ course.credit_units|default:"—" }}</td>
+          <td data-label="Status">
             {% if course.is_active %}<span class="badge badge-active">Active</span>
             {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
           </td>
           {% if user.is_admin or user.is_superuser %}
-          <td><a href="{% url 'academics:course_edit' course.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
+          <td data-label="Actions"><a href="{% url 'academics:course_edit' course.pk %}" class="btn btn-secondary btn-sm">Edit</a></td>
           {% endif %}
         </tr>
         {% endfor %}
@@ -63,7 +67,7 @@
 
     <!-- Pagination -->
     {% if page_obj.has_other_pages %}
-    <div style="padding:16px 20px;">
+    <div class="table-foot">
       <div class="pagination">
         {% if page_obj.has_previous %}
         <a href="?page={{ page_obj.previous_page_number }}{% if selected_dept %}&dept={{ selected_dept }}{% endif %}" class="page-link">‹</a>
@@ -87,7 +91,7 @@
       <span class="icon">📚</span>
       No courses found.
       {% if user.is_admin or user.is_superuser %}
-      <a href="{% url 'academics:course_create' %}" style="color:var(--accent);">Add one</a>.
+      <a href="{% url 'academics:course_create' %}" class="empty-link">Add one</a>.
       {% endif %}
     </div>
     {% endif %}

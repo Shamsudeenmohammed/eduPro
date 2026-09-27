@@ -805,7 +805,7 @@ def my_enrolments(request):
         student_profile = None
 
     return render(request, "academics/my_enrolments.html", {
-        "page_title":      "My Courses",
+        "page_title":      "My Enrolments",
         "enrolments":      enrolments,
         "student_profile": student_profile,
     })
@@ -926,7 +926,15 @@ def result_sheet_list(request):
 
     paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(request.GET.get("page"))
-    return render(request, "teachers/result_sheet_list.html", {
+    # This view is mounted in two namespaces: teachers (teacher chrome) and
+    # academics (academics chrome). Keep each on its own layout so the
+    # sidebar does not swap when the page is reached from either menu.
+    list_template = (
+        "academics/result_sheet_list.html"
+        if request.resolver_match.namespace == "academics"
+        else "teachers/result_sheet_list.html"
+    )
+    return render(request, list_template, {
         "page_title":     page_title,
         "page_obj":       page_obj,
         "sheets":         page_obj.object_list,

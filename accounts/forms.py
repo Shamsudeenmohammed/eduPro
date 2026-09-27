@@ -286,3 +286,61 @@ class PasswordResetForm(StyledFieldsMixin, DjangoPasswordResetForm):
 
 class SetPasswordForm(StyledFieldsMixin, DjangoSetPasswordForm):
     pass
+
+
+# ── Admin User Creation ────────────────────────────────────────────────────────
+
+class AdminUserCreationForm(StyledFieldsMixin, forms.ModelForm):
+    """
+    Admin form to create a new user with full control over role and active status.
+    """
+    password1 = forms.CharField(
+        label=_("Password"),
+        widget=forms.PasswordInput(attrs={
+            "placeholder": "Create a password",
+            "autocomplete": "new-password",
+        }),
+        min_length=8,
+        help_text=_("Minimum 8 characters."),
+    )
+    password2 = forms.CharField(
+        label=_("Confirm password"),
+        widget=forms.PasswordInput(attrs={
+            "placeholder": "Repeat your password",
+            "autocomplete": "new-password",
+        }),
+    )
+
+    class Meta:
+        model  = EduProUser
+        fields = ["first_name", "last_name", "email", "role", "is_active"]
+        widgets = {
+            "first_name": forms.TextInput(attrs={"placeholder": "First name", "autocomplete": "given-name"}),
+            "last_name":  forms.TextInput(attrs={"placeholder": "Last name",  "autocomplete": "family-name"}),
+            "email":      forms.EmailInput(attrs={"placeholder": "you@institution.edu", "autocomplete": "email"}),
+            "role":       forms.Select(),
+            "is_active":  forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].lower().strip()
+        if EduProUser.objects.filter(email=email).exists():
+            raise forms.ValidationError(
+                _("An account with this email already exists.")
+            )
+        return email
+
+    def clean_password2(self):
+        p1 = self.cleaned_data.get("password1", "")
+        p2 = self.cleaned_data.get("password2", "")
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError(_("The two passwords do not match."))
+        return p2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        user.email = user.email.lower().strip()
+        if commit:
+            user.save()
+        return user
