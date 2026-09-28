@@ -1,0 +1,69 @@
+{% extends "admin_base.html" %}{% block title %}{{ page_title }}{% endblock %}
+{% block breadcrumb %}Admissions / {{ application.reference_number }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Issue Admission Offer</h1>
+    <p>{{ application.reference_number }} — {{ application.get_full_name }}</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Back to application</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start">
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Offer details</div></div>
+    <form method="post" style="padding:20px">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style="padding:10px 12px;margin-bottom:14px;border-radius:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);font-size:13px">
+          {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        </div>
+      {% endif %}
+      {% for field in form %}
+      <div class="form-group" style="margin-bottom:16px">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span style="color:var(--rose)">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<div style="font-size:11px;color:var(--tx3);margin-top:4px">{{ field.help_text }}</div>{% endif %}
+        {% for e in field.errors %}<div style="font-size:11px;color:var(--rose);margin-top:4px">{{ e }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary">Issue offer</button>
+        <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">What happens next</div></div>
+    <div style="padding:20px;font-size:13px;color:var(--tx2);line-height:1.7">
+      <ol style="margin:0;padding-left:18px">
+        <li>The applicant is notified and can accept or decline the offer.</li>
+        <li>Nothing becomes a student at this point.</li>
+        <li>Once the offer is <strong>accepted</strong>, convert the application to
+            create the student record, number and account in one transaction.</li>
+      </ol>
+      <div style="margin-top:14px;padding:12px;border-radius:8px;background:var(--bg2)">
+        Decision on file: <strong>{{ application.get_decision_display }}</strong><br>
+        Programme: <strong>{{ application.get_program_name }}</strong>
+      </div>
+      {% if application.offers.exists %}
+      <div style="margin-top:14px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600;margin-bottom:8px">Earlier offers</div>
+        {% for o in application.offers.all %}
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-top:1px solid var(--border)">
+          <span style="font-family:var(--mono)">{{ o.offer_number }}</span>
+          <span>{{ o.get_status_display }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

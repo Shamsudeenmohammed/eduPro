@@ -531,8 +531,55 @@ class StudentProfile(TimeStampedModel):
     total_credits_earned = models.PositiveSmallIntegerField(_("total credits earned"), default=0)
     is_active            = models.BooleanField(_("active"), default=True)
 
+    # Added by the Applications & Admissions upgrade: the academic session this
+    # student was admitted into.
+    #
+    # Deliberately a property, not a column. The session is recorded on the
+    # AdmissionOffer that the student accepted, so storing it again here would
+    # duplicate the source of truth and — because ``academics`` is a migrated
+    # app — require a schema change that the upgrade is not permitted to make.
+    # Previously the session was only discoverable by walking
+    # enrolment -> offering -> semester -> session, which cannot tell you which
+    # session a student was *admitted* into.
+
     objects     = ActiveManager()
     all_objects = models.Manager()
+
+    @property
+    def admission_session(self):
+        """
+        The :class:`AcademicSession` this student was admitted into, or ``None``.
+
+        Resolved from the admission application that produced this student:
+        the offer carries the session it was issued for, and the application
+        carries it via its cycle. Nothing is denormalised onto the profile, so
+        this stays correct even if a session is renamed or re-pointed later.
+        """
+        from portal.models import AdmissionApplication
+
+        application = (
+            AdmissionApplication.objects
+            .filter(user_id=self.student_id)
+            .exclude(converted_at__isnull=True)
+            .select_related("cycle__academic_session")
+            .order_by("-converted_at")
+            .first()
+        )
+        if application is not None:
+            return application.cycle.academic_session if application.cycle_id else None
+
+        # No converted application (e.g. a student created by staff): fall back
+        # to any offer they hold.
+        from portal.models import AdmissionOffer
+
+        offer = (
+            AdmissionOffer.objects
+            .filter(application__user_id=self.student_id)
+            .select_related("academic_session")
+            .order_by("-issue_date")
+            .first()
+        )
+        return offer.academic_session if offer else None
 
     class Meta:
         verbose_name        = _("student academic profile")
@@ -545,6 +592,76 @@ class StudentProfile(TimeStampedModel):
             f"[{self.student_number or 'No ID'}] "
             f"— {self.program.code if self.program else 'Unassigned'}"
         )
+
+    @classmethod
+    def generate_number(cls, program=None, year=None):
+        """
+        Next free student number, formatted {program_code}/{year}/{0001}.
+
+        Single source of truth for student numbers. Manual admin add, bulk CSV
+        upload, portal application approval and the import command all go
+        through here, so the sequence cannot drift between entry points.
+
+        Reads through all_objects on purpose: a deactivated profile's number must
+        stay reserved, otherwise reusing it would hand one student two IDs.
+        """
+        year = year or timezone.now().year
+        code = (program.code if program else "") or "STU"
+        prefix = f"{code}/{year}/"
+
+        last = (
+            cls.all_objects.filter(student_number__startswith=prefix)
+            .order_by("student_number")
+            .values_list("student_number", flat=True)
+            .last()
+        )
+        number = 1
+        if last:
+            tail = last.rsplit("/", 1)[-1]
+            if tail.isdigit():
+                number = int(tail) + 1
+
+        # student_number is unique, and two admins adding students at the same
+        # moment would otherwise both read the same "last" row and collide.
+        # Walk forward instead of letting the save raise IntegrityError.
+        candidate = f"{prefix}{number:04d}"
+        while cls.all_objects.filter(student_number=candidate).exists():
+            number += 1
+            candidate = f"{prefix}{number:04d}"
+        return candidate
+
+    @classmethod
+    def ensure_for_student(cls, student, program=None, year=None):
+        """
+        Return the student's academic profile, creating it complete if needed.
+
+        A student created anywhere in the system needs a number, an admission
+        date and a starting level, otherwise they cannot be enrolled, billed,
+        given an ID card or located by student ID at login. Callers that used
+        to build this by hand now share one implementation.
+        """
+        profile, created = cls.all_objects.get_or_create(student=student)
+
+        changed = False
+        if not profile.student_number:
+            profile.student_number = cls.generate_number(program=program, year=year)
+            changed = True
+        if program is not None and profile.program_id != program.pk:
+            profile.program = program
+            changed = True
+        if not profile.admission_date:
+            profile.admission_date = timezone.now().date()
+            changed = True
+        if changed:
+            profile.save()
+
+        if program is not None and not profile.current_level:
+            level = program.get_starting_level()
+            if level:
+                profile.current_level = level
+                profile.save(update_fields=["current_level"])
+
+        return profile, created
 
     def check_graduation_eligibility(self):
         """

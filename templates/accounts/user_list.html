@@ -59,6 +59,7 @@
         <tr>
           <th>User</th>
           <th class="sortable">Role</th>
+          <th>Student ID</th>
           <th class="sortable">Joined</th>
           <th class="sortable">Status</th>
           <th></th>
@@ -85,6 +86,17 @@
               <span class="badge" style="background:var(--teal-dim);color:var(--success)">{{ u.role|title }}</span>
             {% endif %}
           </td>
+          <td style="font-family:var(--mono);font-size:11px">
+            {% if u.role == 'student' %}
+              {% if u.academic_profile.student_number %}
+                <span style="color:var(--ochre);background:var(--ochre-dim);padding:2px 7px;border-radius:4px;border:1px solid rgba(232,168,76,0.2)">{{ u.academic_profile.student_number }}</span>
+              {% else %}
+                <span style="color:var(--tx3)" title="No student ID assigned yet">Not assigned</span>
+              {% endif %}
+            {% else %}
+              <span style="color:var(--tx3)">—</span>
+            {% endif %}
+          </td>
           <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ u.date_joined|date:"M d, Y" }}</td>
           <td>
             {% if u.is_active %}
@@ -104,7 +116,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:24px">No users found.</td></tr>
+        <tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:24px">No users found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

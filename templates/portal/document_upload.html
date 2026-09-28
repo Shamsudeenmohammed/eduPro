@@ -1,0 +1,49 @@
+{% extends "base_public.html" %}{% block title %}Upload Document — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>Upload a Document</h1>
+    <p>{{ application.reference_number }} — {{ application.get_program_name }}</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container" style="max-width:640px">
+    <div class="feature-card" style="padding:1.75rem">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div style="padding:.85rem 1rem;margin-bottom:1rem;border-radius:8px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);font-size:.85rem">
+          {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        </div>
+        {% endif %}
+
+        {% for field in form %}
+        <div style="margin-bottom:1.1rem">
+          <label for="{{ field.id_for_label }}" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">
+            {{ field.label }} {% if field.field.required %}<span style="color:var(--danger)">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}
+          <div style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem">{{ field.help_text|safe }}</div>
+          {% endif %}
+          {% for e in field.errors %}
+          <div style="font-size:.78rem;color:var(--danger);margin-top:.3rem">{{ e }}</div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div style="padding:.9rem 1rem;margin-bottom:1.25rem;border-radius:8px;background:var(--surface2);font-size:.8rem;color:var(--text-muted)">
+          Accepted formats: PDF, JPG, JPEG or PNG. Maximum 5&nbsp;MB per file.
+          Uploading a new copy of a document you already sent replaces the previous
+          version and sends it back for verification.
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <button type="submit" class="btn" style="padding:10px 22px;border-radius:8px;font-weight:600;font-size:.88rem;background:var(--primary);color:#fff;border:none;cursor:pointer">Upload</button>
+          <a href="{% url 'portal:applicant_checklist' application.pk %}" class="btn" style="padding:10px 22px;border-radius:8px;font-weight:600;font-size:.88rem;border:1px solid var(--border);background:var(--surface);color:var(--text);text-decoration:none">Back to checklist</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

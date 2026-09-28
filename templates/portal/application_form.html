@@ -120,7 +120,14 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="btn" style="background:var(--primary);color:#fff;padding:11px 32px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Submit Application →</button>
+        <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
+          <button type="submit" class="btn" style="background:var(--primary);color:#fff;padding:11px 32px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Submit Application →</button>
+          <button type="submit" name="action" value="draft" class="btn" style="background:transparent;color:var(--text-muted);padding:11px 24px;border-radius:8px;font-weight:600;font-size:.875rem;border:1px solid var(--border);cursor:pointer;display:inline-flex;align-items:center;gap:6px">Save as draft</button>
+        </div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.85rem">
+          Not ready yet? Save a draft and finish later — you will be asked to sign in,
+          and nothing is sent to the admissions office until you submit.
+        </p>
       </form>
     </div>
   </div>

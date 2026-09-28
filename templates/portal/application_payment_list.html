@@ -1,0 +1,98 @@
+{% extends "admin_base.html" %}{% block title %}Application Payments{% endblock %}
+{% block breadcrumb %}Admissions / Payments{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Application Payments</h1>
+    <p>{{ total }} payment{{ total|pluralize }} recorded</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'portal:admissions_dashboard' %}" class="btn btn-ghost">Admissions Dashboard</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header">
+    <div class="card-title">Filters</div>
+    {% if status_filter %}<a href="{% url 'portal:application_payment_list' %}" class="card-action">Clear ✕</a>{% endif %}
+  </div>
+  <form method="get" class="filter-bar">
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status" class="form-select" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="display:flex;align-items:flex-end">
+      <button type="submit" class="btn btn-primary">Apply</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><div class="card-title">Payments</div></div>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Reference</th><th>Applicant</th><th>Programme</th>
+          <th>Amount</th><th>Provider</th><th>Status</th>
+          <th>Verified by</th><th>Date</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in page_obj %}
+        <tr>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ p.payment_reference }}</td>
+          <td style="font-weight:600">
+            <a href="{% url 'portal:application_detail' p.application_id %}" style="color:inherit;text-decoration:none">
+              {{ p.application.get_full_name }}
+            </a>
+          </td>
+          <td style="color:var(--tx2);font-size:12px">{{ p.application.get_program_name }}</td>
+          <td style="font-family:var(--mono)">{{ p.amount }}</td>
+          <td style="font-size:12px;color:var(--tx2)">{{ p.provider|default:"—" }}</td>
+          <td>
+            <span class="badge" style="{% if p.status == 'successful' %}color:var(--teal){% elif p.status == 'failed' or p.status == 'refunded' %}color:var(--rose){% else %}color:var(--ochre){% endif %}">
+              {{ p.get_status_display }}
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--tx2)">
+            {% if p.verified_by %}{{ p.verified_by.get_full_name|default:p.verified_by.email }}{% else %}<span style="color:var(--tx3)">—</span>{% endif %}
+          </td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ p.created_at|date:"M j, Y H:i" }}</td>
+          <td>
+            {% if p.status == 'pending' %}
+            <form method="post" action="{% url 'portal:application_payment_verify' p.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="padding:4px 10px;font-size:11px">Verify with provider</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:24px">No payments recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="padding:16px 20px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--border)">
+    {% if page_obj.has_previous %}
+      <a href="?status={{ status_filter }}&page={{ page_obj.previous_page_number }}" class="btn btn-ghost" style="padding:5px 12px;font-size:12px">← Prev</a>
+    {% endif %}
+    <span style="font-size:12px;color:var(--tx3)">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?status={{ status_filter }}&page={{ page_obj.next_page_number }}" class="btn btn-ghost" style="padding:5px 12px;font-size:12px">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

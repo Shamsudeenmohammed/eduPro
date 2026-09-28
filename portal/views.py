@@ -20,7 +20,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from django.views.decorators.http import require_http_methods
 
@@ -31,11 +35,19 @@ from .forms import (
     AdmissionApplicationForm,
     AdmissionCycleForm,
     AdmissionForm,
+    ApplicationCorrectionForm,
+    ApplicationDocumentUploadForm,
+    ApplicationPaymentRecordForm,
     ApplicationRejectForm,
     ApplicationReviewForm,
     ApplicationStatusCheckForm,
+    ApplicationSubmitForm,
+    AdmissionDecisionForm,
+    AdmissionOfferForm,
     ContactForm,
     DocumentRequestForm,
+    DocumentVerificationForm,
+    OfferResponseForm,
 )
 from .models import (
     AdmissionApplication,
@@ -173,6 +185,36 @@ def _admissions_required(view_func):
     return wrapper
 
 
+def _admissions_read_required(view_func):
+    """
+    Also admits HODs, who may READ applications for their own departments.
+
+    Every view using this must scope its queryset with
+    ``permissions.scope_applications``; the department restriction is enforced
+    per object, not by the decorator. Mutating actions (decision, offer,
+    convert, transitions) deliberately use ``_admissions_required`` instead, so
+    an HOD can see and verify documents for their department but cannot record
+    an admission decision.
+    """
+    from functools import wraps
+
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from .permissions import is_admissions_staff, is_hod
+
+        if not request.user.is_authenticated:
+            return redirect(f"/accounts/login/?next={request.path}")
+        if is_admissions_staff(request.user) or is_hod(request.user):
+            return view_func(request, *args, **kwargs)
+        messages.error(
+            request,
+            "Admissions officer, HOD or administrator access required.",
+        )
+        return redirect(request.user.get_dashboard_url())
+
+    return wrapper
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # NEW: PUBLIC CONTROLLED-ONBOARDING VIEWS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -180,8 +222,17 @@ def _admissions_required(view_func):
 @require_http_methods(["GET", "POST"])
 def application_form(request):
     """
-    New controlled public application form (replaces the legacy admission_apply
-    for new intake cycles).  Requires an active AdmissionCycle.
+    Public application form.
+
+    Preserves the original behaviour (an account is created so the applicant
+    can track progress) and adds draft support: posting with ``action=draft``
+    stores the application as a DRAFT so it can be finished later.
+
+    The account created here is an APPLICANT account, not a student: it has no
+    ``academic_profile``, therefore no student number and no dashboard. A
+    student record is only created by
+    :class:`portal.services.StudentConversionService`, after an admission
+    decision and an accepted offer (requirement 7).
     """
     if request.user.is_authenticated and request.user.is_student:
         messages.info(request, "You already have a student account.")
@@ -200,24 +251,89 @@ def application_form(request):
         files=request.FILES or None,
     )
 
+    save_as_draft = request.method == "POST" and request.POST.get("action") == "draft"
+
     if request.method == "POST" and form.is_valid():
-        application = form.save(commit=False)
-        application.cycle = active_cycle
-        application.save()
+        email = form.cleaned_data["email"]
 
-        # Create user account so the applicant can log in immediately
-        from accounts.models import EduProUser
-        user = EduProUser.objects.create_user(
-            email=application.email,
-            password=form.cleaned_data["password1"],
-            first_name=application.first_name,
-            last_name=application.last_name,
-            role="student",
-            is_active=True,  # active from start so they can check status
-        )
-        application.user = user
-        application.save(update_fields=["user"])
+        # One live application per person per cycle. Checked on the server so a
+        # crafted POST cannot slip past the form.
+        duplicate = AdmissionApplication.objects.filter(
+            cycle=active_cycle, email__iexact=email,
+        ).exclude(status=AdmissionStatus.WITHDRAWN).exists()
+        if duplicate:
+            form.add_error(
+                "email",
+                "You already have an application for this cycle. Sign in to track "
+                "or update it, or contact admissions if you believe this is a mistake.",
+            )
+            return render(request, "portal/application_form.html", {
+                "page_title": "Apply for Admission",
+                "form": form,
+                "cycle": active_cycle,
+            })
 
+        # Atomic: the application and its applicant account must both exist or
+        # neither does. Previously a duplicate email raised IntegrityError after
+        # the application row was already committed, orphaning it.
+        with transaction.atomic():
+            application = form.save(commit=False)
+            application.cycle = active_cycle
+            application.status = (
+                AdmissionStatus.DRAFT if save_as_draft else AdmissionStatus.SUBMITTED
+            )
+            application.submitted_at = None if save_as_draft else timezone.now()
+            application.save()
+
+            # Create the applicant account so they can log in and track progress.
+            # An existing account with this address is reused rather than
+            # duplicated; a second application with the same address was
+            # already rejected above, so this is a returning applicant.
+            from accounts.models import EduProUser
+            user = EduProUser.objects.filter(email__iexact=email).first()
+            if user is None:
+                user = EduProUser.objects.create_user(
+                    email=email,
+                    password=form.cleaned_data["password1"],
+                    first_name=application.first_name,
+                    last_name=application.last_name,
+                    role="student",
+                    is_active=True,  # active so they can check status / finish a draft
+                )
+            else:
+                # Keep the name they gave us current on the account.
+                changed = []
+                if application.first_name and user.first_name != application.first_name:
+                    user.first_name = application.first_name
+                    changed.append("first_name")
+                if application.last_name and user.last_name != application.last_name:
+                    user.last_name = application.last_name
+                    changed.append("last_name")
+                if changed:
+                    user.save(update_fields=changed)
+
+            application.user = user
+            application.save(update_fields=["user"])
+
+            from .services import AuditService
+            from .models import AuditAction
+            AuditService.record(
+                application,
+                AuditAction.CREATED if save_as_draft else AuditAction.SUBMITTED,
+                actor=user,
+                remark=("Application started as a draft." if save_as_draft
+                        else "Application submitted via the public form."),
+                visible_to_applicant=True,
+            )
+            _notify_new_application(application, save_as_draft)
+
+        if save_as_draft:
+            messages.success(
+                request,
+                "Your application has been saved as a draft. Sign in to continue "
+                "where you left off.",
+            )
+            return redirect("accounts:login")
         return redirect("portal:application_confirmed", ref=application.reference_number)
 
     return render(request, "portal/application_form.html", {
@@ -225,6 +341,28 @@ def application_form(request):
         "form": form,
         "cycle": active_cycle,
     })
+
+
+def _notify_new_application(application, is_draft):
+    """Best-effort acknowledgement; never blocks the applicant."""
+    try:
+        from .notify import _send
+        _send(
+            "APPLICATION_DRAFT_SAVED" if is_draft else "APPLICATION_SUBMITTED",
+            application,
+            {
+                "event": "draft" if is_draft else "created",
+                "action": (
+                    "Sign in to finish and submit it."
+                    if is_draft else
+                    "Pay the application fee to move your application to review."
+                ),
+            },
+        )
+    except Exception:  # noqa: BLE001
+        import logging
+        logging.getLogger(__name__).exception("New application notification failed")
+
 
 
 def application_confirmed(request, ref):
@@ -279,107 +417,248 @@ def application_withdraw(request, ref):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-@_admissions_required
+@_admissions_read_required
 def admissions_dashboard(request):
-    active_cycle = AdmissionCycle.get_active()
-    cycle_qs = (
-        AdmissionApplication.objects.filter(cycle=active_cycle)
-        if active_cycle else AdmissionApplication.objects.none()
+    """
+    Admissions dashboard (requirement 20).
+
+    Extended — not replaced — with the full statistics set, filterable by
+    cycle / type / faculty / department / programme / status / payment status.
+    Every count is derived from the SAME scoped queryset used by the list view,
+    so the numbers can never disagree with the rows underneath them.
+    """
+    from .models import ApplicationType, CycleStatus
+    from .permissions import scope_applications
+    from .services import ReportingService
+
+    qs = scope_applications(request.user).select_related(
+        "cycle", "program_applied__department__faculty",
     )
 
-    status_counts = {
-        "pending":   cycle_qs.filter(status=AdmissionStatus.PENDING).count(),
-        "reviewing": cycle_qs.filter(status=AdmissionStatus.REVIEWING).count(),
-        "approved":  cycle_qs.filter(status=AdmissionStatus.APPROVED).count(),
-        "rejected":  cycle_qs.filter(status=AdmissionStatus.REJECTED).count(),
-        "withdrawn": cycle_qs.filter(status=AdmissionStatus.WITHDRAWN).count(),
-        "total":     cycle_qs.count(),
+    # ── Filters ─────────────────────────────────────────────────────────────
+    cycle_filter = request.GET.get("cycle", "")
+    type_filter = request.GET.get("type", "")
+    faculty_filter = request.GET.get("faculty", "")
+    department_filter = request.GET.get("department", "")
+    program_filter = request.GET.get("program", "")
+    status_filter = request.GET.get("status", "")
+    payment_filter = request.GET.get("payment", "")
+    date_from = request.GET.get("from", "")
+    date_to = request.GET.get("to", "")
+
+    filtered = qs
+    if cycle_filter:
+        filtered = filtered.filter(cycle_id=cycle_filter)
+    if type_filter:
+        filtered = filtered.filter(application_type=type_filter)
+    if faculty_filter:
+        filtered = filtered.filter(
+            program_applied__department__faculty_id=faculty_filter
+        )
+    if department_filter:
+        filtered = filtered.filter(
+            program_applied__department_id=department_filter
+        )
+    if program_filter:
+        filtered = filtered.filter(program_applied_id=program_filter)
+    if status_filter:
+        filtered = filtered.filter(status=status_filter)
+    if date_from:
+        filtered = filtered.filter(created_at__date__gte=date_from)
+    if date_to:
+        filtered = filtered.filter(created_at__date__lte=date_to)
+
+    # Payment status is a derived property (only *successful* payments count),
+    # so it is filtered in Python. Normalising to a list here keeps one code
+    # path for both the count and the sample rows below.
+    if payment_filter in ("paid", "unpaid"):
+        candidates = filtered.select_related("cycle").prefetch_related("payments")
+        ids = [
+            app.pk for app in candidates
+            if app.is_fee_paid == (payment_filter == "paid")
+        ]
+        filtered = AdmissionApplication.objects.filter(pk__in=ids)
+
+    rows = list(filtered.order_by("-created_at")[:8])
+
+    from academics.models import Department, Faculty, Program
+
+    context = {
+        "page_title": "Admissions Dashboard",
+        "active_cycle": AdmissionCycle.get_active(),
+        "cycles": AdmissionCycle.objects.order_by("-start_date"),
+        "status_counts": ReportingService.statistics(filtered),
+        "filtered_count": filtered.count(),
+        "recent_pending": rows[:8],
+        # Filter options
+        "application_types": ApplicationType.objects.filter(is_active=True),
+        "faculties": Faculty.objects.filter(is_active=True),
+        "departments": Department.objects.filter(is_active=True),
+        "programs": Program.objects.filter(is_active=True).select_related("department"),
+        "status_choices": AdmissionStatus.choices,
+        "cycle_choices": AdmissionCycle.objects.order_by("-start_date"),
+        "cycle_statuses": CycleStatus.choices,
+        # Current filter state
+        "cycle_filter": cycle_filter,
+        "type_filter": type_filter,
+        "faculty_filter": faculty_filter,
+        "department_filter": department_filter,
+        "program_filter": program_filter,
+        "status_filter": status_filter,
+        "payment_filter": payment_filter,
+        "date_from": date_from,
+        "date_to": date_to,
+        "has_filters": any([
+            cycle_filter, type_filter, faculty_filter, department_filter,
+            program_filter, status_filter, payment_filter, date_from, date_to,
+        ]),
     }
-
-    recent_pending = (
-        cycle_qs
-        .filter(status=AdmissionStatus.PENDING)
-        .select_related("program_applied__department")
-        .order_by("-created_at")[:8]
-    )
-
-    return render(request, "portal/admissions_dashboard.html", {
-        "page_title":     "Admissions Dashboard",
-        "active_cycle":   active_cycle,
-        "status_counts":  status_counts,
-        "recent_pending": recent_pending,
-    })
+    return render(request, "portal/admissions_dashboard.html", context)
 
 
 @login_required
-@_admissions_required
+@_admissions_read_required
 def application_list(request):
+    """
+    Application list.
+
+    Scoped through ``portal.permissions.scope_applications``, which is what
+    stops an HOD seeing other departments' applications (scenario 7) and stops
+    any non-staff user browsing applications at all.
+    """
+    from .models import ApplicationType
+    from .permissions import scope_applications
+    from academics.models import Department, Faculty, Program
+
     qs = (
-        AdmissionApplication.objects
-        .select_related("cycle", "program_applied__department", "reviewed_by", "approved_by")
+        scope_applications(request.user)
+        .select_related("cycle", "program_applied__department__faculty",
+                        "reviewed_by", "approved_by")
         .order_by("-created_at")
     )
 
     status_filter = request.GET.get("status", "")
     cycle_filter  = request.GET.get("cycle", "")
+    type_filter   = request.GET.get("type", "")
+    decision_filter = request.GET.get("decision", "")
     search_query  = request.GET.get("q", "").strip()
 
     if status_filter:
         qs = qs.filter(status=status_filter)
     if cycle_filter:
-        qs = qs.filter(cycle__id=cycle_filter)
+        qs = qs.filter(cycle_id=cycle_filter)
+    if type_filter:
+        qs = qs.filter(application_type=type_filter)
+    if decision_filter:
+        qs = qs.filter(decision=decision_filter)
     if search_query:
-        from django.db.models import Q
         qs = qs.filter(
             Q(first_name__icontains=search_query)
             | Q(last_name__icontains=search_query)
             | Q(email__icontains=search_query)
             | Q(reference_number__icontains=search_query)
+            | Q(program_applied__code__icontains=search_query)
+            | Q(program_applied__name__icontains=search_query)
         )
 
     paginator = Paginator(qs, 20)
+
+    from .models import AdmissionDecision
 
     return render(request, "portal/application_list.html", {
         "page_title":     "Applications",
         "page_obj":       paginator.get_page(request.GET.get("page")),
         "status_choices": AdmissionStatus.choices,
+        "decision_choices": AdmissionDecision.choices,
+        "application_types": ApplicationType.objects.filter(is_active=True),
         "cycles":         AdmissionCycle.objects.order_by("-start_date"),
         "status_filter":  status_filter,
         "cycle_filter":   cycle_filter,
+        "type_filter":    type_filter,
+        "decision_filter": decision_filter,
         "search_query":   search_query,
+        "total":          qs.count(),
     })
 
 
 @login_required
-@_admissions_required
+@_admissions_read_required
 def application_detail(request, pk):
-    application = get_object_or_404(
-        AdmissionApplication.objects.select_related(
-            "cycle", "program_applied__department",
-            "reviewed_by", "approved_by", "rejected_by", "user",
-        ),
-        pk=pk,
-    )
-    doc_requests = application.document_requests.select_related("requested_by").order_by("-requested_at")
+    """
+    Application detail with the staff checklist, document verification, offers,
+    audit timeline and every permitted next action (requirement 13).
+    """
+    from .permissions import visible_application
+    from .services import AuditService, ChecklistService, OfferService
+    from .workflow import ApplicationWorkflow
+
+    application = visible_application(request.user, pk)
+    doc_requests = application.document_requests.select_related(
+        "requested_by"
+    ).order_by("-requested_at")
+
+    offer = OfferService.active_offer(application)
+    conversion_blocker = ""
+    from .services import StudentConversionService
+    if application.is_admitted:
+        conversion_blocker = StudentConversionService.preflight(application) or ""
+
+    # The workflow returns bare status codes (domain logic stays free of
+    # presentation); the template needs readable labels, so pair them here.
+    staff_targets = [
+        {
+            "value": target,
+            "label": AdmissionStatus(target).label
+            if target in AdmissionStatus.values else target.replace("_", " ").title(),
+        }
+        for target in ApplicationWorkflow.staff_targets(application)
+    ]
 
     return render(request, "portal/application_detail.html", {
         "page_title":      f"Application — {application.get_full_name()}",
         "application":     application,
         "doc_requests":    doc_requests,
         "AdmissionStatus": AdmissionStatus,
+        # New engine context
+        "checklist":       ChecklistService.build(application),
+        "documents":       application.uploaded_documents.select_related(
+            "verified_by").order_by("document_type", "-version"),
+        "offers":          application.offers.select_related("issued_by").order_by("-issue_date"),
+        "payments":        application.payments.select_related("verified_by").order_by("-created_at"),
+        "audit_logs":      AuditService.staff_timeline(application)[:50],
+        "active_offer":    offer,
+        "staff_targets":   staff_targets,
+        "can_decide":      _can_decide(request.user, application),
+        "conversion_blocker": conversion_blocker,
+        "decision_form":   AdmissionDecisionForm(),
+        "offer_form":      AdmissionOfferForm(),
+        "correction_form": ApplicationCorrectionForm(),
     })
+
+
+def _can_decide(user, application):
+    from .permissions import can_decide
+    return can_decide(user, application)
+
 
 
 @login_required
 @_admissions_required
 @require_http_methods(["POST"])
 def application_review(request, pk):
+    """Start (or restart) review of an application via the workflow layer."""
+    from .services import DecisionService  # noqa: F401  (kept for symmetry)
+    from .workflow import ApplicationWorkflow
+
     application = get_object_or_404(AdmissionApplication, pk=pk)
     try:
-        application.mark_reviewing(request.user)
-        messages.info(request, f"Application {application.reference_number} is now Under Review.")
+        ApplicationWorkflow.mark_reviewing(application, request.user)
+        messages.info(
+            request,
+            f"Application {application.reference_number} is now Under Review.",
+        )
     except ValidationError as e:
-        messages.error(request, str(e.message))
+        messages.error(request, "; ".join(e.messages) if hasattr(e, "messages") else str(e))
     return redirect("portal:application_detail", pk=pk)
 
 
@@ -387,39 +666,55 @@ def application_review(request, pk):
 @_admissions_required
 @require_http_methods(["GET", "POST"])
 def application_approve(request, pk):
+    """
+    Record an ADMITTED decision and issue an admission offer.
+
+    Behaviour change (deliberate, requirement 7 & 8): this no longer creates a
+    student record. The old implementation provisioned an active account *and*
+    a StudentProfile with a student number at approval time, which meant an
+    applicant became a student without ever receiving or accepting an offer.
+
+    Now: decision = Accepted, then an offer is issued. The student record is
+    created only after the applicant accepts, via
+    :class:`portal.services.StudentConversionService`.
+    """
+    from .services import DecisionService, OfferService
+    from .models import AdmissionDecision
+
     application = get_object_or_404(
         AdmissionApplication.objects.select_related("program_applied", "cycle"),
         pk=pk,
     )
 
-    if application.status not in (AdmissionStatus.PENDING, AdmissionStatus.REVIEWING):
-        messages.warning(
-            request,
-            f"This application is already {application.get_status_display()} "
-            "and cannot be approved again."
-        )
+    allowed, reason = DecisionService.can_make(
+        application, AdmissionDecision.ACCEPTED
+    )
+    if not allowed:
+        messages.warning(request, reason or "This application cannot be accepted.")
         return redirect("portal:application_detail", pk=pk)
 
     if request.method == "POST":
-        review_notes = request.POST.get("review_notes", "")
+        decision_notes = request.POST.get("review_notes", "").strip()
         try:
-            new_user = application.approve(actor=request.user)
-            if review_notes:
-                application.review_notes = review_notes
-                application.save(update_fields=["review_notes"])
+            with transaction.atomic():
+                DecisionService.record(
+                    application, AdmissionDecision.ACCEPTED,
+                    actor=request.user, notes=decision_notes,
+                )
+                offer = OfferService.issue(application, actor=request.user)
             messages.success(
                 request,
-                f"✅ Application approved! {new_user.get_full_name()}'s password has been reset "
-                f"to the default (0123456789). Their Student ID is "
-                f"{new_user.academic_profile.student_number}. "
-                f"Share these credentials with the applicant."
+                f"✅ {application.get_full_name()} has been accepted. "
+                f"Offer {offer.offer_number} was issued and is valid until "
+                f"{offer.expiry_date}. The applicant must accept it before a "
+                f"student record is created.",
             )
         except ValidationError as e:
-            messages.error(request, str(e.message))
+            messages.error(request, "; ".join(e.messages) if hasattr(e, "messages") else str(e))
         return redirect("portal:application_detail", pk=pk)
 
     return render(request, "portal/application_approve_confirm.html", {
-        "page_title":  "Approve Application",
+        "page_title":  "Accept Application & Issue Offer",
         "application": application,
     })
 
@@ -428,12 +723,17 @@ def application_approve(request, pk):
 @_admissions_required
 @require_http_methods(["GET", "POST"])
 def application_reject(request, pk):
+    """Record a REJECTED decision (kept separate from the workflow status)."""
+    from .services import DecisionService
+    from .models import AdmissionDecision
+
     application = get_object_or_404(AdmissionApplication, pk=pk)
 
-    if application.status in (AdmissionStatus.APPROVED, AdmissionStatus.WITHDRAWN):
+    if application.is_terminal:
         messages.warning(
             request,
-            f"Cannot reject an already {application.get_status_display()} application."
+            f"Cannot reject an application that is already "
+            f"{application.get_status_display()}.",
         )
         return redirect("portal:application_detail", pk=pk)
 
@@ -441,13 +741,23 @@ def application_reject(request, pk):
 
     if request.method == "POST" and form.is_valid():
         try:
-            application.reject(
-                actor=request.user,
-                reason=form.cleaned_data["rejection_reason"],
+            DecisionService.record(
+                application, AdmissionDecision.REJECTED,
+                actor=request.user, reason=form.cleaned_data["rejection_reason"],
             )
-            messages.info(request, f"Application {application.reference_number} rejected.")
+            application.rejection_reason = form.cleaned_data["rejection_reason"]
+            application.rejected_by = request.user
+            application.rejected_at = timezone.now()
+            application.save(update_fields=[
+                "rejection_reason", "rejected_by", "rejected_at", "updated_at",
+            ])
+            messages.info(
+                request,
+                f"Application {application.reference_number} rejected. "
+                "No student record was created.",
+            )
         except ValidationError as e:
-            messages.error(request, str(e.message))
+            messages.error(request, "; ".join(e.messages) if hasattr(e, "messages") else str(e))
         return redirect("portal:application_detail", pk=pk)
 
     return render(request, "portal/application_reject_form.html", {
@@ -455,6 +765,7 @@ def application_reject(request, pk):
         "application": application,
         "form":        form,
     })
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -623,21 +934,796 @@ def application_letter_pdf(request, ref):
 
 
 def admission_letter_pdf(request, ref):
-    """Download the admission letter as PDF (applicant only, approved only)."""
+    """
+    Download the admission letter (applicant only).
+
+    Extended: the letter is now available once an OFFER has been issued, not
+    only after conversion to a student — which is when an applicant actually
+    needs it. A student number is shown once conversion has happened.
+    """
+    from .services import OfferService
+    from .models import AdmissionDecision, OfferStatus
+
     application = get_object_or_404(
         AdmissionApplication, reference_number__iexact=ref,
     )
     if application.user_id != request.user.pk:
         raise PermissionDenied
-    if application.status not in (AdmissionStatus.APPROVED,):
+
+    has_offer = application.offers.exclude(
+        status__in=[OfferStatus.REVOKED]
+    ).exists()
+    if application.decision not in (
+        AdmissionDecision.ACCEPTED, AdmissionDecision.CONDITIONALLY_ACCEPTED,
+    ) and not has_offer:
         from django.http import HttpResponseNotFound
-        return HttpResponseNotFound("Admission letter is only available after approval.")
+        return HttpResponseNotFound(
+            "An admission letter is only available once an offer has been issued."
+        )
 
     from academics.models import StudentProfile
-    try:
-        student_profile = application.user.academic_profile
-        student_id = student_profile.student_number
-    except StudentProfile.DoesNotExist:
-        student_id = "—"
+    profile = StudentProfile.all_objects.filter(
+        student_id=application.user_id
+    ).first()
+    student_id = profile.student_number if profile else "Pending registration"
 
     return render_admission_letter(application, student_id=student_id)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# APPLICATIONS & ADMISSIONS ENGINE — APPLICANT PORTAL
+#
+# Every view below is ownership-scoped through
+# ``portal.permissions.assert_is_owner``: an applicant may only ever reach
+# their own application (requirement 22 / scenario 12). None of them mutate
+# workflow status directly — they go through portal.services / portal.workflow.
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _owned_application(request, pk):
+    """Fetch an application, 404-ing unless the requester owns it."""
+    from .permissions import assert_is_owner
+    application = get_object_or_404(
+        AdmissionApplication.objects.select_related(
+            "cycle", "program_applied__department", "user",
+        ),
+        pk=pk,
+    )
+    if not assert_is_owner(request.user, application):
+        raise PermissionDenied
+    return application
+
+
+@login_required
+@require_http_methods(["GET"])
+def applicant_dashboard(request):
+    """
+    Applicant dashboard (requirement 21).
+
+    Shows every application this account owns with its number, type, cycle,
+    programme, workflow status, payment status, completion percentage, missing
+    requirements, admission decision and offer status — plus a plain-language
+    statement of the action currently required.
+    """
+    from .services import ChecklistService, OfferService
+    from .workflow import ApplicationWorkflow
+
+    applications = (
+        AdmissionApplication.objects.filter(user=request.user)
+        .select_related("cycle", "program_applied__department__faculty")
+        .prefetch_related("payments", "offers", "uploaded_documents")
+        .order_by("-created_at")
+    )
+
+    cards = []
+    for app in applications:
+        checklist = ChecklistService.build(app)
+        offer = OfferService.active_offer(app)
+        cards.append({
+            "application": app,
+            "checklist": checklist,
+            "offer": offer,
+            "next_action": ApplicationWorkflow.next_action_for_applicant(app),
+            "editable": ApplicationWorkflow.is_applicant_editable(app),
+            "fee_paid": app.is_fee_paid,
+        })
+
+    open_cycles = [
+        c for c in AdmissionCycle.objects.filter(is_active=True)
+        if c.is_open
+    ]
+
+    return render(request, "portal/applicant_dashboard.html", {
+        "page_title": "My Applications",
+        "cards": cards,
+        "open_cycles": open_cycles,
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def applicant_application_edit(request, pk):
+    """
+    Edit a draft / send-back-for-correction application (requirement 3, 22).
+
+    Editability is enforced on the server: once submitted, the form is not even
+    bound with data, so a crafted POST cannot modify a locked application.
+    """
+    from .forms import ApplicationDraftForm
+    from .services import AuditService
+    from .models import AuditAction
+    from .workflow import ApplicationWorkflow
+
+    application = _owned_application(request, pk)
+
+    if not ApplicationWorkflow.is_applicant_editable(application):
+        messages.warning(
+            request,
+            "This application can no longer be edited. Contact admissions if "
+            "something needs to change.",
+        )
+        return redirect("portal:applicant_dashboard")
+
+    form = ApplicationDraftForm(
+        instance=application,
+        application_type=application.application_type,
+        cycle=application.cycle,
+    )
+
+    if request.method == "POST":
+        form = ApplicationDraftForm(
+            data=request.POST,
+            instance=application,
+            application_type=application.application_type,
+            cycle=application.cycle,
+        )
+        if form.is_valid():
+            application = form.save()
+            AuditService.record(
+                application, AuditAction.UPDATED, actor=request.user,
+                remark="Applicant updated their application.",
+                visible_to_applicant=True,
+            )
+            messages.success(request, "Your changes have been saved.")
+            return redirect("portal:applicant_dashboard")
+
+    checklist = application.checklist()
+    return render(request, "portal/application_edit.html", {
+        "page_title": f"Edit application {application.reference_number}",
+        "application": application,
+        "form": form,
+        "checklist": checklist,
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def applicant_application_submit(request, pk):
+    """
+    Submit a draft, or resubmit after a correction was requested.
+
+    Submission is BLOCKED while any required item is outstanding, and the
+    missing items are listed for the applicant (scenario 4).
+    """
+    from .services import ChecklistService
+    from .workflow import ApplicationWorkflow
+
+    application = _owned_application(request, pk)
+    current = ApplicationWorkflow.normalize(application.status)
+
+    if current not in (AdmissionStatus.DRAFT, AdmissionStatus.NEEDS_CORRECTION):
+        messages.info(request, "This application has already been submitted.")
+        return redirect("portal:applicant_dashboard")
+
+    blocking = ChecklistService.blocking_items(application)
+    if blocking:
+        messages.error(
+            request,
+            "Your application is not complete yet. Please supply: "
+            + ", ".join(item["label"] for item in blocking),
+        )
+        return redirect("portal:applicant_application_edit", pk=pk)
+
+    form = ApplicationSubmitForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            ApplicationWorkflow.transition(
+                application, AdmissionStatus.SUBMITTED,
+                actor=request.user, as_applicant=True,
+                remark="Submitted by applicant.",
+            )
+            messages.success(
+                request,
+                f"Application {application.reference_number} submitted successfully.",
+            )
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:applicant_dashboard")
+
+    return render(request, "portal/application_submit.html", {
+        "page_title": f"Submit {application.reference_number}",
+        "application": application,
+        "form": form,
+        "checklist": ChecklistService.build(application),
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def applicant_application_withdraw(request, pk):
+    """Applicant withdraws their own application."""
+    from .workflow import ApplicationWorkflow
+
+    application = _owned_application(request, pk)
+    try:
+        ApplicationWorkflow.withdraw(application, actor=request.user)
+        messages.info(request, f"Application {application.reference_number} withdrawn.")
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect("portal:applicant_dashboard")
+
+
+@login_required
+@require_http_methods(["GET"])
+def applicant_checklist(request, pk):
+    """The applicant's own checklist with completion progress."""
+    from .services import ChecklistService
+
+    application = _owned_application(request, pk)
+    return render(request, "portal/application_checklist.html", {
+        "page_title": f"Checklist — {application.reference_number}",
+        "application": application,
+        "checklist": ChecklistService.build(application),
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def applicant_document_upload(request, pk):
+    """
+    Upload a supporting document against the applicant's own application.
+
+    File type and size are validated server-side (requirement 22). Uploaded
+    only while the application is still editable, or always for a DRAFT.
+    """
+    from .services import DocumentService
+    from .workflow import ApplicationWorkflow
+
+    application = _owned_application(request, pk)
+    form = ApplicationDocumentUploadForm(request.POST or None, request.FILES or None)
+
+    if not ApplicationWorkflow.is_applicant_editable(application) \
+            and not application.uploaded_documents.exists():
+        messages.warning(
+            request,
+            "Documents cannot be added after submission unless admissions "
+            "asks you for a replacement.",
+        )
+        return redirect("portal:applicant_dashboard")
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            document = DocumentService.upload(
+                application,
+                document_type=form.cleaned_data["document_type"],
+                uploaded=form.cleaned_data["file"],
+                uploaded_by=request.user,
+            )
+            messages.success(
+                request,
+                f"{document.get_document_type_display()} uploaded and awaiting verification.",
+            )
+            return redirect("portal:applicant_checklist", pk=pk)
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+
+    return render(request, "portal/document_upload.html", {
+        "page_title": f"Upload document — {application.reference_number}",
+        "application": application,
+        "form": form,
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def document_download(request, pk):
+    """
+    Serve an uploaded document.
+
+    Authorisation: the applicant who owns the application, or staff who are
+    allowed to see the application. This is the *only* supported way to read an
+    uploaded file, so a leaked URL still cannot expose another applicant's
+    document (requirement 22 / scenario 12).
+    """
+    from .models import ApplicationDocument
+    from .permissions import scope_applications
+
+    document = get_object_or_404(
+        ApplicationDocument.objects.select_related("application"),
+        pk=pk,
+    )
+    if not scope_applications(request.user).filter(
+        pk=document.application_id
+    ).exists():
+        raise PermissionDenied
+
+    try:
+        handle = document.file.open("rb")
+    except (FileNotFoundError, ValueError):
+        raise Http404("That file is no longer available.")
+    filename = document.file.name.rsplit("/", 1)[-1]
+    return FileResponse(handle, as_attachment=True, filename=filename)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def applicant_offer_detail(request, application_pk, offer_pk):
+    """
+    Show an offer and let the applicant accept or decline it (requirement 8).
+
+    This is the only route to becoming a student, and it never creates one —
+    accepting merely records the response; staff then run the conversion.
+    """
+    from .services import OfferService
+
+    application = _owned_application(request, application_pk)
+    offer = get_object_or_404(
+        application.offers.all(), pk=offer_pk,
+    )
+
+    form = OfferResponseForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            if form.cleaned_data["response"] == OfferResponseForm.ACCEPT:
+                OfferService.accept(offer, actor=request.user)
+                messages.success(
+                    request,
+                    "Thank you — your acceptance has been recorded. Our team will "
+                    "complete your registration and send you your student number.",
+                )
+            else:
+                OfferService.decline(offer, actor=request.user)
+                messages.info(request, "Your offer has been declined.")
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:applicant_dashboard")
+
+    return render(request, "portal/offer_detail.html", {
+        "page_title": f"Offer {offer.offer_number}",
+        "application": application,
+        "offer": offer,
+        "form": form,
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def applicant_payment_start(request, pk):
+    """
+    Start (or resume) payment of the application fee.
+
+    Creating the payment record does NOT mark the fee as paid — only
+    :meth:`portal.services.PaymentService.confirm` /
+    :meth:`~portal.services.PaymentService.verify_with_provider` do that
+    (requirement 15).
+
+    The row is created only on POST: rendering this page must be a safe,
+    repeatable read, otherwise every page refresh would mint a new payment
+    reference.
+    """
+    from .services import PaymentService
+
+    application = _owned_application(request, pk)
+
+    if application.is_fee_paid:
+        messages.info(request, "Your application fee has already been confirmed.")
+        return redirect("portal:applicant_dashboard")
+
+    if not application.cycle.requires_payment:
+        messages.info(request, "This admission cycle has no application fee.")
+        return redirect("portal:applicant_dashboard")
+
+    payment = None
+    if request.method == "POST":
+        payment, error = PaymentService.initiate(application)
+        if error:
+            messages.info(request, error)
+            return redirect("portal:applicant_dashboard")
+        if payment.status == "successful":
+            messages.info(request, "Your application fee has already been confirmed.")
+            return redirect("portal:applicant_dashboard")
+        messages.success(
+            request,
+            f"Payment reference {payment.payment_reference} created. "
+            "Complete the payment to continue your application.",
+        )
+        return redirect("portal:applicant_payment_start", pk=pk)
+    else:
+        # Read-only: show the in-flight payment, if there is one.
+        payment = PaymentService.pending_payment(application)
+
+    return render(request, "portal/application_payment.html", {
+        "page_title": f"Application fee — {application.reference_number}",
+        "application": application,
+        "payment": payment,
+        "amount_due": application.payment_balance,
+    })
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# APPLICATIONS & ADMISSIONS ENGINE — STAFF ACTIONS
+#
+# Each of these is a thin shell: authorise → delegate to a service → report.
+# None of them assign ``application.status`` directly (requirement 5).
+# ═════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@_admissions_required
+@require_http_methods(["POST"])
+def application_transition(request, pk):
+    """
+    Move an application to another workflow stage (requirement 5).
+
+    This is the ONLY staff endpoint that changes workflow status, and it goes
+    through ``ApplicationWorkflow.transition`` so the transition graph, the
+    payment gate, the audit trail and notifications all apply. A crafted POST
+    naming an arbitrary status is rejected by the graph, not trusted.
+    """
+    from .permissions import visible_application
+    from .workflow import ApplicationWorkflow
+
+    application = visible_application(request.user, pk)
+    target = request.POST.get("to_status", "").strip()
+    remark = request.POST.get("remark", "").strip()
+    bypass_payment = request.POST.get("bypass_payment_gate") == "1"
+
+    if not target:
+        messages.error(request, "No target stage was supplied.")
+        return redirect("portal:application_detail", pk=pk)
+
+    try:
+        ApplicationWorkflow.transition(
+            application, target, actor=request.user, remark=remark,
+            bypass_payment_gate=bypass_payment and request.user.is_admin,
+        )
+        messages.success(
+            request,
+            f"Application {application.reference_number} moved to "
+            f"{application.get_status_display()}.",
+        )
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect("portal:application_detail", pk=pk)
+
+
+@login_required
+@_admissions_required
+@require_http_methods(["GET", "POST"])
+def application_decision(request, pk):
+    """
+    Record the admission decision (requirement 6).
+
+    Separated from workflow status: the decision is stored on
+    ``application.decision`` with its own actor, timestamp and notes.
+    """
+    from .permissions import visible_application
+    from .services import ChecklistService, DecisionService
+
+    application = visible_application(request.user, pk)
+
+    allowed, reason = DecisionService.can_make(application, "accepted")
+    if not allowed:
+        messages.warning(request, reason or "You cannot decide on this application.")
+        return redirect("portal:application_detail", pk=pk)
+
+    form = AdmissionDecisionForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        decision = form.cleaned_data["decision"]
+        try:
+            DecisionService.record(
+                application, decision, actor=request.user,
+                notes=form.cleaned_data.get("notes", ""),
+            )
+            messages.success(
+                request,
+                f"Decision recorded: {application.get_decision_display()}. "
+                + (
+                    "Issue an offer to proceed."
+                    if decision in DecisionService.OFFERABLE
+                    else ""
+                ),
+            )
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:application_detail", pk=pk)
+
+    return render(request, "portal/application_decision_form.html", {
+        "page_title": f"Admission decision — {application.reference_number}",
+        "application": application,
+        "form": form,
+        "checklist": ChecklistService.build(application),
+    })
+
+
+@login_required
+@_admissions_required
+@require_http_methods(["GET", "POST"])
+def application_offer_issue(request, pk):
+    """Issue an admission offer (requirement 8)."""
+    from .models import AdmissionDecision
+    from .permissions import visible_application
+    from .services import DecisionService, OfferService
+
+    application = visible_application(request.user, pk)
+
+    if application.decision not in DecisionService.OFFERABLE:
+        messages.warning(
+            request,
+            "Record an accepted admission decision before issuing an offer.",
+        )
+        return redirect("portal:application_detail", pk=pk)
+
+    form = AdmissionOfferForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            offer = OfferService.issue(
+                application,
+                actor=request.user,
+                expiry_date=form.cleaned_data.get("expiry_date") or None,
+                conditions=form.cleaned_data.get("conditions", ""),
+                admission_type=form.cleaned_data.get("admission_type") or "full_time",
+            )
+            messages.success(
+                request,
+                f"Offer {offer.offer_number} issued to {application.get_full_name()}, "
+                f"valid until {offer.expiry_date}.",
+            )
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:application_detail", pk=pk)
+
+    return render(request, "portal/application_offer_form.html", {
+        "page_title": f"Issue offer — {application.reference_number}",
+        "application": application,
+        "form": form,
+    })
+
+
+@login_required
+@_admissions_required
+@require_http_methods(["POST"])
+def application_convert(request, pk):
+    """
+    Convert an admitted applicant into a student (requirement 9).
+
+    Refuses unless there is an accepted decision AND an accepted offer, and is
+    idempotent so a double submission cannot create a second student, account
+    or enrolment (scenario 10).
+    """
+    from .permissions import visible_application
+    from .services import StudentConversionService
+
+    application = visible_application(request.user, pk)
+
+    try:
+        profile, created = StudentConversionService.convert(
+            application, actor=request.user,
+        )
+        if created:
+            messages.success(
+                request,
+                f"{application.get_full_name()} is now a student. "
+                f"Student number: {profile.student_number}.",
+            )
+        else:
+            messages.info(
+                request,
+                f"{application.get_full_name()} was already converted "
+                f"(student number {profile.student_number}). No duplicate was created.",
+            )
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect("portal:application_detail", pk=pk)
+
+
+@login_required
+@_admissions_required
+@require_http_methods(["GET", "POST"])
+def application_correction_request(request, pk):
+    """Ask the applicant to correct their application (requirement 18 event)."""
+    from .permissions import visible_application
+    from .services import DocumentService
+    from .workflow import ApplicationWorkflow
+
+    application = visible_application(request.user, pk)
+    form = ApplicationCorrectionForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            ApplicationWorkflow.request_correction(
+                application, request.user, form.cleaned_data["reason"],
+            )
+            messages.success(
+                request,
+                "Correction requested. The applicant has been notified.",
+            )
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:application_detail", pk=pk)
+
+    return render(request, "portal/application_correction_form.html", {
+        "page_title": f"Request correction — {application.reference_number}",
+        "application": application,
+        "form": form,
+    })
+
+
+@login_required
+@_admissions_required
+@require_http_methods(["POST"])
+def document_verify(request, pk):
+    """
+    Verify / reject / request replacement for an uploaded document (req 12).
+
+    A verified document can never be silently replaced: the applicant's next
+    upload supersedes it and revokes the earlier sign-off.
+    """
+    from .models import ApplicationDocument
+    from .services import DocumentService
+
+    document = get_object_or_404(
+        ApplicationDocument.objects.select_related("application"),
+        pk=pk,
+    )
+    from .permissions import assert_can_manage_documents
+    if not assert_can_manage_documents(request.user, document.application):
+        raise PermissionDenied
+
+    form = DocumentVerificationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        action = form.cleaned_data["action"]
+        reason = form.cleaned_data.get("reason", "")
+        try:
+            if action == DocumentVerificationForm.VERIFY:
+                DocumentService.verify(document, request.user)
+                messages.success(request, "Document verified.")
+            elif action == DocumentVerificationForm.REJECT:
+                DocumentService.reject(document, request.user, reason)
+                messages.warning(request, "Document rejected and the applicant notified.")
+            else:
+                DocumentService.request_replacement(document, request.user, reason)
+                messages.info(request, "Replacement requested.")
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:application_detail", pk=document.application_id)
+
+    return render(request, "portal/document_verify_form.html", {
+        "page_title": "Verify document",
+        "document": document,
+        "form": form,
+    })
+
+
+# ── Finance: application-fee payments (requirement 15/16) ───────────────────
+
+@login_required
+@admin_required
+@require_http_methods(["GET", "POST"])
+def application_payment_record(request, pk):
+    """
+    Finance records and confirms an application-fee payment.
+
+    Admin-only, mirroring how the rest of the ``finance`` app is gated, and
+    deliberately without any power over admission decisions (requirement 16).
+    """
+    from .models import ApplicationPayment
+    from .services import PaymentService
+
+    application = get_object_or_404(
+        AdmissionApplication.objects.select_related("cycle"),
+        pk=pk,
+    )
+    form = ApplicationPaymentRecordForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        payment = form.save(commit=False)
+        payment.application = application
+        payment.status = "pending"
+        payment.payment_reference = ApplicationPayment.generate_reference(application)
+        payment.save()
+        try:
+            PaymentService.confirm(
+                payment, actor=request.user,
+                transaction_id=form.cleaned_data.get("transaction_id", ""),
+                note=form.cleaned_data.get("notes", ""),
+            )
+            messages.success(
+                request,
+                f"Payment {payment.payment_reference} confirmed. The application has "
+                "been moved forward automatically.",
+            )
+        except ValidationError as e:
+            messages.error(request, "; ".join(e.messages))
+        return redirect("portal:application_detail", pk=pk)
+
+    return render(request, "portal/application_payment_record.html", {
+        "page_title": f"Record payment — {application.reference_number}",
+        "application": application,
+        "form": form,
+        "amount_due": application.payment_balance,
+    })
+
+
+@login_required
+@admin_required
+@require_http_methods(["POST"])
+def application_payment_verify(request, pk):
+    """Verify a pending payment against the configured provider (Paystack)."""
+    from .models import ApplicationPayment
+    from .services import PaymentService
+
+    payment = get_object_or_404(ApplicationPayment, pk=pk)
+    try:
+        PaymentService.verify_with_provider(payment, actor=request.user)
+        messages.success(
+            request, f"Payment {payment.payment_reference} verified with the provider."
+        )
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect("portal:application_detail", pk=payment.application_id)
+
+
+@login_required
+@admin_required
+@require_http_methods(["GET"])
+def application_payment_list(request):
+    """Finance report: application payments, filterable by status."""
+    from .models import ApplicationPayment
+    from .models import ApplicationPaymentStatus
+
+    qs = (
+        ApplicationPayment.objects
+        .select_related("application", "application__program_applied", "verified_by")
+        .order_by("-created_at")
+    )
+    status_filter = request.GET.get("status", "")
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    from django.core.paginator import Paginator
+    return render(request, "portal/application_payment_list.html", {
+        "page_title": "Application Payments",
+        "page_obj": Paginator(qs, 25).get_page(request.GET.get("page")),
+        "status_choices": ApplicationPaymentStatus.choices,
+        "status_filter": status_filter,
+        "total": qs.count(),
+    })
+
+
+# ── Applicant: correction response ──────────────────────────────────────────
+
+@login_required
+@require_http_methods(["POST"])
+def applicant_correction_response(request, pk):
+    """
+    Applicant acknowledges a correction request.
+
+    Simply routes the application to RESUBMITTED once the requested changes are
+    saved. The workflow graph is the authority: if a transition is not
+    permitted from the current stage the applicant is told why.
+    """
+    from .workflow import ApplicationWorkflow
+
+    application = _owned_application(request, pk)
+    try:
+        ApplicationWorkflow.transition(
+            application, AdmissionStatus.RESUBMITTED,
+            actor=request.user, as_applicant=True,
+            remark="Corrections supplied by applicant.",
+        )
+        messages.success(
+            request, "Thank you — your corrections have been received."
+        )
+    except ValidationError as e:
+        messages.error(request, "; ".join(e.messages))
+    return redirect("portal:applicant_dashboard")
+

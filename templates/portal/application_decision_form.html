@@ -1,0 +1,62 @@
+{% extends "admin_base.html" %}{% block title %}{{ page_title }}{% endblock %}
+{% block breadcrumb %}Admissions / {{ application.reference_number }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Admission Decision</h1>
+    <p>{{ application.reference_number }} — {{ application.get_full_name }} — {{ application.get_program_name }}</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Back to application</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start">
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Record the decision</div></div>
+    <form method="post" style="padding:20px">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style="padding:10px 12px;margin-bottom:14px;border-radius:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);font-size:13px">
+          {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        </div>
+      {% endif %}
+      {% for field in form %}
+      <div class="form-group" style="margin-bottom:16px">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span style="color:var(--rose)">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<div style="font-size:11px;color:var(--tx3);margin-top:4px">{{ field.help_text }}</div>{% endif %}
+        {% for e in field.errors %}<div style="font-size:11px;color:var(--rose);margin-top:4px">{{ e }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary">Record decision</button>
+        <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Current state</div></div>
+    <div style="padding:20px;font-size:13px">
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px">
+        <span style="color:var(--tx3)">Status</span><span>{{ application.get_status_display }}</span>
+        <span style="color:var(--tx3)">Decision</span><span>{{ application.get_decision_display }}</span>
+        <span style="color:var(--tx3)">Checklist</span><span>{{ checklist.percent }}%</span>
+        <span style="color:var(--tx3)">Fee</span>
+        <span>{% if not application.cycle.requires_payment %}Not required{% elif application.is_fee_paid %}Paid{% else %}Outstanding {{ application.payment_balance }}{% endif %}</span>
+        <span style="color:var(--tx3)">Documents</span><span>{{ application.uploaded_documents.count }} uploaded</span>
+      </div>
+      <div style="margin-top:16px;padding:12px;border-radius:8px;background:var(--bg2);font-size:12px;color:var(--tx2)">
+        The decision is stored separately from the workflow status. Accepting or
+        conditionally accepting does <strong>not</strong> create a student — issue an
+        offer, wait for the applicant's response, then convert.
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

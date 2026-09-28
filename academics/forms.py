@@ -155,6 +155,22 @@ class EnrolmentForm(StyledFieldsMixin, forms.ModelForm):
         model  = Enrolment
         fields = ["student", "offering", "status"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Both lists grow with the whole institution, so they get a
+        # type-to-filter box (components/select_search.js.html) instead of
+        # forcing staff to scroll a long <select>.
+        self.fields["student"].widget.attrs.update({
+            "data-searchable": "",
+            "data-search-label": "Search student",
+            "data-search-placeholder": "Search by name or email…",
+        })
+        self.fields["offering"].widget.attrs.update({
+            "data-searchable": "",
+            "data-search-label": "Search course offering",
+            "data-search-placeholder": "Search by code, level or semester…",
+        })
+
 
 class BulkEnrolmentForm(StyledFieldsMixin, forms.Form):
     offering = forms.ModelChoiceField(

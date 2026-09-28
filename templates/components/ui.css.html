@@ -134,6 +134,84 @@ never overrides the host's own .card / .btn / .badge rules.
 /* ── Hero (bulk upload header) ── */
 .admin-hero { border-radius: var(--radius); padding: 28px; color: #fff; }
 
+/* ── Searchable select (long option lists: students, offerings, …) ──
+   Opt in per widget with the data-searchable attribute; enhanced by
+   components/select_search.js.html. Clicking the field opens a panel with a
+   search box on top and the filtered options below it, so there is never a
+   long list to scroll. The native <select> stays in the form as the value
+   holder, so POST values and server-side validation are unchanged. */
+.ss { position: relative; }
+
+/* The real select is kept for form submission, clipped to 1px but still
+   focusable so browser validation can still report against it. The doubled
+   class/element selector outranks the page's ".card-body select" rules. */
+.ss select.ss-native {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+/* Visible control that looks like the select it replaces. */
+.ss-control {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 9px 13px;
+  background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: var(--font-body, var(--font)); font-size: 14px;
+  text-align: left; cursor: pointer; transition: border-color .15s;
+}
+.ss-control:hover { border-color: var(--border2); }
+.ss-control:focus-visible { outline: none; border-color: var(--accent); }
+.ss.open .ss-control { border-color: var(--accent); }
+.ss-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-value.is-placeholder { color: var(--muted); }
+.ss-caret {
+  width: 14px; height: 14px; flex-shrink: 0; color: var(--muted);
+  transition: transform .18s;
+}
+.ss.open .ss-caret { transform: rotate(180deg); }
+
+/* Dropdown panel: search box on top, matches below. */
+.ss-panel {
+  position: absolute; z-index: 60; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+}
+.ss-head {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.ss-head > svg {
+  position: absolute; left: 19px; width: 14px; height: 14px;
+  color: var(--muted); pointer-events: none;
+}
+.ss-search {
+  width: 100%; padding: 7px 10px 7px 30px;
+  background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-family: var(--font-body, var(--font)); font-size: 13px;
+}
+.ss-search:focus { outline: none; border-color: var(--accent); }
+.ss-search::placeholder { color: var(--muted); }
+.ss-count {
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  white-space: nowrap; flex-shrink: 0;
+}
+.ss-list { max-height: 230px; overflow-y: auto; padding: 4px; }
+.ss-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 7px;
+  font-size: 13px; color: var(--tx1); cursor: pointer;
+}
+.ss-opt:hover { background: var(--surface2); }
+.ss-opt.active { background: var(--surface3); }
+.ss-opt[aria-selected="true"] { color: var(--accent); font-weight: 600; }
+.ss-tick { width: 13px; height: 13px; margin-left: auto; color: var(--accent); flex-shrink: 0; }
+.ss-empty { padding: 16px 12px; text-align: center; font-size: 12.5px; color: var(--muted); }
+
+/* .card clips its overflow, which would cut the panel off. Lift it while open. */
+.ss-card-open { overflow: visible !important; position: relative; z-index: 70; }
+
 @media (max-width: 640px) {
   .detail-grid { grid-template-columns: 1fr; gap: 10px; }
 }

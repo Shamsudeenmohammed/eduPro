@@ -23,6 +23,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -632,7 +633,9 @@ def bulk_student_upload_view(request):
 def user_list_view(request):
     from django.db.models import Q
 
-    qs = EduProUser.objects.select_related("profile").order_by("-date_joined")
+    # academic_profile is joined in so the student ID column does not trigger a
+    # query per row.
+    qs = EduProUser.objects.select_related("profile", "academic_profile").order_by("-date_joined")
 
     search_query = request.GET.get("q", "").strip()
     if search_query:
@@ -669,22 +672,42 @@ def user_list_view(request):
 def admin_create_user(request):
     """
     Admin view to create a new user with full control over role and active status.
+
+    Creating a student here is a one-step operation: the student ID number and
+    default password are assigned automatically and the academic profile is
+    built immediately, so the account is usable without a separate application
+    or approval pass.
     """
     from .forms import AdminUserCreationForm
 
     if request.method == "POST":
-        form = AdminUserCreationForm(request.POST)
+        form = AdminUserCreationForm(request.POST, actor=request.user)
         if form.is_valid():
-            user = form.save()
-            messages.success(request, f"User {user.get_full_name()} ({user.email}) created successfully.")
+            # The user row and the academic profile must both land, or the
+            # student would exist with no ID number at all.
+            with transaction.atomic():
+                user = form.save()
+                profile = getattr(form, "created_profile", None)
+
+            if user.role == Role.STUDENT and profile is not None:
+                messages.success(
+                    request,
+                    f"Student {user.get_full_name()} created — Student ID: {profile.student_number} · "
+                    f"default password: {user.get_default_password()}. "
+                    f"They sign in with the Student ID {profile.student_number} (not their email) "
+                    "and can change the password from their profile.",
+                )
+            else:
+                messages.success(request, f"User {user.get_full_name()} ({user.email}) created successfully.")
             return redirect("accounts:user_list")
     else:
-        form = AdminUserCreationForm()
+        form = AdminUserCreationForm(actor=request.user)
 
     return render(request, "accounts/user_form.html", {
         "form": form,
         "page_title": "Add User",
         "submit_label": "Create User",
+        "default_password": EduProUser.DEFAULT_PASSWORD,
     })
 
 

@@ -53,6 +53,25 @@ class NotificationService:
         NotificationType.RESULT_REJECTED: (Channel.APP, Channel.EMAIL),
         NotificationType.RESULT_PUBLISHED: (Channel.APP, Channel.EMAIL),
         NotificationType.RESULT_REVISED: (Channel.APP, Channel.EMAIL),
+        # Admissions. Applicants get in-app + email by default; SMS is opt-in
+        # via force_channels because the institution controls SMS spend and
+        # NotificationPreference.receive_sms defaults to False.
+        NotificationType.APPLICATION_SUBMITTED: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_DRAFT_SAVED: (Channel.APP,),
+        NotificationType.APPLICATION_PAYMENT_CONFIRMED: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_CORRECTION_REQUESTED: (Channel.APP, Channel.EMAIL, Channel.SMS),
+        NotificationType.APPLICATION_UNDER_REVIEW: (Channel.APP,),
+        NotificationType.APPLICATION_SHORTLISTED: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_INTERVIEW_REQUIRED: (Channel.APP, Channel.EMAIL, Channel.SMS),
+        NotificationType.APPLICATION_DECISION_MADE: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_OFFER_ISSUED: (Channel.APP, Channel.EMAIL, Channel.SMS),
+        NotificationType.APPLICATION_OFFER_ACCEPTED: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_OFFER_DECLINED: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_OFFER_EXPIRING: (Channel.APP, Channel.EMAIL, Channel.SMS),
+        NotificationType.APPLICATION_CONVERTED: (Channel.APP, Channel.EMAIL),
+        NotificationType.APPLICATION_DOCUMENT_UPLOADED: (Channel.APP,),
+        NotificationType.APPLICATION_DOCUMENT_VERIFIED: (Channel.APP,),
+        NotificationType.APPLICATION_DOCUMENT_REJECTED: (Channel.APP, Channel.EMAIL),
     }
 
     # Map NotificationType -> students.NotificationCategory for the in-app bell.

@@ -1,0 +1,38 @@
+{% extends "admin_base.html" %}{% block title %}{{ page_title }}{% endblock %}
+{% block breadcrumb %}Admissions / {{ application.reference_number }}{% endblock %}
+{% block page_header %}
+<div class="page-header">
+  <div class="ph-left">
+    <h1>Request a Correction</h1>
+    <p>{{ application.reference_number }} — {{ application.get_full_name }}</p>
+  </div>
+  <div class="ph-right">
+    <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Back to application</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card" style="max-width:720px">
+  <div class="card-header"><div class="card-title">Tell the applicant what to fix</div></div>
+  <form method="post" style="padding:20px">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div style="padding:10px 12px;margin-bottom:14px;border-radius:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);font-size:13px">
+        {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    {% for field in form %}
+    <div class="form-group" style="margin-bottom:16px">
+      <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span style="color:var(--rose)">*</span>{% endif %}</label>
+      {{ field }}
+      {% if field.help_text %}<div style="font-size:11px;color:var(--tx3);margin-top:4px">{{ field.help_text }}</div>{% endif %}
+      {% for e in field.errors %}<div style="font-size:11px;color:var(--rose);margin-top:4px">{{ e }}</div>{% endfor %}
+    </div>
+    {% endfor %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="submit" class="btn btn-primary">Request correction</button>
+      <a href="{% url 'portal:application_detail' application.pk %}" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

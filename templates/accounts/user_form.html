@@ -55,7 +55,19 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div data-when-role="student" hidden>
+        <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.program.label }}</label>
+        {{ form.program }}
+        {% if form.program.errors %}<div style="font-size:11px;color:var(--rose);margin-top:3px">{{ form.program.errors.0 }}</div>{% endif %}
+        {% if form.program.help_text %}<div style="font-size:11px;color:var(--tx3);margin-top:3px">{{ form.program.help_text }}</div>{% endif %}
+        <div style="margin-top:10px;padding:11px 13px;background:var(--teal-dim);border:1px solid rgba(52,211,153,.25);border-radius:var(--r);font-size:12px;color:var(--tx2);line-height:1.5">
+          <strong style="color:var(--success);display:block;margin-bottom:3px">Handled automatically</strong>
+          No password needed. The account is created active with the default password
+          <code style="font-family:var(--mono);color:var(--ochre)">{{ default_password }}</code>, a student ID number is assigned from the program and year, and admission date plus starting level are filled in. The student can log in straight away and does not need to apply.
+        </div>
+      </div>
+
+      <div data-when-role="staff" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div>
           <label style="display:block;font-size:10px;font-weight:600;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">{{ form.password1.label }}</label>
           {{ form.password1 }}
@@ -82,4 +94,30 @@
     </form>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+/* Show only the fields that apply to the chosen role: a student gets the
+   program picker and the automatic-credentials note, staff get the password
+   boxes. This is presentation only — the server decides the same thing in
+   AdminUserCreationForm.clean(), so a submit still behaves correctly with
+   scripting unavailable. */
+(function () {
+  var role = document.getElementById('id_role');
+  if (!role) return;
+  function apply() {
+    var student = role.value === 'student';
+    document.querySelectorAll('[data-when-role]').forEach(function (box) {
+      var show = box.getAttribute('data-when-role') === (student ? 'student' : 'staff');
+      box.hidden = !show;
+      // Stop a hidden password box reporting "this field is required".
+      box.querySelectorAll('input').forEach(function (input) {
+        input.disabled = !show;
+      });
+    });
+  }
+  role.addEventListener('change', apply);
+  apply();
+})();
+</script>
 {% endblock %}

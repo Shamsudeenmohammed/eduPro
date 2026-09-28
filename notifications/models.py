@@ -30,6 +30,26 @@ class NotificationType(models.TextChoices):
     RESULT_PUBLISHED = "result_published", "Results Published"
     RESULT_REVISED = "result_revised", "Results Returned for Revision"
 
+    # ── Admissions (portal.AdmissionApplication) ───────────────────────────
+    # Added by the Applications & Admissions upgrade. These are plain choice
+    # values, so extending the enum needs no database migration.
+    APPLICATION_SUBMITTED = "application_submitted", "Application Submitted"
+    APPLICATION_DRAFT_SAVED = "application_draft_saved", "Application Draft Saved"
+    APPLICATION_PAYMENT_CONFIRMED = "application_payment_confirmed", "Application Fee Confirmed"
+    APPLICATION_CORRECTION_REQUESTED = "application_correction_requested", "Application Correction Requested"
+    APPLICATION_UNDER_REVIEW = "application_under_review", "Application Under Review"
+    APPLICATION_SHORTLISTED = "application_shortlisted", "Application Shortlisted"
+    APPLICATION_INTERVIEW_REQUIRED = "application_interview_required", "Interview Required"
+    APPLICATION_DECISION_MADE = "application_decision_made", "Admission Decision Made"
+    APPLICATION_OFFER_ISSUED = "application_offer_issued", "Admission Offer Issued"
+    APPLICATION_OFFER_ACCEPTED = "application_offer_accepted", "Admission Offer Accepted"
+    APPLICATION_OFFER_DECLINED = "application_offer_declined", "Admission Offer Declined"
+    APPLICATION_OFFER_EXPIRING = "application_offer_expiring", "Admission Offer Expiring"
+    APPLICATION_CONVERTED = "application_converted", "Converted to Student"
+    APPLICATION_DOCUMENT_UPLOADED = "application_document_uploaded", "Application Document Uploaded"
+    APPLICATION_DOCUMENT_VERIFIED = "application_document_verified", "Document Verified"
+    APPLICATION_DOCUMENT_REJECTED = "application_document_rejected", "Document Rejected"
+
 
 class Channel(models.TextChoices):
     APP = "app", "In-app"

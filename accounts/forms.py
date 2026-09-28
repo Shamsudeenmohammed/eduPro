@@ -15,7 +15,10 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm as DjangoPasswordResetForm
 from django.contrib.auth.forms import SetPasswordForm as DjangoSetPasswordForm
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+from academics.models import Program, StudentProfile
 
 from .models import EduProUser, Role, UserProfile, UserStaffRole, StaffResponsibility
 
@@ -293,22 +296,37 @@ class SetPasswordForm(StyledFieldsMixin, DjangoSetPasswordForm):
 class AdminUserCreationForm(StyledFieldsMixin, forms.ModelForm):
     """
     Admin form to create a new user with full control over role and active status.
+
+    A student is a complete academic record the moment the account exists, so
+    this form also does the work that used to be a separate manual step: it
+    assigns the student ID number and the default password, and builds the
+    StudentProfile with program, admission date and starting level. Creating a
+    student here needs no application or second approval pass.
     """
+
     password1 = forms.CharField(
         label=_("Password"),
+        required=False,
         widget=forms.PasswordInput(attrs={
             "placeholder": "Create a password",
             "autocomplete": "new-password",
         }),
         min_length=8,
-        help_text=_("Minimum 8 characters."),
+        help_text=_("Minimum 8 characters. Leave blank for a student to get the default password."),
     )
     password2 = forms.CharField(
         label=_("Confirm password"),
+        required=False,
         widget=forms.PasswordInput(attrs={
             "placeholder": "Repeat your password",
             "autocomplete": "new-password",
         }),
+    )
+    program = forms.ModelChoiceField(
+        label=_("Program"),
+        required=False,
+        queryset=Program.objects.filter(is_active=True).select_related("department"),
+        help_text=_("Students only. Sets the student ID prefix and starting level."),
     )
 
     class Meta:
@@ -322,6 +340,53 @@ class AdminUserCreationForm(StyledFieldsMixin, forms.ModelForm):
             "is_active":  forms.CheckboxInput(attrs={"class": "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"}),
         }
 
+    def __init__(self, *args, actor=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # The admin creating the account is the approver of record, so the
+        # audit trail is filled in rather than left blank.
+        self.actor = actor
+        # Staff passwords are the admin's responsibility; a student's are not.
+        if not self.is_bound:
+            self._apply_role_rules(Role.STUDENT)
+
+    def _is_student(self):
+        role = self.data.get("role") if self.is_bound else (
+            self.initial.get("role") or Role.STUDENT
+        )
+        return role == Role.STUDENT
+
+    def _apply_role_rules(self, role):
+        """Make the password boxes mandatory only for staff."""
+        self.fields["password1"].required = role != Role.STUDENT
+        self.fields["password2"].required = role != Role.STUDENT
+
+    def clean(self):
+        cleaned = super().clean()
+        role = cleaned.get("role") or Role.STUDENT
+        self._apply_role_rules(role)
+
+        p1 = cleaned.get("password1") or ""
+        p2 = self.data.get("password2") or ""
+
+        if role != Role.STUDENT:
+            # Staff must be given a real password: there is no default to fall
+            # back on, and a blank one would lock the account out entirely.
+            if not p1:
+                self.add_error("password1", _("A password is required for teachers and admins."))
+            elif p1 != p2:
+                self.add_error("password2", _("The two passwords do not match."))
+        elif p1 and p1 != p2:
+            self.add_error("password2", _("The two passwords do not match."))
+
+        if role == Role.STUDENT:
+            # A student's typed password is discarded in favour of the default,
+            # so any error on those fields (minimum length, for instance) would
+            # block a save over a value that is never used. Clear them.
+            for name in ("password1", "password2"):
+                self._errors.pop(name, None)
+
+        return cleaned
+
     def clean_email(self):
         email = self.cleaned_data["email"].lower().strip()
         if EduProUser.objects.filter(email=email).exists():
@@ -331,16 +396,41 @@ class AdminUserCreationForm(StyledFieldsMixin, forms.ModelForm):
         return email
 
     def clean_password2(self):
-        p1 = self.cleaned_data.get("password1", "")
-        p2 = self.cleaned_data.get("password2", "")
-        if p1 and p2 and p1 != p2:
-            raise forms.ValidationError(_("The two passwords do not match."))
-        return p2
+        # Validated against password1 in clean(); returning None here stops the
+        # field's own "this field is required" message firing for students.
+        return self.data.get("password2") or None
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
         user.email = user.email.lower().strip()
-        if commit:
-            user.save()
+
+        is_student = user.role == Role.STUDENT
+        if is_student:
+            # Students always land on the default password, whatever was typed
+            # into the optional fields, so every new student can be handed
+            # working credentials on the spot.
+            user.set_default_password()
+            user.is_active = True   # a manually added student skips the queue
+        else:
+            user.set_password(self.cleaned_data.get("password1") or "")
+
+        if self.actor is not None:
+            user.approved_by = self.actor
+            user.approved_at = timezone.now()
+
+        if not commit:
+            return user
+
+        user.save()
+
+        if is_student:
+            # Gives the student an ID number, admission date and starting level
+            # in the same transaction, so the account is immediately usable for
+            # enrolment, billing and ID cards.
+            profile, _ = StudentProfile.ensure_for_student(
+                user, program=self.cleaned_data.get("program")
+            )
+            self.created_profile = profile
+
         return user
+

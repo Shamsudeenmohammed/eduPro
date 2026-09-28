@@ -1,117 +1,326 @@
-{% extends "admin_base.html" %}{% block title %}Application Detail{% endblock %}
-{% block breadcrumb %}Admissions / Application / {{ application.reference_number }}{% endblock %}
+{% extends "admin_base.html" %}{% block title %}{{ application.reference_number }}{% endblock %}
+{% block breadcrumb %}Admissions / Applications{% endblock %}
 {% block page_header %}
 <div class="page-header">
   <div class="ph-left">
     <h1>{{ application.get_full_name }}</h1>
-    <p>{{ application.reference_number }} · {{ application.program_applied.name }}</p>
+    <p>
+      <span style="font-family:var(--mono)">{{ application.reference_number }}</span> ·
+      {{ application.get_application_type_display }} ·
+      {{ application.get_program_name }} · {{ application.cycle.name }}
+    </p>
   </div>
   <div class="ph-right">
-    {% if application.status == 'pending' or application.status == 'reviewing' %}
-    <form method="post" action="{% url 'portal:application_review' application.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn-ghost">Mark Reviewing</button></form>
-    <a href="{% url 'portal:application_approve' application.pk %}" class="btn btn-primary">Approve</a>
-    <a href="{% url 'portal:application_reject' application.pk %}" class="btn btn-ghost" style="color:var(--rose)">Reject</a>
+    <span class="badge">{{ application.get_status_display }}</span>
+    {% if application.decision and application.decision != 'pending' %}
+      <span class="badge" style="color:{% if application.is_admitted %}var(--teal){% else %}var(--rose){% endif %}">
+        {{ application.get_decision_display }}
+      </span>
     {% endif %}
-    <a href="{% url 'portal:document_request_create' application.pk %}" class="btn btn-ghost">Request Document</a>
+    <a href="{% url 'portal:admissions_dashboard' %}" class="btn btn-ghost">Dashboard</a>
   </div>
 </div>
 {% endblock %}
 {% block content %}
-<div class="body-grid">
-  <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="card">
-      <div class="card-header"><div class="card-title">Personal Information</div></div>
-      <ul class="status-list">
-        <li class="status-row"><span class="s-label">Full Name</span><span class="s-val" style="font-weight:600">{{ application.get_full_name }}</span></li>
-        <li class="status-row"><span class="s-label">Date of Birth</span><span class="s-val">{{ application.date_of_birth|date:"M j, Y"|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Gender</span><span class="s-val">{{ application.get_gender_display|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Nationality</span><span class="s-val">{{ application.nationality|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Email</span><span class="s-val" style="font-family:var(--mono);font-size:12px">{{ application.email }}</span></li>
-        <li class="status-row"><span class="s-label">Phone</span><span class="s-val">{{ application.phone|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Address</span><span class="s-val">{{ application.address|default:"—" }}</span></li>
-      </ul>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Academic Background</div></div>
-      <ul class="status-list">
-        <li class="status-row"><span class="s-label">Previous School</span><span class="s-val">{{ application.previous_school|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Qualification</span><span class="s-val">{{ application.qualification|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Year Completed</span><span class="s-val">{{ application.year_of_completion|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Aggregate Score</span><span class="s-val">{{ application.aggregate_score|default:"—" }}</span></li>
-      </ul>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Documents</div></div>
-      <ul class="status-list">
-        {% if application.transcript %}<li class="status-row"><span class="s-label">Transcript</span><span class="s-val"><a href="{{ application.transcript.url }}" target="_blank">View</a></span></li>{% endif %}
-        {% if application.id_document %}<li class="status-row"><span class="s-label">ID Document</span><span class="s-val"><a href="{{ application.id_document.url }}" target="_blank">View</a></span></li>{% endif %}
-        {% if application.passport_photo %}<li class="status-row"><span class="s-label">Passport Photo</span><span class="s-val"><a href="{{ application.passport_photo.url }}" target="_blank">View</a></span></li>{% endif %}
-        {% if application.personal_statement %}<li class="status-row"><span class="s-label">Personal Statement</span><span class="s-val"><a href="{{ application.personal_statement.url }}" target="_blank">View</a></span></li>{% endif %}
-        {% if not application.transcript and not application.id_document and not application.passport_photo and not application.personal_statement %}<li class="status-row"><span class="s-val" style="color:var(--tx3)">No documents uploaded.</span></li>{% endif %}
-      </ul>
-    </div>
-    {% if doc_requests %}
-    <div class="card">
-      <div class="card-header"><div class="card-title">Document Requests</div></div>
+
+{% if conversion_blocker %}
+<div style="padding:12px 16px;margin-bottom:18px;border-radius:10px;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);font-size:13px">
+  <strong style="color:var(--ochre)">Conversion not ready.</strong> {{ conversion_blocker }}
+</div>
+{% endif %}
+
+{# ══ LEFT: checklist, documents, offers, payments, audit ══════════════════ #}
+<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:20px;align-items:start">
+
+  <div>
+
+    {# ── Checklist ──────────────────────────────────────────────────── #}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header">
+        <div class="card-title">Checklist — {{ checklist.percent }}%</div>
+        <a href="{% url 'portal:application_list' %}" class="card-action">All applications</a>
+      </div>
+      <div style="padding:14px 20px 0">
+        <div style="height:7px;background:var(--bg2);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:{{ checklist.percent }}%;background:{% if checklist.satisfied %}var(--teal){% else %}var(--ochre){% endif %}"></div>
+        </div>
+      </div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>Document </th><th>Status </th><th>Requested </th><th> Upload</th></tr></thead>
+          <thead><tr><th>Requirement</th><th>Type</th><th>State</th><th>Note</th></tr></thead>
           <tbody>
-            {% for dr in doc_requests %}
+            {% for item in checklist.items %}
             <tr>
-              <td style="font-weight:600">{{ dr.document_name }}</td>
-              <td>{% if dr.status == 'fulfilled' %}<span class="s-pill pill-green">Fulfilled</span>{% else %}<span class="s-pill pill-amber">Pending</span>{% endif %}</td>
-              <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">{{ dr.requested_at|date:"M j, Y" }}</td>
-              <td style="text-align:right">{% if dr.status != 'fulfilled' %}<form method="post" action="{% url 'portal:document_request_fulfill' dr.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px">Mark Fulfilled</button></form>{% endif %}</td>
-              {% if dr.status == 'fulfilled' and dr.uploaded_file %}
-              <td style="text-align:right"><a href="{{ dr.uploaded_file.url }}" target="_blank" class="btn btn-sm btn-secondary">View</a></td>
-              {% endif %}
-              {% if dr.status == 'fulfilled' and not dr.uploaded_file %}
-              <td style="text-align:right;color:var(--rose);font-size:11px">No file uploaded</td>
-              {% endif %}
-              {% if dr.status != 'fulfilled' %}
-              <td style="text-align:right;color:var(--tx3);font-size:11px">Awaiting fulfillment</td>
-              {% endif %}
+              <td style="font-weight:600">
+                {{ item.label }}{% if not item.required %} <span style="color:var(--tx3);font-weight:400">(optional)</span>{% endif %}
+              </td>
+              <td style="font-size:12px;color:var(--tx2)">{{ item.kind|title }}</td>
+              <td>
+                {% if item.done %}
+                  <span class="badge" style="color:var(--teal)">
+                    {% if item.kind == 'document' %}{% if item.document.is_verified %}Verified{% else %}Uploaded{% endif %}{% else %}Complete{% endif %}
+                  </span>
+                {% elif item.required %}
+                  <span class="badge" style="color:var(--rose)">Missing</span>
+                {% else %}
+                  <span class="badge" style="color:var(--tx3)">Optional</span>
+                {% endif %}
+              </td>
+              <td style="font-size:11px;color:var(--tx3)">
+                {% if item.document %}
+                  <a href="{% url 'portal:document_download' item.document.pk %}">Download</a>
+                {% endif %}
+                {% if item.note %}{{ item.note }}{% endif %}
+              </td>
             </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:20px">No requirements configured for this application type.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
-    {% endif %}
-  </div>
-  <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="card">
-      <div class="card-header"><div class="card-title">Status &amp; Review</div></div>
-      <ul class="status-list">
-        <li class="status-row"><span class="s-label">Status</span>
-          <span class="s-pill {% if application.status == 'approved' or application.status == 'accepted' %}pill-green{% elif application.status == 'rejected' %}pill-rose{% elif application.status == 'reviewing' or application.status == 'review' %}pill-amber{% else %}pill-muted{% endif %}">{{ application.get_status_display }}</span>
-        </li>
-        <li class="status-row"><span class="s-label">Application Type</span><span class="s-val">{{ application.get_application_type_display|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Cycle</span><span class="s-val">{{ application.cycle.name|default:"—" }}</span></li>
-        <li class="status-row"><span class="s-label">Applied</span><span class="s-val" style="font-family:var(--mono);font-size:11px">{{ application.created_at|date:"M j, Y H:i" }}</span></li>
-        {% if application.reviewed_by %}<li class="status-row"><span class="s-label">Reviewed By</span><span class="s-val">{{ application.reviewed_by.get_full_name }}</span></li>{% endif %}
-        {% if application.review_notes %}<li class="status-row"><span class="s-label">Review Notes</span><span class="s-val" style="font-size:12px">{{ application.review_notes }}</span></li>{% endif %}
-        {% if application.approved_by %}<li class="status-row"><span class="s-label">Approved By</span><span class="s-val">{{ application.approved_by.get_full_name }}</span></li>{% endif %}
-        {% if application.rejected_by %}<li class="status-row"><span class="s-label">Rejected By</span><span class="s-val">{{ application.rejected_by.get_full_name }}</span></li>{% endif %}
-        {% if application.rejection_reason %}<li class="status-row"><span class="s-label">Rejection Reason</span><span class="s-val" style="font-size:12px;color:var(--rose)">{{ application.rejection_reason }}</span></li>{% endif %}
-      </ul>
-      {% if application.user %}
-      <div style="padding:12px 18px;border-top:1px solid var(--border)">
-        <div style="background:var(--teal-dim);border:1px solid rgba(62,207,178,.25);border-radius:var(--r);padding:12px">
-          <p style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">✅ Student Account Created</p>
-          <p style="font-size:12px;color:var(--tx2)">Email: <strong style="color:var(--teal);font-family:var(--mono)">{{ application.user.email }}</strong></p>
-          <p style="font-size:11px;color:var(--tx2);margin-top:2px">The applicant can log in at <strong style="color:var(--tx1)">/accounts/login/</strong> with the password they chose during application.</p>
-        </div>
+
+    {# ── Uploaded documents ─────────────────────────────────────────── #}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header">
+        <div class="card-title">Documents ({{ documents|length }})</div>
+        <a href="{% url 'portal:application_correction_request' application.pk %}" class="card-action">Request correction</a>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Document</th><th>Ver</th><th>Status</th><th>Uploaded</th><th></th></tr></thead>
+          <tbody>
+            {% for d in documents %}
+            <tr>
+              <td style="font-weight:600">{{ d.name }}</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">v{{ d.version }}</td>
+              <td>
+                <span class="badge" style="color:{% if d.is_verified %}var(--teal){% elif d.status == 'rejected' %}var(--rose){% else %}var(--ochre){% endif %}">
+                  {{ d.get_status_display }}
+                </span>
+              </td>
+              <td style="font-size:12px;color:var(--tx2)">{{ d.uploaded_at|date:"M j, Y" }}</td>
+              <td style="white-space:nowrap">
+                <a href="{% url 'portal:document_download' d.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:11px">View</a>
+                {% if not d.is_verified %}
+                <a href="{% url 'portal:document_verify' d.pk %}" class="btn btn-ghost" style="padding:4px 10px;font-size:11px">Verify</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:20px">No documents uploaded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ── Offers ─────────────────────────────────────────────────────── #}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header">
+        <div class="card-title">Offers ({{ offers|length }})</div>
+        {% if can_decide and application.is_admitted %}
+        <a href="{% url 'portal:application_offer_issue' application.pk %}" class="card-action">Issue offer</a>
+        {% endif %}
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Offer</th><th>Status</th><th>Issued</th><th>Expires</th><th>Response</th></tr></thead>
+          <tbody>
+            {% for o in offers %}
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px">{{ o.offer_number }}</td>
+              <td><span class="badge">{{ o.get_status_display }}</span></td>
+              <td style="font-size:12px;color:var(--tx2)">{{ o.issue_date|date:"M j, Y" }}</td>
+              <td style="font-size:12px;color:var(--tx2)">{{ o.expiry_date|date:"M j, Y"|default:"—" }}</td>
+              <td style="font-size:12px;color:var(--tx2)">
+                {% if o.acceptance_date %}{{ o.get_status_display }} — {{ o.acceptance_date|date:"M j, Y" }}{% else %}<span style="color:var(--tx3)">Awaiting</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:20px">No offer issued yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ── Payments ───────────────────────────────────────────────────── #}
+    {% if application.cycle.requires_payment or payments %}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header">
+        <div class="card-title">Application Fee</div>
+        {% if user.is_admin %}
+        <a href="{% url 'portal:application_payment_record' application.pk %}" class="card-action">Record payment</a>
+        {% endif %}
+      </div>
+      <div style="padding:16px 20px;font-size:13px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600">Fee</div>
+             <div style="font-family:var(--mono);font-weight:600">{{ application.application_fee|default:"0" }}</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600">Verified paid</div>
+             <div style="font-family:var(--mono);font-weight:600;color:var(--teal)">{{ application.paid_amount }}</div></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600">Outstanding</div>
+             <div style="font-family:var(--mono);font-weight:600;color:{% if application.payment_balance > 0 %}var(--rose){% else %}var(--teal){% endif %}">{{ application.payment_balance }}</div></div>
+      </div>
+      {% if payments %}
+      <div style="overflow-x:auto;border-top:1px solid var(--border)">
+        <table class="data-table">
+          <thead><tr><th>Reference</th><th>Amount</th><th>Status</th><th>Verified by</th><th>Date</th></tr></thead>
+          <tbody>
+            {% for p in payments %}
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px">{{ p.payment_reference }}</td>
+              <td style="font-family:var(--mono)">{{ p.amount }}</td>
+              <td><span class="badge">{{ p.get_status_display }}</span></td>
+              <td style="font-size:12px;color:var(--tx2)">{% if p.verified_by %}{{ p.verified_by.email }}{% else %}—{% endif %}</td>
+              <td style="font-size:12px;color:var(--tx3)">{{ p.created_at|date:"M j, Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
       {% endif %}
     </div>
-    {% if application.personal_statement %}
+    {% endif %}
+
+    {# ── Audit trail ────────────────────────────────────────────────── #}
     <div class="card">
-      <div class="card-header"><div class="card-title">Personal Statement</div></div>
-      <div style="padding:14px 18px;font-size:12.5px;color:var(--tx2);line-height:1.6;white-space:pre-wrap">{{ application.personal_statement }}</div>
+      <div class="card-header"><div class="card-title">Audit trail</div></div>
+      <div style="padding:8px 20px 20px">
+        {% for log in audit_logs %}
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:130px;flex-shrink:0;font-family:var(--mono);font-size:11px;color:var(--tx3)">
+            {{ log.created_at|date:"M j, H:i" }}
+          </div>
+          <div style="flex:1;font-size:13px">
+            <div style="font-weight:600">{{ log.get_action_display }}</div>
+            {% if log.actor %}<div style="font-size:11px;color:var(--tx3)">by {{ log.actor.email }}</div>{% endif %}
+            {% if log.remark %}<div style="font-size:12px;color:var(--tx2);margin-top:2px">{{ log.remark }}</div>{% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;color:var(--tx3);padding:20px;font-size:13px">No audit entries yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  {# ══ RIGHT: facts + actions ═══════════════════════════════════════════ #}
+  <div>
+
+    {# ── Facts ──────────────────────────────────────────────────────── #}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header"><div class="card-title">Application</div></div>
+      <div style="padding:18px 20px;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:8px 14px">
+        <span style="color:var(--tx3)">Email</span><span style="word-break:break-all">{{ application.email }}</span>
+        <span style="color:var(--tx3)">Phone</span><span>{{ application.phone|default:"—" }}</span>
+        <span style="color:var(--tx3)">Previous school</span><span>{{ application.previous_school|default:"—" }}</span>
+        <span style="color:var(--tx3)">Qualification</span><span>{{ application.qualification|default:"—" }}</span>
+        <span style="color:var(--tx3)">Aggregate</span><span>{{ application.aggregate_score|default:"—" }}</span>
+        <span style="color:var(--tx3)">Applied</span><span>{{ application.created_at|date:"M j, Y" }}</span>
+        {% if application.submitted_at %}<span style="color:var(--tx3)">Submitted</span><span>{{ application.submitted_at|date:"M j, Y" }}</span>{% endif %}
+        {% if application.converted_at %}<span style="color:var(--tx3)">Converted</span><span>{{ application.converted_at|date:"M j, Y" }}</span>{% endif %}
+      </div>
+    </div>
+
+    {# ── Actions ───────────────────────────────────────────────────── #}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header"><div class="card-title">Actions</div></div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:8px">
+
+        {# Workflow transitions — the only way status changes (req 5) #}
+        {% if staff_targets %}
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600;margin-top:2px">Move to stage</div>
+        {% for target in staff_targets %}
+        <form method="post" action="{% url 'portal:application_transition' application.pk %}"
+              onsubmit="return confirm('Move this application to &quot;{{ target.label }}&quot;?');">
+          {% csrf_token %}
+          <input type="hidden" name="to_status" value="{{ target.value }}">
+          <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:flex-start;padding:8px 12px;font-size:12px">
+            → {{ target.label }}
+          </button>
+        </form>
+        {% endfor %}
+        {% endif %}
+
+        {% if can_decide %}
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600;margin-top:10px">Decision</div>
+        {% if application.decision and application.decision != 'pending' %}
+        <div style="font-size:12px;color:var(--tx2)">Recorded: <strong>{{ application.get_decision_display }}</strong>
+          {% if application.decision_made_by %}<br><span style="color:var(--tx3)">by {{ application.decision_made_by.email }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <a href="{% url 'portal:application_decision' application.pk %}" class="btn btn-primary" style="padding:8px 12px;font-size:12px">
+          Record decision
+        </a>
+        {% endif %}
+
+        {% if can_decide and application.is_admitted and not application.is_converted %}
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600;margin-top:10px">Offer</div>
+        <a href="{% url 'portal:application_offer_issue' application.pk %}" class="btn btn-ghost" style="padding:8px 12px;font-size:12px">
+          Issue admission offer
+        </a>
+        {% endif %}
+
+        {% if application.is_admitted and not application.is_converted %}
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600;margin-top:10px">Conversion</div>
+        {% if conversion_blocker %}
+        <div style="font-size:11px;color:var(--tx3)">{{ conversion_blocker }}</div>
+        {% elif can_decide %}
+        <form method="post" action="{% url 'portal:application_convert' application.pk %}"
+              onsubmit="return confirm('Create the student record for {{ application.get_full_name }}? This cannot be undone.');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="padding:8px 12px;font-size:12px">
+            Convert to student
+          </button>
+        </form>
+        {% endif %}
+        {% endif %}
+
+        {% if application.is_converted %}
+        <div style="padding:10px 12px;border-radius:8px;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);font-size:12px;color:var(--teal)">
+          Converted to a student on {{ application.converted_at|date:"j M Y" }}.
+          {% if application.user.academic_profile %}
+            Number <strong style="font-family:var(--mono)">{{ application.user.academic_profile.student_number }}</strong>.
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);font-weight:600;margin-top:10px">Other</div>
+        <a href="{% url 'portal:application_correction_request' application.pk %}" class="btn btn-ghost" style="padding:8px 12px;font-size:12px">
+          Request correction
+        </a>
+        {% if not application.is_terminal %}
+        <form method="post" action="{% url 'portal:application_transition' application.pk %}"
+              onsubmit="return confirm('Reject this application?');">
+          {% csrf_token %}
+          <input type="hidden" name="to_status" value="rejected">
+          <button type="submit" class="btn btn-ghost" style="padding:8px 12px;font-size:12px;color:var(--rose)">
+            Reject application
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {# ── Legacy document requests ──────────────────────────────────── #}
+    {% if doc_requests %}
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-header"><div class="card-title">Document requests</div></div>
+      <div style="padding:8px 20px 20px">
+        {% for r in doc_requests %}
+        <div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <div style="font-weight:600">{{ r.get_status_display }}</div>
+          <div style="color:var(--tx2)">{{ r.description|truncatewords:16 }}</div>
+          <div style="color:var(--tx3);font-size:11px">{{ r.requested_at|date:"M j, Y" }}</div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
+
   </div>
 </div>
 {% endblock %}

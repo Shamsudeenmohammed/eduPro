@@ -173,6 +173,112 @@ BUILDERS = {
         f"Reason: {c.get('reason', 'No reason given.')}",
         _result_view_link(c),
     ),
+
+    # ── Admissions ───────────────────────────────────────────────────────────
+    # Context keys: ref, program, status, action, reason, amount, decision,
+    # offer_number, expiry, student_number, missing.
+    NotificationType.APPLICATION_SUBMITTED: lambda c: (
+        f"Application received — {c.get('ref', '')}",
+        f"We have received your application{c.get('program_suffix', '')}. "
+        f"Reference {c.get('ref', '')}. {c.get('action', 'Track its progress from your applicant portal.')}",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_DRAFT_SAVED: lambda c: (
+        f"Application draft saved — {c.get('ref', '')}",
+        f"Your application has been saved as a draft. Sign in to finish it and "
+        f"submit. Reference {c.get('ref', '')}.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_PAYMENT_CONFIRMED: lambda c: (
+        "Application fee received",
+        f"We have received your application fee of {c.get('amount', '')}. "
+        f"Your application {c.get('ref', '')} will now proceed to review.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_CORRECTION_REQUESTED: lambda c: (
+        f"Action needed on application {c.get('ref', '')}",
+        f"The admissions team has requested corrections to your application. "
+        f"Reason: {c.get('reason', 'No reason given.')} "
+        f"Please update and resubmit.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_UNDER_REVIEW: lambda c: (
+        f"Application under review — {c.get('ref', '')}",
+        f"Your application {c.get('ref', '')} is now being reviewed by the "
+        f"admissions team. No action is needed from you right now.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_SHORTLISTED: lambda c: (
+        f"You have been shortlisted — {c.get('ref', '')}",
+        f"Congratulations. Your application {c.get('ref', '')}"
+        f"{c.get('program_suffix', '')} has been shortlisted. Watch your email "
+        f"for the next steps.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_INTERVIEW_REQUIRED: lambda c: (
+        f"Interview required — {c.get('ref', '')}",
+        f"An interview is required as part of your application {c.get('ref', '')}. "
+        f"{c.get('reason', 'You will receive the details shortly.')}",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_DECISION_MADE: lambda c: (
+        f"Admission decision — {c.get('ref', '')}",
+        f"A decision has been made on your application {c.get('ref', '')}: "
+        f"{c.get('decision', 'Pending')}. {c.get('action', '')}",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_OFFER_ISSUED: lambda c: (
+        f"Admission offer issued — {c.get('offer_number', '')}",
+        f"You have been offered admission{c.get('program_suffix', '')}. "
+        f"Offer {c.get('offer_number', '')} is valid until {c.get('expiry', 'the expiry date')}. "
+        f"Please accept or decline it from your applicant portal."
+        + (f" Conditions: {c['conditions']}" if c.get("conditions") else ""),
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_OFFER_ACCEPTED: lambda c: (
+        f"Offer accepted — {c.get('offer_number', '')}",
+        f"Thank you. Your acceptance of offer {c.get('offer_number', '')} has been "
+        f"recorded. Our team will complete your registration and contact you with "
+        f"your student details.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_OFFER_DECLINED: lambda c: (
+        f"Offer declined — {c.get('offer_number', '')}",
+        f"We have recorded your decision to decline offer {c.get('offer_number', '')}. "
+        f"You are welcome to apply again in a future admission cycle.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_OFFER_EXPIRING: lambda c: (
+        f"Offer expiring soon — {c.get('offer_number', '')}",
+        f"Offer {c.get('offer_number', '')} expires on {c.get('expiry', 'soon')}. "
+        f"Please accept or decline it before then to keep your place.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_CONVERTED: lambda c: (
+        f"Welcome to eduPro — {c.get('student_number', '')}",
+        f"Your admission is complete. Your student number is "
+        f"{c.get('student_number', '')}. Sign in with your student number and the "
+        f"password you were given to access your student portal.",
+        c.get("link") or "/students/dashboard/",
+    ),
+    NotificationType.APPLICATION_DOCUMENT_UPLOADED: lambda c: (
+        f"Document received — {c.get('ref', '')}",
+        f"Thank you. We received your {c.get('document', 'document')} and it is "
+        f"awaiting verification.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_DOCUMENT_VERIFIED: lambda c: (
+        f"Document verified — {c.get('document', 'document')}",
+        f"Your {c.get('document', 'document')} has been verified.",
+        c.get("link") or "/portal/applicant/",
+    ),
+    NotificationType.APPLICATION_DOCUMENT_REJECTED: lambda c: (
+        f"Document needs attention — {c.get('document', 'document')}",
+        f"Your {c.get('document', 'document')} was not accepted. "
+        f"Reason: {c.get('reason', 'No reason given.')} "
+        f"Please upload a replacement from your applicant portal.",
+        c.get("link") or "/portal/applicant/",
+    ),
 }
 
 

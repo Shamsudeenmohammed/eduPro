@@ -1,0 +1,149 @@
+{% extends "base_public.html" %}{% block title %}My Applications — {{ site_name }}{% endblock %}
+{% block content %}
+<section class="page-banner">
+  <div class="container">
+    <h1>My Applications</h1>
+    <p>Track every application you have submitted, and see what is needed next</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+
+    {% if not cards %}
+    <div class="feature-card" style="padding:2.5rem;text-align:center">
+      <h3 style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:.5rem">You have not applied yet</h3>
+      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem">
+        {% if open_cycles %}
+          Applications are open for {{ open_cycles|length }} cycle{{ open_cycles|pluralize }}.
+        {% else %}
+          There is no open application cycle at the moment. Please check back later.
+        {% endif %}
+      </p>
+      {% if open_cycles %}
+        {% for c in open_cycles %}
+        <a href="{% url 'portal:admission_apply' %}" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          Apply — {{ c.name }}
+        </a>
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% for card in cards %}
+    <div class="feature-card" style="padding:0;margin-bottom:1.25rem;overflow:hidden">
+
+      {# ── Header ─────────────────────────────────────────────────────── #}
+      <div style="padding:1.25rem 1.5rem;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem;flex-wrap:wrap">
+            <span style="font-family:monospace;font-weight:700;font-size:.95rem">{{ card.application.reference_number }}</span>
+            <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(37,99,235,.1);color:var(--primary)">{{ card.application.get_application_type_display }}</span>
+          </div>
+          <div style="font-weight:700;font-size:1.05rem">{{ card.application.get_full_name }}</div>
+          <div style="font-size:.85rem;color:var(--text-muted)">
+            {{ card.application.get_program_name }} · {{ card.application.cycle.name }}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.3rem">Status</div>
+          <span style="display:inline-block;padding:4px 14px;border-radius:20px;font-size:.8rem;font-weight:600;
+            {% if card.application.is_admitted %}background:rgba(5,150,105,.12);color:var(--success)
+            {% elif card.application.decision == 'rejected' or card.application.status == 'rejected' %}background:rgba(220,38,38,.12);color:var(--danger)
+            {% elif card.application.status == 'needs_correction' %}background:rgba(217,119,6,.12);color:var(--warning)
+            {% else %}background:var(--surface2);color:var(--text-muted){% endif %}">
+            {{ card.application.get_status_display }}
+          </span>
+        </div>
+      </div>
+
+      <div style="padding:1.25rem 1.5rem">
+
+        {# ── Decision / offer result ──────────────────────────────────── #}
+        {% if card.application.decision and card.application.decision != 'pending' %}
+        <div style="padding:1rem;margin-bottom:1.25rem;border-radius:10px;
+          {% if card.application.is_admitted %}background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2)
+          {% else %}background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.15){% endif %}">
+          <div style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;
+            {% if card.application.is_admitted %}color:var(--success){% else %}color:var(--danger){% endif %}">
+            Admission decision: {{ card.application.get_decision_display }}
+          </div>
+          {% if card.application.decision_notes %}
+          <div style="font-size:.85rem;color:var(--text-muted)">{{ card.application.decision_notes }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {# ── What is required next ───────────────────────────────────── #}
+        <div style="padding:.9rem 1rem;margin-bottom:1.25rem;border-radius:10px;background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.15)">
+          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.3rem">What happens next</div>
+          <div style="font-size:.9rem;font-weight:600">{{ card.next_action }}</div>
+        </div>
+
+        {# ── Progress + payment ───────────────────────────────────────── #}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.25rem">
+          <div style="padding:.85rem;background:var(--surface2);border-radius:8px">
+            <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.4rem">Checklist</div>
+            <div style="height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-bottom:.4rem">
+              <div style="height:100%;width:{{ card.checklist.percent }}%;background:{% if card.checklist.satisfied %}var(--success){% else %}var(--warning){% endif %}"></div>
+            </div>
+            <div style="font-size:.8rem;color:var(--text-muted)">{{ card.checklist.percent }}% complete{% if card.checklist.missing %} · {{ card.checklist.missing|length }} required item{{ card.checklist.missing|pluralize }} left{% endif %}</div>
+          </div>
+
+          <div style="padding:.85rem;background:var(--surface2);border-radius:8px">
+            <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.4rem">Application fee</div>
+            {% if not card.application.cycle.requires_payment %}
+              <div style="font-size:.85rem;color:var(--text-muted)">No fee required</div>
+            {% elif card.fee_paid %}
+              <div style="font-size:.85rem;color:var(--success);font-weight:600">Paid in full</div>
+            {% else %}
+              <div style="font-size:.85rem;color:var(--danger);font-weight:600">{{ card.application.payment_balance }} outstanding</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {# ── Actions ──────────────────────────────────────────────────── #}
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+          <a href="{% url 'portal:applicant_checklist' card.application.pk %}" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;border:1px solid var(--border);background:var(--surface);color:var(--text);text-decoration:none;cursor:pointer">Checklist</a>
+
+          {% if card.editable %}
+            <a href="{% url 'portal:applicant_application_edit' card.application.pk %}" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;border:1px solid var(--border);background:var(--surface);color:var(--text);text-decoration:none;cursor:pointer">Edit details</a>
+            <a href="{% url 'portal:applicant_application_submit' card.application.pk %}" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;background:var(--primary);color:#fff;border:none;cursor:pointer;text-decoration:none">Submit application</a>
+          {% endif %}
+
+          <a href="{% url 'portal:applicant_document_upload' card.application.pk %}" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;border:1px solid var(--border);background:var(--surface);color:var(--text);text-decoration:none;cursor:pointer">Upload document</a>
+
+          {% if card.application.cycle.requires_payment and not card.fee_paid and not card.application.is_withdrawn %}
+            <a href="{% url 'portal:applicant_payment_start' card.application.pk %}" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;background:var(--primary);color:#fff;border:none;cursor:pointer;text-decoration:none">Pay application fee</a>
+          {% endif %}
+
+          {% if card.offer %}
+            <a href="{% url 'portal:applicant_offer_detail' card.application.pk card.offer.pk %}" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;background:{% if card.offer.status == 'issued' %}var(--success){% else %}var(--surface){% endif %};color:{% if card.offer.status == 'issued' %}#fff{% else %}var(--text){% endif %};border:1px solid var(--border);cursor:pointer;text-decoration:none">
+              {% if card.offer.status == 'issued' %}Review your offer{% else %}Offer {{ card.offer.get_status_display }}{% endif %}
+            </a>
+          {% endif %}
+
+          {% if not card.application.is_terminal and not card.application.is_converted %}
+          <form method="post" action="{% url 'portal:applicant_application_withdraw' card.application.pk %}" style="display:inline"
+                onsubmit="return confirm('Withdraw this application? This cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="padding:8px 16px;border-radius:8px;font-weight:600;font-size:.82rem;border:1px solid rgba(220,38,38,.3);background:transparent;color:var(--danger);cursor:pointer">Withdraw</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if cards %}
+    <div style="margin-top:2rem;padding:1.25rem;background:var(--surface2);border-radius:12px;font-size:.85rem;color:var(--text-muted)">
+      <strong style="color:var(--text)">Need help?</strong>
+      Admissions officers review applications in the order they are received. You will be notified
+      by email and in your notification centre whenever the status of an application changes.
+      <a href="{% url 'portal:contact' %}" style="color:var(--primary)">Contact admissions</a> if something
+      is wrong with your details.
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

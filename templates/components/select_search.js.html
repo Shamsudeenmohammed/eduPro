@@ -1,0 +1,321 @@
+/* ── Searchable select ──────────────────────────────────────────────────────
+   Turns any <select data-searchable> into a combobox: the field looks like a
+   normal select, and clicking it opens a panel with a search box on top and
+   the matching options below. Nobody has to scroll a long list.
+
+   The native <select> is kept in the form as the value holder (clipped to 1px
+   via .ss-native) and is never rebuilt, so option order, the posted value and
+   server-side validation all behave exactly as before. Only the *presentation*
+   of the choice is custom. Multi-selects are deliberately left alone so their
+   posted set cannot be altered.
+
+   Optional attributes on the select:
+     data-searchable            enables the widget
+     data-search-placeholder    placeholder text inside the dropdown search box
+     data-search-label          accessible name for that search box
+     data-search                extra text to match on, beyond the visible
+                                label (e.g. an id or a code)
+   ────────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  // A select with nothing to choose between is left alone. Anything else that
+  // is marked data-searchable gets the widget however short the list is, so
+  // that opting in means the same thing on every record count. Gating this on
+  // list length would make the control silently change shape as the table
+  // fills up — two students today, a plain dropdown, then a searchable one
+  // next month without anyone touching the code.
+  var MIN_OPTIONS = 2;
+
+  var ICON_SEARCH =
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+    '<circle cx="11" cy="11" r="7"/>' +
+    '<path stroke-linecap="round" d="M20 20l-3.6-3.6"/></svg>';
+
+  var ICON_CARET =
+    '<svg class="ss-caret" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+    '<path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>';
+
+  var ICON_TICK =
+    '<svg class="ss-tick" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">' +
+    '<path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>';
+
+  // Lower-cased, whitespace-collapsed text for matching.
+  function norm(value) {
+    return (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function el(tag, className, html) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  }
+
+  function enhance(select) {
+    if (select.getAttribute('data-ss-ready') === '1') return;
+    if (select.multiple || select.disabled) return;
+
+    var nodes = Array.prototype.slice.call(select.options);
+    if (nodes.length < MIN_OPTIONS) return;
+    select.setAttribute('data-ss-ready', '1');
+    select.classList.add('ss-native');
+    // Keep the real control out of the tab order; the visible button replaces it.
+    select.setAttribute('tabindex', '-1');
+
+    // Snapshot the options once. Everything is driven from this list, so the
+    // native select is only ever read, never rewritten.
+    var items = nodes.map(function (node) {
+      return {
+        value: node.value,
+        label: (node.textContent || '').replace(/\s+/g, ' ').trim(),
+        disabled: node.disabled
+      };
+    });
+    var haystack = nodes.map(function (node, i) {
+      return norm(items[i].label + ' ' + (node.getAttribute('data-search') || ''));
+    });
+
+    var wrap = el('div', 'ss');
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+
+    var control = el('button', 'ss-control');
+    control.type = 'button';
+    control.setAttribute('aria-haspopup', 'listbox');
+    control.setAttribute('aria-expanded', 'false');
+    var valueText = el('span', 'ss-value');
+    control.appendChild(valueText);
+    control.insertAdjacentHTML('beforeend', ICON_CARET);
+
+    var panel = el('div', 'ss-panel');
+    panel.hidden = true;
+
+    var head = el('div', 'ss-head');
+    head.insertAdjacentHTML('afterbegin', ICON_SEARCH);
+    var search = document.createElement('input');
+    search.type = 'text';
+    search.className = 'ss-search';
+    search.autocomplete = 'off';
+    search.spellcheck = false;
+    search.placeholder = select.getAttribute('data-search-placeholder') || 'Type to search…';
+    search.setAttribute('aria-label', select.getAttribute('data-search-label') || 'Search options');
+    var count = el('span', 'ss-count');
+    head.appendChild(search);
+    head.appendChild(count);
+
+    var list = el('div', 'ss-list');
+    list.setAttribute('role', 'listbox');
+    var empty = el('div', 'ss-empty');
+    empty.hidden = true;
+
+    panel.appendChild(head);
+    panel.appendChild(list);
+    panel.appendChild(empty);
+
+    wrap.appendChild(control);
+    wrap.appendChild(panel);
+
+    var shown = [];   // indices into `items` currently listed
+    var active = -1;  // index into `shown` highlighted by the keyboard
+
+    function syncValue() {
+      var label = items.length ? null : '';
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].value === select.value) { label = items[i].label; break; }
+      }
+      valueText.textContent = label === null ? '' : label;
+      valueText.classList.toggle('is-placeholder', select.value === '');
+    }
+
+    function filter() {
+      var tokens = norm(search.value).split(' ').filter(Boolean);
+      shown = [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].disabled) continue;
+        if (!tokens.length) { shown.push(i); continue; }
+        var ok = true;
+        for (var t = 0; t < tokens.length; t++) {
+          if (haystack[i].indexOf(tokens[t]) === -1) { ok = false; break; }
+        }
+        if (ok) shown.push(i);
+      }
+    }
+
+    function setActive(index) {
+      var options = list.children;
+      for (var i = 0; i < options.length; i++) {
+        options[i].classList.toggle('active', i === index);
+      }
+      if (index >= 0 && options[index] && options[index].scrollIntoView) {
+        options[index].scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function draw() {
+      list.textContent = '';
+      count.textContent = shown.length + ' of ' + items.length;
+      if (!shown.length) {
+        empty.hidden = false;
+        empty.textContent = 'No match for "' + search.value.trim() + '"';
+        setActive(-1);
+        return;
+      }
+      empty.hidden = true;
+      var frag = document.createDocumentFragment();
+      for (var k = 0; k < shown.length; k++) {
+        var item = items[shown[k]];
+        var row = el('div', 'ss-opt');
+        row.setAttribute('role', 'option');
+        row.setAttribute('data-index', shown[k]);
+        var selected = item.value === select.value;
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
+        row.appendChild(document.createTextNode(item.label));
+        if (selected) row.insertAdjacentHTML('beforeend', ICON_TICK);
+        frag.appendChild(row);
+      }
+      list.appendChild(frag);
+      if (active >= shown.length) active = shown.length - 1;
+      if (active < 0) active = 0;
+      setActive(active);
+    }
+
+    function refresh() { filter(); draw(); }
+
+    function selectIndex(index) {
+      select.value = items[index].value;
+      // Let anything listening on the form (other scripts, validators) react.
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      syncValue();
+      close();
+      control.focus();
+    }
+
+    function open() {
+      // Only one panel at a time, whichever field was clicked last.
+      if (openPanel) openPanel.close();
+      // .card clips its overflow, which would cut the panel off.
+      var card = wrap.closest ? wrap.closest('.card') : null;
+      if (card) card.classList.add('ss-card-open');
+      panel.hidden = false;
+      wrap.classList.add('open');
+      control.setAttribute('aria-expanded', 'true');
+      search.value = '';
+      filter();
+      // Start the highlight on the current choice so Enter keeps it.
+      active = 0;
+      for (var i = 0; i < shown.length; i++) {
+        if (items[shown[i]].value === select.value) { active = i; break; }
+      }
+      draw();
+      search.focus();
+      if (search.select) search.select();
+      openPanel = { wrap: wrap, close: close };
+    }
+
+    function close() {
+      panel.hidden = true;
+      wrap.classList.remove('open');
+      control.setAttribute('aria-expanded', 'false');
+      var card = wrap.closest ? wrap.closest('.card') : null;
+      if (card) card.classList.remove('ss-card-open');
+      if (openPanel && openPanel.wrap === wrap) openPanel = null;
+    }
+
+    control.addEventListener('click', function () {
+      if (panel.hidden) open(); else close();
+    });
+
+    control.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    search.addEventListener('input', function () {
+      active = 0;
+      refresh();
+    });
+
+    search.addEventListener('keydown', function (e) {
+      // The sidebar closes on Escape too; this must not also fire that.
+      e.stopPropagation();
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        active = Math.min(active + 1, shown.length - 1);
+        setActive(active);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        active = Math.max(active - 1, 0);
+        setActive(active);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (shown.length) selectIndex(shown[Math.max(active, 0)]);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (search.value) { search.value = ''; refresh(); } else { close(); control.focus(); }
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        active = 0; setActive(active);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        active = shown.length - 1; setActive(active);
+      }
+    });
+
+    list.addEventListener('mousedown', function (e) {
+      // Keep focus in the search box so the panel does not close on blur.
+      e.preventDefault();
+    });
+
+    list.addEventListener('click', function (e) {
+      var row = e.target.closest ? e.target.closest('.ss-opt') : null;
+      if (!row) return;
+      selectIndex(Number(row.getAttribute('data-index')));
+    });
+
+    list.addEventListener('mousemove', function (e) {
+      var row = e.target.closest ? e.target.closest('.ss-opt') : null;
+      if (!row) return;
+      active = Array.prototype.indexOf.call(list.children, row);
+      setActive(active);
+    });
+
+    // If something else changes the select, keep the visible label in step.
+    select.addEventListener('change', syncValue);
+
+    syncValue();
+  }
+
+  // The single open panel, tracked centrally so outside-click handling needs
+  // only one document listener no matter how many selects are enhanced.
+  var openPanel = null;
+
+  document.addEventListener('click', function (e) {
+    if (openPanel && !openPanel.wrap.contains(e.target)) openPanel.close();
+  });
+
+  function init(root) {
+    var scope = root || document;
+    var selects = scope.querySelectorAll('select[data-searchable]');
+    for (var i = 0; i < selects.length; i++) enhance(selects[i]);
+  }
+
+  window.eduProInitSelectSearch = init;
+
+  // The AJAX sidebar navigation swaps `.content` without a page load, so reuse
+  // the re-init hook it already calls after every swap.
+  var previous = window.initPageWidgets;
+  window.initPageWidgets = function () {
+    if (typeof previous === 'function') { try { previous(); } catch (e) {} }
+    init();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { init(); });
+  } else {
+    init();
+  }
+})();

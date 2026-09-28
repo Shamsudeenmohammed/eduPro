@@ -263,10 +263,333 @@ class AdmissionCycleForm(StyledFieldsMixin, forms.ModelForm):
         fields = [
             "name", "academic_year", "start_date", "end_date",
             "is_active", "max_applications",
+            # Added by the admissions upgrade — all optional.
+            "academic_session", "application_type", "application_fee",
+            "status", "payment_required_to_progress",
         ]
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "end_date":   forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "name": forms.TextInput(attrs={"placeholder": "e.g. 2025/2026 Main Intake"}),
             "academic_year": forms.TextInput(attrs={"placeholder": "e.g. 2025/2026"}),
+            "application_fee": forms.NumberInput(attrs={
+                "step": "0.01", "min": "0",
+                "placeholder": "0.00 — leave 0 if there is no application fee",
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from academics.models import AcademicSession
+        from .models import ApplicationType
+
+        self.fields["academic_session"].queryset = (
+            AcademicSession.objects.order_by("-start_date")
+        )
+        self.fields["academic_session"].empty_label = "— Select academic session —"
+        self.fields["academic_session"].required = False
+
+        self.fields["application_type"].queryset = ApplicationType.objects.filter(
+            is_active=True
+        )
+        self.fields["application_type"].empty_label = "— Any application type —"
+        self.fields["application_type"].required = False
+        self.fields["application_fee"].required = False
+        self.fields["status"].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get("start_date"), cleaned.get("end_date")
+        if start and end and start > end:
+            self.add_error(
+                "end_date", _("The closing date must be on or after the opening date.")
+            )
+        return cleaned
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APPLICATIONS & ADMISSIONS UPGRADE
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ApplicationDraftForm(StyledFieldsMixin, forms.ModelForm):
+    """
+    Applicant-facing create/edit form for the unified engine.
+
+    Used for BOTH starting an application and editing it, because an
+    application is one row whether it is a draft or submitted — only its
+    workflow status differs. The view enforces editability server-side via
+    :meth:`portal.workflow.ApplicationWorkflow.is_applicant_editable`; this
+    form narrows the fields to what the current application type actually
+    needs so an undergraduate is not shown postgraduate-only inputs.
+    """
+
+    #: Fields collected for every application type.
+    COMMON_FIELDS = [
+        "first_name", "last_name", "other_names", "date_of_birth", "gender",
+        "nationality", "email", "phone", "address",
+    ]
+    UNDERGRADUATE_FIELDS = [
+        "program_applied", "previous_school", "qualification",
+        "year_of_completion", "aggregate_score",
+    ]
+    POSTGRADUATE_FIELDS = [
+        "program_applied", "previous_school", "qualification",
+        "year_of_completion", "personal_statement",
+    ]
+    OTHER_FIELDS = [
+        "program_applied", "previous_school", "qualification", "year_of_completion",
+    ]
+
+    class Meta:
+        model = AdmissionApplication
+        fields = [
+            "first_name", "last_name", "other_names", "date_of_birth", "gender",
+            "nationality", "email", "phone", "address", "program_applied",
+            "previous_school", "qualification", "year_of_completion",
+            "aggregate_score", "personal_statement",
+        ]
+        widgets = {
+            "date_of_birth": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "personal_statement": forms.Textarea(attrs={
+                "rows": 6, "placeholder": "Tell us about yourself and why you are applying…",
+            }),
+            "address": forms.Textarea(attrs={"rows": 3, "placeholder": "Your residential address"}),
+            "first_name": forms.TextInput(attrs={"placeholder": "First name"}),
+            "last_name":  forms.TextInput(attrs={"placeholder": "Last name"}),
+            "other_names": forms.TextInput(attrs={"placeholder": "Middle / other names (optional)"}),
+            "email": forms.EmailInput(attrs={"placeholder": "your@email.com"}),
+            "phone": forms.TextInput(attrs={"placeholder": "+233 20 000 0000"}),
+            "nationality": forms.TextInput(attrs={"placeholder": "e.g. Ghanaian"}),
+            "previous_school": forms.TextInput(attrs={
+                "placeholder": "School / institution attended",
+            }),
+            "qualification": forms.TextInput(attrs={"placeholder": "e.g. WASSCE, BSc Computer Science"}),
+        }
+
+    def __init__(self, *args, application_type=None, cycle=None,
+                 is_new=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        from academics.models import Program
+
+        self._is_new = is_new
+        self._cycle = cycle
+        self._type_code = application_type or (
+            self.instance.application_type if self.instance.pk else None
+        )
+
+        self.fields["program_applied"].queryset = (
+            Program.objects.filter(is_active=True)
+            .select_related("department__faculty")
+            .order_by("department__name", "name")
+        )
+        self.fields["program_applied"].empty_label = "— Select a programme —"
+        self.fields["program_applied"].required = False
+
+        self._apply_type_rules()
+
+    def _apply_type_rules(self):
+        """
+        Show the inputs that make sense for this application type.
+
+        This is presentation only — the CHECKLIST service independently decides
+        what is *required*, so hiding a field can never let an applicant skip a
+        requirement.
+        """
+        from .models import ApplicationTypeCode
+
+        code = self._type_code
+        if code == ApplicationTypeCode.POSTGRADUATE:
+            keep = set(self.COMMON_FIELDS) | set(self.POSTGRADUATE_FIELDS)
+        elif code == ApplicationTypeCode.UNDERGRADUATE:
+            keep = set(self.COMMON_FIELDS) | set(self.UNDERGRADUATE_FIELDS)
+        else:
+            keep = set(self.COMMON_FIELDS) | set(self.OTHER_FIELDS)
+
+        for name in list(self.fields):
+            if name not in keep:
+                self.fields.pop(name)
+
+        # Postgraduate applicants do not supply an aggregate score.
+        if code == ApplicationTypeCode.POSTGRADUATE:
+            self.fields.pop("aggregate_score", None)
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if not email:
+            return email
+        duplicates = AdmissionApplication.objects.filter(email__iexact=email)
+        if self._cycle is not None:
+            duplicates = duplicates.filter(cycle=self._cycle)
+        if self.instance.pk:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if duplicates.exists():
+            # Requirement 10: one application per cycle for this email. A
+            # different cycle is always allowed, so legitimate re-application
+            # is not blocked.
+            raise forms.ValidationError(
+                _("An application from this email address already exists for this "
+                  "admission cycle. You may still apply in a future cycle, or use the "
+                  "status-check page to track your existing application.")
+            )
+        return email
+
+
+class ApplicationSubmitForm(StyledFieldsMixin, forms.Form):
+    """
+    Confirmation + completeness gate before submission.
+
+    Submission is refused while a required item is outstanding, and the missing
+    items are returned to the template so the applicant sees exactly what to do
+    (scenario 4).
+    """
+
+    confirm = forms.BooleanField(
+        label=_("I confirm the information given above is correct and complete."),
+        required=True,
+    )
+
+
+class ApplicationDocumentUploadForm(StyledFieldsMixin, forms.Form):
+    document_type = forms.ChoiceField(label=_("Document type"), choices=[])
+    file = forms.FileField(label=_("File"), help_text=_("PDF, JPG or PNG. Maximum 5 MB."))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import ApplicationDocumentType
+        self.fields["document_type"].choices = [
+            ("", "— Select a document —"),
+            *ApplicationDocumentType.choices,
+        ]
+
+    def clean_file(self):
+        from .services import DocumentService
+        DocumentService.validate_upload(self.cleaned_data["file"])
+        return self.cleaned_data["file"]
+
+
+class AdmissionDecisionForm(StyledFieldsMixin, forms.Form):
+    """Staff recording the admission decision (requirement 6)."""
+
+    decision = forms.ChoiceField(
+        label=_("Admission decision"), choices=[],
+        help_text=_("This is the academic outcome and is recorded separately from "
+                    "the application workflow stage."),
+    )
+    notes = forms.CharField(
+        label=_("Notes"),
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Internal remarks…"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import AdmissionDecision
+        self.fields["decision"].choices = [
+            (value, label) for value, label in AdmissionDecision.choices
+            if value != "pending"
+        ]
+
+
+class AdmissionOfferForm(StyledFieldsMixin, forms.Form):
+    """Staff issuing an admission offer (requirement 8)."""
+
+    expiry_date = forms.DateField(
+        label=_("Offer valid until"), required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        help_text=_("Defaults to 30 days from today."),
+    )
+    admission_type = forms.CharField(
+        label=_("Admission type"), required=False, initial="full_time",
+        widget=forms.TextInput(attrs={"placeholder": "e.g. full_time / part_time"}),
+    )
+    conditions = forms.CharField(
+        label=_("Conditions"), required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 3,
+            "placeholder": "e.g. Must pass all outstanding courses at 50% or above.",
+        }),
+    )
+
+    def clean_expiry_date(self):
+        from django.utils import timezone
+        value = self.cleaned_data.get("expiry_date")
+        if value and value < timezone.localdate():
+            raise forms.ValidationError(_("An offer cannot expire in the past."))
+        return value
+
+
+class OfferResponseForm(StyledFieldsMixin, forms.Form):
+    """Applicant accepting or declining an offer."""
+
+    ACCEPT = "accept"
+    DECLINE = "decline"
+    response = forms.ChoiceField(
+        label=_("Response"), choices=[(ACCEPT, _("Accept offer")), (DECLINE, _("Decline offer"))],
+    )
+
+
+class ApplicationPaymentRecordForm(StyledFieldsMixin, forms.ModelForm):
+    """Finance recording an application-fee payment (requirement 15)."""
+
+    class Meta:
+        from .models import ApplicationPayment
+        model = ApplicationPayment
+        fields = ["amount", "provider", "transaction_id", "notes"]
+        widgets = {
+            "amount": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "provider": forms.TextInput(attrs={"placeholder": "e.g. cash, bank transfer, mobile money"}),
+            "transaction_id": forms.TextInput(attrs={"placeholder": "Provider reference (optional)"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+        }
+
+    def clean_amount(self):
+        from decimal import Decimal
+        value = self.cleaned_data.get("amount")
+        if value is None or Decimal(value) <= 0:
+            raise forms.ValidationError(_("Enter a payment amount greater than zero."))
+        return value
+
+
+class DocumentVerificationForm(StyledFieldsMixin, forms.Form):
+    """Staff verifying, rejecting or requesting a replacement document."""
+
+    VERIFY = "verify"
+    REJECT = "reject"
+    REPLACE = "replace"
+    action = forms.ChoiceField(
+        label=_("Action"),
+        choices=[
+            (VERIFY, _("Verify")),
+            (REJECT, _("Reject")),
+            (REPLACE, _("Request replacement")),
+        ],
+    )
+    reason = forms.CharField(
+        label=_("Reason"), required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text=_("Required when rejecting or requesting a replacement."),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("action") in (self.REJECT, self.REPLACE):
+            reason = (cleaned.get("reason") or "").strip()
+            if len(reason) < 5:
+                self.add_error(
+                    "reason", _("Please give a reason of at least 5 characters.")
+                )
+        return cleaned
+
+
+class ApplicationCorrectionForm(StyledFieldsMixin, forms.Form):
+    """Staff asking an applicant to correct their application."""
+
+    reason = forms.CharField(
+        label=_("What needs correcting?"),
+        min_length=10,
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Be specific — the applicant sees this message.",
+        }),
+        help_text=_("Minimum 10 characters. This is shown to the applicant."),
+    )

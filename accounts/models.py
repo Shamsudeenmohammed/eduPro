@@ -123,6 +123,11 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(_("first name"), max_length=150, blank=False)
     last_name  = models.CharField(_("last name"),  max_length=150, blank=False)
 
+    # Shared starting password for every student account. Declared once so the
+    # form hint, the success message and set_default_password() can never quote
+    # a different value.
+    DEFAULT_PASSWORD = "0123456789"
+
     role = models.CharField(
         _("primary role"),
         max_length=20,
@@ -208,6 +213,35 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
         ).exists()
 
     @property
+    def is_admissions_applicant(self):
+        """
+        True while this account represents an *applicant* rather than a
+        student: it holds an admission application but has no academic
+        profile yet.
+
+        eduPro has exactly three roles (admin / teacher / student), so an
+        applicant is represented as a student-role account WITHOUT a
+        StudentProfile — which is precisely what makes them not a student:
+        there is no student number, no programme, and email login stays enabled
+        (see ``accounts.auth_backends``). A student record is only ever created
+        by ``portal.services.StudentConversionService`` after an offer has
+        been accepted. This property makes that distinction explicit instead of
+        leaving callers to infer it.
+        """
+        if self.role != Role.STUDENT:
+            return False
+        from academics.models import StudentProfile
+        if StudentProfile.all_objects.filter(student=self).exists():
+            return False
+        from portal.models import AdmissionApplication
+        return AdmissionApplication.objects.filter(user=self).exists()
+
+    def get_admission_application(self):
+        """The most recent application owned by this account, or None."""
+        from portal.models import AdmissionApplication
+        return AdmissionApplication.objects.filter(user=self).order_by("-created_at").first()
+
+    @property
     def is_hostel_officer(self):
         """True for hostel officers or wardens (admin/superuser always)."""
         if self.is_admin:
@@ -234,7 +268,21 @@ class EduProUser(AbstractBaseUser, PermissionsMixin):
 
     def set_default_password(self):
         """Set the default password for new students."""
-        self.set_password("0123456789")
+        self.set_password(self.DEFAULT_PASSWORD)
+
+    def get_default_password(self):
+        """
+        The password a student was actually given.
+
+        A hash cannot be read back, so this returns the known default. It is
+        only truthful while the account still has its default password, which
+        is why it is paired with must_change_password() for display purposes.
+        """
+        return self.DEFAULT_PASSWORD
+
+    def must_change_password(self):
+        """True while the account still sits on the shared default password."""
+        return self.check_password(self.DEFAULT_PASSWORD)
 
     def has_responsibility(self, responsibility: str) -> bool:
         """True if the user holds the given StaffResponsibility."""
