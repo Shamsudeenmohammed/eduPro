@@ -1,0 +1,19 @@
+{% comment %}
+Closing call-to-action. Include with cta_title / cta_text to override the
+defaults, which are written so they stay true for any institution name.
+{% endcomment %}
+<section class="section">
+  <div class="container">
+    <div class="cta-band" data-reveal>
+      <h2>{{ cta_title|default:"Your future starts here" }}</h2>
+      <p>{{ cta_text|default:"Apply in a few guided steps, follow your application online, and continue your studies through the same portal that manages your coursework, results and fees." }}</p>
+      <div class="cta-band__actions">
+        <a class="btn btn--white btn--lg" href="{% url 'portal:apply' %}">
+          Apply Now
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn--light btn--lg" href="{% url 'portal:programs' %}">Explore Programmes</a>
+      </div>
+    </div>
+  </div>
+</section>

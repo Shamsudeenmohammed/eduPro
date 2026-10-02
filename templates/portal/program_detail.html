@@ -1,0 +1,151 @@
+{% extends "base_public.html" %}
+{% block title %}{{ program.name }} — {{ site_name }}{% endblock %}
+{% block meta_description %}{{ program.description|striptags|truncatewords:26|default:program.name }}{% endblock %}
+
+{% block content %}
+
+{% include "portal/partials/page_hero.html" with hero_title=program.name hero_lead=program.description hero_parent_label="Programmes" hero_parent_url="/portal/programs/" %}
+
+<section class="section section--tight">
+  <div class="container">
+    <div class="split">
+      <div data-reveal>
+        <div class="cluster mb-2">
+          <span class="badge">{{ program.get_program_type_display }}</span>
+          <span class="badge badge--neutral">{{ program.code }}</span>
+          {% if open_cycles %}<span class="badge badge--success badge--dot">Applications open</span>{% endif %}
+        </div>
+
+        <h2 class="mb-1">{{ program.name }}</h2>
+        {% if program.description %}
+        <p class="lead">{{ program.description }}</p>
+        {% else %}
+        <p class="lead">{{ program.name }} is offered by the {{ program.department.name }} department within the {{ program.department.faculty.name }}.</p>
+        {% endif %}
+
+        <div class="cluster mt-3">
+          <a class="btn btn--primary" href="{% url 'portal:apply' %}?program={{ program.pk }}&type={{ program.program_type }}">
+            Apply for this Programme
+            {% include "portal/partials/icon.html" with name="pen" size=16 %}
+          </a>
+          <a class="btn btn--ghost" href="{% url 'portal:admissions' %}">Entry requirements</a>
+        </div>
+
+        {% if application_types %}
+        <h3 class="mt-4 mb-1">How to apply</h3>
+        <p class="text-muted" style="font-size:.93rem">
+          You can apply to this programme as a:
+        </p>
+        <div class="cluster mt-2">
+          {% for atype in application_types %}
+          <a class="chip" href="{% url 'portal:apply' %}?program={{ program.pk }}&type={{ atype.code }}">
+            {% include "portal/partials/icon.html" with name="check" size=14 %}
+            {{ atype.label }}
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div data-reveal data-reveal-delay="120">
+        <div class="card card--pad">
+          <h3>Programme details</h3>
+          <dl class="facts">
+            <div><dt>Programme code</dt><dd>{{ program.code }}</dd></div>
+            <div><dt>Award type</dt><dd>{{ program.get_program_type_display }}</dd></div>
+            <div><dt>Duration</dt><dd>{{ program.duration_years }} year{% if program.duration_years != 1 %}s{% endif %} full-time</dd></div>
+            <div><dt>Total credits</dt><dd>{{ program.total_credits }}</dd></div>
+            <div><dt>Department</dt><dd>{{ program.department.name }}</dd></div>
+            <div><dt>Faculty</dt><dd>{{ program.department.faculty.name }}</dd></div>
+            <div>
+              <dt>Entry level{% if levels|length > 1 %}s{% endif %}</dt>
+              <dd>
+                {% if levels %}{% for level in levels %}{{ level.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                {% else %}On the programme page{% endif %}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        {% if open_cycles %}
+        <div class="card card--pad mt-3">
+          <h3 class="mb-2">Next application period</h3>
+          {% for cycle in open_cycles %}
+          <dl class="facts">
+            <div><dt>Intake</dt><dd>{{ cycle.name }}</dd></div>
+            <div><dt>Opens</dt><dd>{{ cycle.start_date|date:"j F Y" }}</dd></div>
+            <div><dt>Closes</dt><dd>{{ cycle.end_date|date:"j F Y" }}</dd></div>
+            {% if cycle.application_fee %}
+            <div><dt>Application fee</dt><dd>{{ cycle.application_fee }}</dd></div>
+            {% endif %}
+          </dl>
+          {% endfor %}
+          <a class="btn btn--primary btn--block mt-3" href="{% url 'portal:apply' %}?program={{ program.pk }}">Start an application</a>
+        </div>
+        {% else %}
+        <div class="notice notice--info mt-3">
+          <span class="notice__icon">{% include "portal/partials/icon.html" with name="info" size=18 %}</span>
+          <span>
+            <span class="notice__title">Applications are not open right now</span>
+            Check the admissions page for the next intake, or sign in to the portal to see the status of an application you already submitted.
+          </span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if levels or department_courses or siblings %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="grid grid--3">
+      {% if levels %}
+      <div class="value-card card" data-reveal>
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="layers" size=22 %}</span>
+        <h3>Entry levels</h3>
+        <p class="mb-2">You can enter this programme at the following level{% if levels|length > 1 %}s{% endif %}.</p>
+        <ul class="program-card__facts">
+          {% for level in levels %}
+          <li>{% include "portal/partials/icon.html" with name="check-circle" size=15 %} {{ level.name }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if department_courses %}
+      <div class="value-card card" data-reveal data-reveal-delay="100">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="book" size=22 %}</span>
+        <h3>Sample of department courses</h3>
+        <p class="mb-2">A selection of the courses offered by the {{ program.department.name }} department.</p>
+        <ul class="program-card__facts">
+          {% for course in department_courses|slice:":6" %}
+          <li>{% include "portal/partials/icon.html" with name="file" size=15 %} {{ course.code }} — {{ course.title }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="value-card card" data-reveal data-reveal-delay="200">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="compass" size=22 %}</span>
+        <h3>Not the right fit?</h3>
+        <p>Explore the programmes offered by this department and the rest of the institution.</p>
+        <div class="cluster mt-2">
+          <a class="btn btn--ghost btn--sm" href="{% url 'portal:programs' %}?department={{ program.department.code }}">All programmes</a>
+          <a class="btn btn--ghost btn--sm" href="{% url 'portal:academic' %}">Academic structure</a>
+        </div>
+        {% if siblings %}
+        <p class="mt-2 mb-0 text-muted" style="font-size:.87rem">
+          Also in {{ program.department.name }}:
+          {% for sibling in siblings|slice:":3" %}<a href="{% url 'portal:program_detail' sibling.pk %}">{{ sibling.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% include "portal/partials/cta_band.html" %}
+
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base_public.html" %}
+{% block title %}Events — {{ site_name }}{% endblock %}
+{% block meta_description %}Public events, open days and key academic dates at {{ site_name }}.{% endblock %}
+
+{% block content %}
+
+{% include "portal/partials/page_hero.html" with hero_title="Events & Calendar" hero_lead="Public lectures, open days and key academic dates. Everyone is welcome to attend the events listed here." %}
+
+<section class="section section--tight">
+  <div class="container">
+    <div class="section-head section-head--left" data-reveal>
+      <p class="eyebrow">Coming up</p>
+      <h2>Upcoming events</h2>
+      <p>Dates are taken from the institution's academic calendar and are updated as they are confirmed.</p>
+    </div>
+
+    {% if upcoming_events %}
+    <div class="event-list" data-reveal>
+      {% for event in upcoming_events %}
+        {% include "portal/partials/event_card.html" with event=event show_details=True %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card card--pad empty-state" data-reveal>
+      <span class="empty-state__icon">{% include "portal/partials/icon.html" with name="calendar" size=28 %}</span>
+      <h3>No public events are scheduled yet</h3>
+      <p>Upcoming open days, lectures and public activities will be listed here as soon as they are added to the academic calendar.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if past_events %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head section-head--left" data-reveal>
+      <p class="eyebrow">Archive</p>
+      <h2>Recently held</h2>
+    </div>
+
+    <div class="event-list" data-reveal>
+      {% for event in past_events %}
+        {% include "portal/partials/event_card.html" with event=event show_details=True muted=True %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="container">
+    <div class="card card--pad" data-reveal>
+      <div class="split">
+        <div>
+          <p class="eyebrow">Academic calendar</p>
+          <h2>Registered students</h2>
+          <p class="lead mb-0">
+            The full academic calendar &mdash; registration windows, lectures,
+            examinations and vacation dates &mdash; is published in the student portal
+            for registered students and staff.
+          </p>
+        </div>
+        <div class="cluster" style="align-items:center">
+          <a class="btn btn--primary" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">
+            {% include "portal/partials/icon.html" with name="shield" size=16 %}
+            Go to the student portal
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% include "portal/partials/cta_band.html" %}
+
+{% endblock %}

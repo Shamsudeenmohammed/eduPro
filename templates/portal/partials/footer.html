@@ -1,0 +1,103 @@
+<footer class="site-footer">
+  <div class="container footer-main">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="footer-brand__mark" href="{% url 'portal:home' %}">
+          <span class="brand__mark">
+            {% if institution and institution.logo %}
+              <img src="{{ institution.logo.url }}" alt="" width="44" height="44">
+            {% else %}{% if institution and institution.short_name %}{{ institution.short_name }}{% else %}{{ site_name|slice:":2"|upper }}{% endif %}{% endif %}
+          </span>
+          <span class="footer-brand__name">{{ site_name }}</span>
+        </a>
+        <p>
+          {% if institution.motto %}{{ institution.motto }}. {% endif %}
+          Explore our academic programmes, apply online and track your admission journey.
+        </p>
+        {% if institution.address or institution.phone or institution.email or institution.website %}
+        <ul class="footer-contact">
+          {% if institution.address %}
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>{{ institution.address }}</span>
+          </li>
+          {% endif %}
+          {% if institution.phone %}
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+            <a href="tel:{{ institution.phone|cut:' ' }}">{{ institution.phone }}</a>
+          </li>
+          {% endif %}
+          {% if institution.email %}
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            <a href="mailto:{{ institution.email }}">{{ institution.email }}</a>
+          </li>
+          {% endif %}
+          {% if institution.website %}
+          <li>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+            <a href="{{ institution.website }}" rel="noopener noreferrer" target="_blank">{{ institution.website }}</a>
+          </li>
+          {% endif %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <div class="footer-col">
+        <h2 class="footer-col__title">Institution</h2>
+        <ul>
+          <li><a href="{% url 'portal:about' %}">About Us</a></li>
+          <li><a href="{% url 'portal:academic' %}#faculties">Faculties</a></li>
+          <li><a href="{% url 'portal:academic' %}#departments">Departments</a></li>
+          <li><a href="{% url 'portal:programs' %}">Programmes</a></li>
+          <li><a href="{% url 'portal:contact' %}">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h2 class="footer-col__title">Admissions</h2>
+        <ul>
+          <li><a href="{% url 'portal:admissions' %}">How to Apply</a></li>
+          <li><a href="{% url 'portal:admissions' %}#requirements">Entry Requirements</a></li>
+          <li><a href="{% url 'portal:apply' %}">Start an Application</a></li>
+          <li><a href="{% url 'portal:application_status' %}">Application Status</a></li>
+          <li><a href="{% url 'portal:programs' %}">Choose a Programme</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h2 class="footer-col__title">Students</h2>
+        <ul>
+          <li><a href="{% url 'accounts:login' %}">Student Portal</a></li>
+          <li><a href="{% url 'portal:portal_login' %}">Applicant Sign In</a></li>
+          <li><a href="{% url 'students:dashboard' %}">My Courses</a></li>
+          <li><a href="{% url 'operations:calendar' %}">Academic Calendar</a></li>
+          <li><a href="{% url 'students:results_list' %}">Results</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h2 class="footer-col__title">Resources</h2>
+        <ul>
+          <li><a href="{% url 'portal:news_list' %}">News &amp; Announcements</a></li>
+          <li><a href="{% url 'portal:events_list' %}">Events</a></li>
+          <li><a href="{% url 'portal:student_life' %}">Student Life</a></li>
+          <li><a href="{% url 'feedback:submit' %}">Give Feedback</a></li>
+          <li><a href="{% url 'portal:contact' %}">General Enquiries</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="container footer-bottom__inner">
+      <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+      <div class="footer-bottom__links">
+        <a href="{% url 'portal:home' %}">Home</a>
+        <a href="{% url 'portal:admissions' %}">Admissions</a>
+        <a href="{% url 'portal:contact' %}">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>

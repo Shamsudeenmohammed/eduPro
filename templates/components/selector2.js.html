@@ -1,0 +1,381 @@
+/* ── Selector 2 ──────────────────────────────────────────────────────────────
+   The multi-select counterpart of components/select_search.js.html.
+
+   Same contract as .ss: the native <select> stays in the form as the value
+   holder and is never rebuilt, so the posted set, option order and server-side
+   validation behave exactly as they would for a bare multi-select. Only the
+   *presentation* is custom.
+
+   The one deliberate difference from .ss: picking an option does not close the
+   panel. Choosing three application types in a row should not mean reopening
+   the list three times, so clicks toggle and the list stays open until you
+   click away or press Escape.
+
+   Opt in per widget with data-selector2. Optional attributes:
+     data-selector2              enables the widget (on a <select multiple>)
+     data-search-placeholder    placeholder text in the search box
+     data-search-label          accessible name for the search box
+     data-search                extra text to match on, beyond the label
+     data-empty-text            message shown when nothing matches
+   ────────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  var ICON_SEARCH =
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+    '<circle cx="11" cy="11" r="7"/>' +
+    '<path stroke-linecap="round" d="M20 20l-3.6-3.6"/></svg>';
+
+  var ICON_CARET =
+    '<svg class="s2-caret" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+    '<path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>';
+
+  var ICON_TICK =
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">' +
+    '<path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>';
+
+  // Lower-cased, whitespace-collapsed text for matching.
+  function norm(value) {
+    return (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function el(tag, className, html) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  }
+
+  function enhance(select) {
+    if (select.getAttribute('data-s2-ready') === '1') return;
+    if (select.disabled) return;
+    // A single <select> is .ss's job, not this one's. Doing nothing here
+    // leaves it as a normal dropdown rather than a broken checkbox list.
+    if (!select.multiple) return;
+
+    var nodes = Array.prototype.slice.call(select.options);
+    select.setAttribute('data-s2-ready', '1');
+    select.classList.add('s2-native');
+    select.setAttribute('tabindex', '-1');
+
+    // Snapshot the options once. The native select is only ever read here.
+    var items = nodes.map(function (node) {
+      return {
+        value: node.value,
+        label: (node.textContent || '').replace(/\s+/g, ' ').trim(),
+        note: node.getAttribute('data-note') || '',
+        disabled: node.disabled
+      };
+    });
+    var haystack = nodes.map(function (node, i) {
+      return norm(items[i].label + ' ' + node.getAttribute('data-search') + ' ' + items[i].note);
+    });
+
+    var wrap = el('div', 's2');
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+
+    var control = el('button', 's2-control');
+    control.type = 'button';
+    control.setAttribute('aria-haspopup', 'listbox');
+    control.setAttribute('aria-expanded', 'false');
+    var valueText = el('span', 's2-value');
+    control.appendChild(valueText);
+    control.insertAdjacentHTML('beforeend', ICON_CARET);
+
+    var panel = el('div', 's2-panel');
+    panel.hidden = true;
+
+    var head = el('div', 's2-head');
+    head.insertAdjacentHTML('afterbegin', ICON_SEARCH);
+    var search = document.createElement('input');
+    search.type = 'text';
+    search.className = 's2-search';
+    search.autocomplete = 'off';
+    search.spellcheck = false;
+    search.placeholder = select.getAttribute('data-search-placeholder') || 'Type to search…';
+    search.setAttribute('aria-label', select.getAttribute('data-search-label') || 'Search options');
+    var count = el('span', 's2-count');
+    head.appendChild(search);
+    head.appendChild(count);
+
+    // Bulk actions for the common "everything / nothing" cases. They act on
+    // what the search box is currently showing, not the whole list, so a
+    // narrowed search cannot silently select a hidden row.
+    var bulk = el('div', 's2-bulk');
+    var selectShown = el('button', null, 'Select all shown');
+    selectShown.type = 'button';
+    var clearAll = el('button', null, 'Clear all');
+    clearAll.type = 'button';
+    bulk.appendChild(selectShown);
+    bulk.appendChild(clearAll);
+
+    var list = el('div', 's2-list');
+    list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-multiselectable', 'true');
+    var empty = el('div', 's2-empty');
+    empty.hidden = true;
+
+    panel.appendChild(head);
+    panel.appendChild(bulk);
+    panel.appendChild(list);
+    panel.appendChild(empty);
+
+    wrap.appendChild(control);
+    wrap.appendChild(panel);
+
+    var shown = [];   // indices into `items` currently listed
+    var active = -1;  // index into `shown` highlighted by the keyboard
+
+    function selectedValues() {
+      var out = [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].value !== '' && select.options[i].selected) out.push(i);
+      }
+      return out;
+    }
+
+    // "1 chosen" reads better than a lone label the user cannot tell from the
+    // placeholder, and "3 chosen: …" gives the names when there is room.
+    function syncValue() {
+      var picked = selectedValues();
+      if (!picked.length) {
+        valueText.textContent = select.getAttribute('data-empty-text')
+          || (select.getAttribute('data-placeholder') || 'Nothing selected');
+        valueText.classList.add('is-placeholder');
+        control.removeAttribute('title');
+        return;
+      }
+      valueText.classList.remove('is-placeholder');
+      if (picked.length === 1) {
+        valueText.textContent = items[picked[0]].label;
+      } else {
+        var names = picked.map(function (i) { return items[i].label; });
+        valueText.textContent = names.join(', ');
+        // Full list for the tooltip; the visible text is ellipsised by CSS.
+        control.setAttribute('title', names.join(', '));
+      }
+    }
+
+    function filter() {
+      var tokens = norm(search.value).split(' ').filter(Boolean);
+      shown = [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].disabled) continue;
+        if (!tokens.length) { shown.push(i); continue; }
+        var ok = true;
+        for (var t = 0; t < tokens.length; t++) {
+          if (haystack[i].indexOf(tokens[t]) === -1) { ok = false; break; }
+        }
+        if (ok) shown.push(i);
+      }
+    }
+
+    function setActive(index) {
+      var options = list.children;
+      for (var i = 0; i < options.length; i++) {
+        options[i].classList.toggle('active', i === index);
+      }
+      if (index >= 0 && options[index] && options[index].scrollIntoView) {
+        options[index].scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function draw() {
+      list.textContent = '';
+      count.textContent = shown.length + ' of ' + items.length;
+      selectShown.disabled = !shown.length;
+      clearAll.disabled = !selectedValues().length;
+      if (!shown.length) {
+        empty.hidden = false;
+        empty.textContent = 'No match for "' + search.value.trim() + '"';
+        setActive(-1);
+        return;
+      }
+      empty.hidden = true;
+      var frag = document.createDocumentFragment();
+      for (var k = 0; k < shown.length; k++) {
+        var index = shown[k];
+        var item = items[index];
+        var row = el('div', 's2-opt');
+        row.setAttribute('role', 'option');
+        row.setAttribute('data-index', index);
+        var isOn = select.options[index].selected;
+        row.setAttribute('aria-selected', isOn ? 'true' : 'false');
+        var box = el('span', 's2-box');
+        box.insertAdjacentHTML('afterbegin', ICON_TICK);
+        row.appendChild(box);
+        row.appendChild(el('span', 's2-opt-label', item.label));
+        if (item.note) row.appendChild(el('span', 's2-opt-note', item.note));
+        frag.appendChild(row);
+      }
+      list.appendChild(frag);
+      if (active >= shown.length) active = shown.length - 1;
+      if (active < 0) active = 0;
+      setActive(active);
+    }
+
+    function refresh() { filter(); draw(); }
+
+    // Toggling writes straight to the native select, so the form's own
+    // listeners and validation see the same value a bare multi-select gives.
+    function setSelected(index, on) {
+      select.options[index].selected = on;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      var row = list.querySelector('.s2-opt[data-index="' + index + '"]');
+      if (row) row.setAttribute('aria-selected', on ? 'true' : 'false');
+      syncValue();
+      clearAll.disabled = !selectedValues().length;
+    }
+
+    function toggleIndex(index) {
+      setSelected(index, !select.options[index].selected);
+    }
+
+    function open() {
+      if (openPanel) openPanel.close();
+      var card = wrap.closest ? wrap.closest('.card') : null;
+      if (card) card.classList.add('s2-card-open');
+      panel.hidden = false;
+      wrap.classList.add('open');
+      control.setAttribute('aria-expanded', 'true');
+      search.value = '';
+      filter();
+      // Start on the first chosen option so Space has something to undo.
+      active = 0;
+      for (var i = 0; i < shown.length; i++) {
+        if (select.options[shown[i]].selected) { active = i; break; }
+      }
+      draw();
+      search.focus();
+      if (search.select) search.select();
+      openPanel = { wrap: wrap, close: close };
+    }
+
+    function close() {
+      panel.hidden = true;
+      wrap.classList.remove('open');
+      control.setAttribute('aria-expanded', 'false');
+      var card = wrap.closest ? wrap.closest('.card') : null;
+      if (card) card.classList.remove('s2-card-open');
+      if (openPanel && openPanel.wrap === wrap) openPanel = null;
+    }
+
+    control.addEventListener('click', function () {
+      if (panel.hidden) open(); else close();
+    });
+
+    control.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    search.addEventListener('input', function () {
+      active = 0;
+      refresh();
+    });
+
+    search.addEventListener('keydown', function (e) {
+      // The sidebar closes on Escape too; this must not also fire that.
+      e.stopPropagation();
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        active = Math.min(active + 1, shown.length - 1);
+        setActive(active);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        active = Math.max(active - 1, 0);
+        setActive(active);
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        // Space toggles instead of submitting the form — the default action
+        // for space in a text input would be a page reload.
+        e.preventDefault();
+        if (shown.length) toggleIndex(shown[Math.max(active, 0)]);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (search.value) { search.value = ''; refresh(); } else { close(); control.focus(); }
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        active = 0; setActive(active);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        active = shown.length - 1; setActive(active);
+      }
+    });
+
+    list.addEventListener('mousedown', function (e) {
+      // Keep focus in the search box so the panel does not close on blur.
+      e.preventDefault();
+    });
+
+    list.addEventListener('click', function (e) {
+      var row = e.target.closest ? e.target.closest('.s2-opt') : null;
+      if (!row) return;
+      toggleIndex(Number(row.getAttribute('data-index')));
+    });
+
+    list.addEventListener('mousemove', function (e) {
+      var row = e.target.closest ? e.target.closest('.s2-opt') : null;
+      if (!row) return;
+      active = Array.prototype.indexOf.call(list.children, row);
+      setActive(active);
+    });
+
+    selectShown.addEventListener('click', function () {
+      // Only the rows the search is currently showing.
+      for (var i = 0; i < shown.length; i++) select.options[shown[i]].selected = true;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      syncValue();
+      draw();
+      search.focus();
+    });
+
+    clearAll.addEventListener('click', function () {
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].value !== '') select.options[i].selected = false;
+      }
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      syncValue();
+      draw();
+      search.focus();
+    });
+
+    // If something else changes the select, keep the summary in step.
+    select.addEventListener('change', syncValue);
+
+    syncValue();
+  }
+
+  // The single open panel, tracked centrally so outside-click handling needs
+  // only one document listener no matter how many selects are enhanced.
+  var openPanel = null;
+
+  document.addEventListener('click', function (e) {
+    if (openPanel && !openPanel.wrap.contains(e.target)) openPanel.close();
+  });
+
+  function init(root) {
+    var scope = root || document;
+    var selects = scope.querySelectorAll('select[data-selector2]');
+    for (var i = 0; i < selects.length; i++) enhance(selects[i]);
+  }
+
+  window.eduProInitSelector2 = init;
+
+  // The AJAX sidebar navigation swaps `.content` without a page load, so reuse
+  // the re-init hook it already calls after every swap.
+  var previous = window.initPageWidgets;
+  window.initPageWidgets = function () {
+    if (typeof previous === 'function') { try { previous(); } catch (e) {} }
+    init();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { init(); });
+  } else {
+    init();
+  }
+})();

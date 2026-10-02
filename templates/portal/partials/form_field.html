@@ -1,0 +1,15 @@
+{% comment %}
+One labelled form field with help text and errors, styled to match the
+public design system. Include with:
+    field  — the bound form field
+    full   — set to True for fields that should span the whole row
+{% endcomment %}
+<div class="field{% if field.errors %} field--error{% endif %}{% if full %} field--full{% endif %}">
+  <label for="{{ field.id_for_label }}">
+    {{ field.label }}
+    {% if field.field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}
+  </label>
+  {{ field }}
+  {% if field.help_text %}<span class="field__help">{{ field.help_text }}</span>{% endif %}
+  {% for error in field.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+</div>

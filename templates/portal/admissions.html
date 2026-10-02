@@ -1,0 +1,229 @@
+{% extends "base_public.html" %}
+{% block title %}Admissions — {{ site_name }}{% endblock %}
+{% block meta_description %}Application requirements, entry requirements and the step-by-step process for applying to {{ site_name }}.{% endblock %}
+
+{% block content %}
+
+{% include "portal/partials/page_hero.html" with hero_title="Admissions" hero_lead="Everything you need before you apply: which intakes are open, what each application needs, and how the process works from submission to decision." %}
+
+{# ── Open intake ──────────────────────────────────────────────────────── #}
+<section class="section section--tight">
+  <div class="container">
+    {% if open_cycles %}
+    <div class="split" data-reveal>
+      <div>
+        <p class="eyebrow">Now accepting applications</p>
+        <h2 class="mb-2">{{ open_cycles.0.name }}</h2>
+        <p class="lead">
+          Submit your application for the {{ open_cycles.0.name }} intake before
+          {{ open_cycles.0.end_date|date:"j F Y" }}. You can start a draft, save it and
+          come back to finish it before the deadline.
+        </p>
+        <div class="cluster mt-3">
+          <a class="btn btn--primary btn--lg" href="{% url 'portal:apply' %}">
+            Start an application
+            {% include "portal/partials/icon.html" with name="pen" size=17 %}
+          </a>
+          <a class="btn btn--ghost btn--lg" href="{% url 'portal:application_status' %}">Check my status</a>
+        </div>
+      </div>
+
+      <div>
+        {% for cycle in open_cycles %}
+        <div class="cycle-card">
+          <div class="cluster mb-2">
+            <span class="badge badge--success badge--dot">Open</span>
+            <span class="badge badge--neutral">{{ cycle.academic_year|default:cycle.academic_session }}</span>
+          </div>
+          <h3 class="mb-1">{{ cycle.name }}</h3>
+          <dl class="facts">
+            <div><dt>Applications open</dt><dd>{{ cycle.start_date|date:"j F Y" }}</dd></div>
+            <div><dt>Applications close</dt><dd>{{ cycle.end_date|date:"j F Y" }}</dd></div>
+            {% if cycle.application_fee %}
+            <div><dt>Application fee</dt><dd>{{ cycle.application_fee }}</dd></div>
+            {% endif %}
+            {% if cycle.max_applications %}
+            <div><dt>Application limit</dt><dd>{{ cycle.max_applications }}</dd></div>
+            {% endif %}
+            <div><dt>Payment required</dt><dd>{% if cycle.payment_required_to_progress %}Yes, before the application progresses{% else %}No payment step{% endif %}</dd></div>
+          </dl>
+        </div>
+        {% endfor %}
+
+        {% if all_cycles|length > open_cycles|length %}
+        <details class="card card--pad mt-3">
+          <summary style="cursor:pointer;font-weight:600">Other intakes and their status</summary>
+          <div class="table-wrap mt-2">
+            <table class="data-table">
+              <thead>
+                <tr><th scope="col">Intake</th><th scope="col">Window</th><th scope="col">Status</th></tr>
+              </thead>
+              <tbody>
+                {% for cycle in all_cycles %}
+                <tr>
+                  <td><strong>{{ cycle.name }}</strong></td>
+                  <td>{{ cycle.start_date|date:"j M Y" }} &ndash; {{ cycle.end_date|date:"j M Y" }}</td>
+                  <td>
+                    {% if cycle in open_cycles %}
+                    <span class="badge badge--success">Open</span>
+                    {% else %}
+                    <span class="badge badge--neutral">{{ cycle.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card card--pad" data-reveal>
+      <div class="cluster mb-2">
+        <span class="badge badge--warning">Closed</span>
+        <span class="badge badge--neutral">Currently between intakes</span>
+      </div>
+      <h2 class="mb-1">Applications are not open at the moment</h2>
+      <p class="lead">
+        No intake is accepting applications today. Use the information below to prepare,
+        and check back or contact us for the next intake dates.
+      </p>
+      <div class="cluster mt-3">
+        <a class="btn btn--primary" href="{% url 'portal:contact' %}">Contact the admissions office</a>
+        <a class="btn btn--ghost" href="{% url 'portal:application_status' %}">Check an existing application</a>
+      </div>
+
+      {% if all_cycles %}
+      <div class="table-wrap mt-4">
+        <table class="data-table">
+          <thead>
+            <tr><th scope="col">Intake</th><th scope="col">Window</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            {% for cycle in all_cycles %}
+            <tr>
+              <td><strong>{{ cycle.name }}</strong></td>
+              <td>{{ cycle.start_date|date:"j M Y" }} &ndash; {{ cycle.end_date|date:"j M Y" }}</td>
+              <td><span class="badge badge--neutral">{{ cycle.get_status_display }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ── The process ───────────────────────────────────────────────────────── #}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">The process</p>
+      <h2>Four steps from application to enrolment</h2>
+      <p>The same four steps apply to every application type, whether you are applying as a new student or returning for another qualification.</p>
+    </div>
+
+    <ol class="steps" data-reveal>
+      <li>
+        <h3>Choose your programme</h3>
+        <p>Pick a programme from the list and review its entry requirements, duration and the documents the admissions office asks for.</p>
+      </li>
+      <li>
+        <h3>Complete the online form</h3>
+        <p>Enter your personal and contact details, select your programme and application type, and save a draft if you need more time to gather documents.</p>
+      </li>
+      <li>
+        <h3>Submit and track</h3>
+        <p>Submit before the intake closes, then follow every stage &mdash; screening, review, payment and decision &mdash; with your reference number.</p>
+      </li>
+      <li>
+        <h3>Accept and enrol</h3>
+        <p>Accept your offer, complete enrolment and sign in to the portal for registration, fees, course materials and results.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+{# ── Application types & requirements ──────────────────────────────────── #}
+<section class="section">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Application types</p>
+      <h2>Choose the application that matches you</h2>
+      <p>Each application type lists the documents the admissions office requires, so you can prepare everything before you start.</p>
+    </div>
+
+    {% if application_types %}
+    <div class="grid grid--auto" data-reveal>
+      {% for card in type_cards %}
+      <article class="card card--hover type-card">
+        <span class="type-card__icon">{% include "portal/partials/icon.html" with name="file" size=20 %}</span>
+        <div class="type-card__main">
+          <h3>{{ card.type.label }}</h3>
+          {% if card.type.description %}<p>{{ card.type.description }}</p>{% endif %}
+          <div class="type-card__meta">
+            {% if card.type.requires_program %}<span class="badge badge--info">Programme required</span>{% endif %}
+            {% if card.type.requires_payment %}<span class="badge badge--warning">Fee payable</span>{% endif %}
+          </div>
+          {% if card.requirements %}
+          <details class="disclosure mt-2">
+            <summary>What you will need ({{ card.requirements|length }})</summary>
+            <ul class="req-list">
+              {% for req in card.requirements %}
+              <li>
+                <span class="req-list__text">
+                  <strong>{{ req.label }}</strong>
+                  {% if req.help_text %}<span class="text-muted">{{ req.help_text }}</span>{% endif %}
+                </span>
+                <span class="badge badge--neutral">{{ req.get_kind_display }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card card--pad empty-state">
+      <span class="empty-state__icon">{% include "portal/partials/icon.html" with name="file" size=28 %}</span>
+      <h3>Application types are being published</h3>
+      <p>The admissions office will publish the available application types and their requirements here.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ── Programme entry ───────────────────────────────────────────────────── #}
+{% if programmes %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Choose a programme</p>
+      <h2>Programmes currently open for application</h2>
+      <p>Start an application from any programme page and the form will be pre-filled with your choice.</p>
+    </div>
+
+    <div class="grid grid--auto" data-reveal>
+      {% for program in programmes|slice:":6" %}
+        {% include "portal/partials/program_card.html" with program=program %}
+      {% endfor %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a class="btn btn--ghost" href="{% url 'portal:programs' %}">View all programmes</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% with cta_title="Ready to apply?" cta_text="Start your application online and follow its progress from the same place you will study from." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
+{% endblock %}

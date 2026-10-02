@@ -1,0 +1,170 @@
+{% extends "base_public.html" %}
+{% block title %}Student Life — {{ site_name }}{% endblock %}
+{% block meta_description %}How daily life works at {{ site_name }}: course materials, results, fees, accommodation, support and the activities in between.{% endblock %}
+
+{% block content %}
+
+{% include "portal/partials/page_hero.html" with hero_title="Student Life" hero_lead="Teaching is only part of it. Here is how the rest of student life works at {{ site_name }} — the services you use every day, and where to find them." %}
+
+{# ── Everyday services ────────────────────────────────────────────────── #}
+<section class="section section--tight">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Everyday</p>
+      <h2>The things you do every week</h2>
+      <p>Course materials, attendance, results and fees are all handled in the student portal, so you are not running between offices.</p>
+    </div>
+
+    <div class="grid grid--3" data-reveal>
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="book" size=22 %}</span>
+        <h3>Learning resources</h3>
+        <p>Course notes, lecture materials, assignments and discussion forums for every registered course, in one place per course.</p>
+      </article>
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="calendar" size=22 %}</span>
+        <h3>Timetable &amp; registration</h3>
+        <p>See your timetable, register for courses and keep track of the academic calendar for the session.</p>
+      </article>
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="chart" size=22 %}</span>
+        <h3>Progress &amp; results</h3>
+        <p>Follow your attendance, results and credits as they are recorded, and download your transcript when you need it.</p>
+      </article>
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="card" size=22 %}</span>
+        <h3>Fees &amp; receipts</h3>
+        <p>Fee statements, records of payment and receipts stay available to you for the whole session.</p>
+      </article>
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="home" size=22 %}</span>
+        <h3>Accommodation</h3>
+        <p>Apply for hostel space, see your allocation and pay your charges online through the same portal.</p>
+      </article>
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="chat" size=22 %}</span>
+        <h3>Support &amp; feedback</h3>
+        <p>Raise a support ticket, send feedback to the institution and follow the response through to resolution.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+{# ── Academic support ──────────────────────────────────────────────────── #}
+<section class="section section--tint">
+  <div class="container">
+    <div class="split">
+      <div data-reveal>
+        <p class="eyebrow">Academic support</p>
+        <h2>You are not on your own</h2>
+        <p class="lead">
+          Every department is headed by an academic who is accountable for the
+          programmes it teaches. Coursework is marked against published criteria, and
+          the portal keeps your submissions, feedback and results on the record.
+        </p>
+        <p class="text-muted">
+          If you are stuck with coursework, a result you do not understand, or something
+          that is affecting your studies, speak to your department first &mdash; or raise a
+          support ticket and let it come to them.
+        </p>
+        <div class="cluster mt-3">
+          <a class="btn btn--primary" href="{% url 'portal:academic' %}">Explore faculties &amp; departments</a>
+          <a class="btn btn--ghost" href="{% url 'portal:contact' %}">Contact us</a>
+        </div>
+      </div>
+
+      <div data-reveal data-reveal-delay="120">
+        <div class="card card--pad">
+          <h3 class="mb-2">Getting help</h3>
+          <ul class="auth-points" style="color:var(--text-soft)">
+            <li>
+              {% include "portal/partials/icon.html" with name="chat" size=16 %}
+              <span><strong>Coursework or a result</strong> &mdash; start with your lecturer, then your head of department.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="card" size=16 %}
+              <span><strong>Fees, receipts or payment records</strong> &mdash; the finance office, or your portal fee statement.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="home" size=16 %}
+              <span><strong>Hostel allocation</strong> &mdash; submit your accommodation request through the portal.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="mail" size=16 %}
+              <span><strong>Anything else</strong> &mdash; raise a support ticket or use the contact form and it is routed to the right office.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Campus & community ────────────────────────────────────────────────── #}
+<section class="section">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Beyond the classroom</p>
+      <h2>Campus and community</h2>
+      <p>Academic work happens alongside the activities that make a campus a community.</p>
+    </div>
+
+    <div class="split">
+      <div data-reveal>
+        <div class="media-frame">
+          {% if institution and institution.logo %}
+            <img src="{{ institution.logo.url }}" alt="{{ site_name }} crest" loading="lazy">
+          {% endif %}
+          <div class="media-frame__label">
+            <strong>{{ site_name }}</strong>
+            <span>{% if institution.address %}{{ institution.address }}{% else %}Add a campus photograph to this space from the admin media library.{% endif %}</span>
+          </div>
+        </div>
+      </div>
+
+      <div data-reveal data-reveal-delay="120">
+        <h3>Where to find out what is on</h3>
+        <p class="lead">
+          The public events page carries anything open to visitors, prospective
+          students and the public. Lectures, open days and institution activities are
+          announced there as they are scheduled.
+        </p>
+        <ul class="program-card__facts mb-3">
+          <li>{% include "portal/partials/icon.html" with name="calendar" size=15 %} Public events and key dates are published on the <a href="{% url 'portal:events_list' %}">events page</a></li>
+          <li>{% include "portal/partials/icon.html" with name="file" size=15 %} Announcements from the institution appear under <a href="{% url 'portal:news_list' %}">news</a></li>
+          <li>{% include "portal/partials/icon.html" with name="building" size=15 %} Clubs and departmental activities are organised by the departments listed under <a href="{% url 'portal:academic' %}">academic structure</a></li>
+          <li>{% include "portal/partials/icon.html" with name="shield" size=15 %} The full academic calendar, timetables and course materials sit behind the <a href="{% url 'accounts:login' %}">student portal</a></li>
+        </ul>
+        <div class="cluster">
+          <a class="btn btn--primary" href="{% url 'portal:events_list' %}">See upcoming events</a>
+          <a class="btn btn--ghost" href="{% url 'portal:programs' %}">Explore programmes</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if events %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head section-head--left" data-reveal>
+      <p class="eyebrow">Open to you</p>
+      <h2>Next events</h2>
+    </div>
+    <div class="event-list" data-reveal>
+      {% for event in events %}
+        {% include "portal/partials/event_card.html" with event=event %}
+      {% endfor %}
+    </div>
+    <div class="mt-3">
+      <a class="btn btn--ghost" href="{% url 'portal:events_list' %}">View all events</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% with cta_title="Come and study with us" cta_text="Applications are the first step. Browse the programmes, check the requirements and start your application when you are ready." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
+{% endblock %}

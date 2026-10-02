@@ -1,0 +1,36 @@
+{% comment %}
+Event row. Expects `event` (operations.CalendarEvent). Optional
+`show_details` = show the full description, `muted` = de-emphasise past events.
+{% endcomment %}
+<article class="card card--hover event-card{% if muted %} event-card--past{% endif %}">
+  <div class="event-date">
+    <span class="event-date__day">{{ event.start_date|date:"j" }}</span>
+    <span class="event-date__month">{{ event.start_date|date:"M" }}</span>
+    <span class="event-date__year">{{ event.start_date|date:"Y" }}</span>
+  </div>
+  <div class="event-card__body">
+    <h3>{{ event.title }}</h3>
+    {% if event.description %}
+      {% if show_details %}
+        <p class="event-card__text">{{ event.description|linebreaksbr }}</p>
+      {% else %}
+        <p class="event-card__text">{{ event.description|striptags|truncatewords:22 }}</p>
+      {% endif %}
+    {% endif %}
+    <p class="event-card__meta">
+      <span>
+        {% include "portal/partials/icon.html" with name="clock" size=14 %}
+        {{ event.start_date|date:"j M Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"j M Y" }}{% endif %}
+      </span>
+      {% if event.location %}
+      <span>
+        {% include "portal/partials/icon.html" with name="pin" size=14 %}
+        {{ event.location }}
+      </span>
+      {% endif %}
+      {% if event.event_type %}
+      <span class="badge badge--neutral">{{ event.event_type|title }}</span>
+      {% endif %}
+    </p>
+  </div>
+</article>

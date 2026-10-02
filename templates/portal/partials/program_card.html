@@ -1,0 +1,38 @@
+{% comment %}
+Programme card. Expects `program` (academics.Program). Also carries the data
+attributes used by the client-side filter on the programmes page.
+{% endcomment %}
+<article class="card card--hover program-card"
+         data-filter-item
+         data-type="{{ program.program_type }}"
+         data-faculty="{{ program.department.faculty.code }} {{ program.department.faculty.name }}"
+         data-department="{{ program.department.code }} {{ program.department.name }}"
+         data-search="{{ program.name }} {{ program.code }} {{ program.department.name }} {{ program.department.faculty.name }} {{ program.get_program_type_display }} {{ program.description|striptags|truncatewords:60 }}">
+  <div class="program-card__top">
+    <span class="program-card__code">{{ program.code }}</span>
+    <span class="program-card__type">{{ program.get_program_type_display }}</span>
+  </div>
+  <div class="program-card__body">
+    <h3><a href="{% url 'portal:program_detail' program.pk %}">{{ program.name }}</a></h3>
+    <p class="program-card__unit">{{ program.department.faculty.name }} &middot; {{ program.department.name }}</p>
+    {% if program.description %}
+    <p class="program-card__text">{{ program.description|truncatewords:26 }}</p>
+    {% else %}
+    <p class="program-card__text">Full programme details, entry requirements and application options are available on the programme page.</p>
+    {% endif %}
+    <ul class="program-card__facts">
+      <li>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        {{ program.duration_years }} year{% if program.duration_years != 1 %}s{% endif %} full-time
+      </li>
+      <li>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+        {{ program.total_credits }} credits
+      </li>
+    </ul>
+    <div class="program-card__actions">
+      <a class="btn btn--primary btn--sm" href="{% url 'portal:program_detail' program.pk %}">View Programme</a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'portal:apply' %}?program={{ program.pk }}">Apply Now</a>
+    </div>
+  </div>
+</article>

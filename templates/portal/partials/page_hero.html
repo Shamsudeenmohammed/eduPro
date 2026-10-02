@@ -1,0 +1,22 @@
+{% comment %}
+Inner-page banner. Include with:
+  hero_title, hero_lead, and optionally hero_parent_label / hero_parent_url
+{% endcomment %}
+<section class="page-hero">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="{% url 'portal:home' %}">Home</a></li>
+        {% if hero_parent_label %}
+        <li aria-hidden="true">/</li>
+        <li><a href="{{ hero_parent_url }}">{{ hero_parent_label }}</a></li>
+        {% endif %}
+        <li aria-hidden="true">/</li>
+        <li><span aria-current="page">{{ hero_title }}</span></li>
+      </ol>
+    </nav>
+    <h1>{{ hero_title }}</h1>
+    {% if hero_lead %}<p>{{ hero_lead }}</p>{% endif %}
+    {% block hero_actions %}{% endblock %}
+  </div>
+</section>

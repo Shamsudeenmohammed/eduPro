@@ -1,0 +1,106 @@
+{% extends "base_public.html" %}
+{% block title %}Faculties &amp; Departments — {{ site_name }}{% endblock %}
+{% block meta_description %}Explore the faculties, departments and academic programmes offered at {{ site_name }}.{% endblock %}
+
+{% block content %}
+
+{% include "portal/partials/page_hero.html" with hero_title="Faculties & Departments" hero_lead="Our teaching is organised into faculties, each made up of departments that own the programmes they deliver. Follow the structure from faculty to programme below." %}
+
+<section class="section section--tight">
+  <div class="container">
+    <div class="stats-grid mb-4" data-reveal>
+      <div class="stat">
+        <span class="stat__value">{{ stats.faculties }}</span>
+        <span class="stat__label">Faculties</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value">{{ stats.departments }}</span>
+        <span class="stat__label">Departments</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value">{{ stats.programmes }}</span>
+        <span class="stat__label">Programmes</span>
+      </div>
+    </div>
+
+    {% if faculties %}
+    <div class="stack">
+      {% for faculty in faculties %}
+      <section class="card card--flush academic-faculty" data-reveal>
+        <header class="academic-faculty__head">
+          <div class="academic-faculty__ident">
+            <span class="faculty-card__code">{{ faculty.code }}</span>
+            <div>
+              <h2>{{ faculty.name }}</h2>
+              {% if faculty.dean %}
+              <p class="text-muted" style="font-size:.87rem;margin:0">
+                Dean:
+                <strong>{{ faculty.dean.get_full_name|default:faculty.dean }}</strong>
+              </p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="academic-faculty__stats">
+            <span class="badge badge--neutral">{{ faculty.department_count }} department{% if faculty.department_count != 1 %}s{% endif %}</span>
+            <span class="badge badge--neutral">{{ faculty.programme_count }} programme{% if faculty.programme_count != 1 %}s{% endif %}</span>
+          </div>
+        </header>
+
+        {% if faculty.description %}
+        <p class="academic-faculty__lead">{{ faculty.description }}</p>
+        {% endif %}
+
+        <div class="academic-faculty__body">
+          {% for department in faculty.live_departments %}
+          <article class="academic-dept">
+            <div class="academic-dept__head">
+              <h3>{% include "portal/partials/icon.html" with name="building" size=17 %} {{ department.name }}</h3>
+              <span class="badge badge--neutral">{{ department.code }}</span>
+            </div>
+            {% if department.description %}
+            <p class="text-muted" style="font-size:.91rem">{{ department.description|truncatewords:32 }}</p>
+            {% endif %}
+            {% if department.hod %}
+            <p class="text-muted" style="font-size:.86rem">
+              Head of Department:
+              <strong>{{ department.hod.get_full_name|default:department.hod }}</strong>
+            </p>
+            {% endif %}
+
+            {% if department.live_programs %}
+            <ul class="academic-dept__programs">
+              {% for program in department.live_programs %}
+              <li>
+                <a href="{% url 'portal:program_detail' program.pk %}">
+                  <span class="academic-dept__program-name">{{ program.name }}</span>
+                  <span class="academic-dept__program-meta">
+                    {{ program.get_program_type_display }} &middot; {{ program.duration_years }} yr{% if program.duration_years != 1 %}s{% endif %} &middot; {{ program.total_credits }} credits
+                  </span>
+                </a>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted" style="font-size:.88rem">No active programmes are published for this department yet.</p>
+            {% endif %}
+          </article>
+          {% empty %}
+          <p class="academic-faculty__lead">This faculty has no published departments yet.</p>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card card--pad empty-state">
+      <span class="empty-state__icon">{% include "portal/partials/icon.html" with name="building" size=28 %}</span>
+      <h3>Academic structure is being published</h3>
+      <p>Faculty and department records will appear here as soon as they are added to the academic register.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% include "portal/partials/cta_band.html" %}
+
+{% endblock %}
