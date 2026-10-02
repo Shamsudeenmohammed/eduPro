@@ -53,10 +53,108 @@ from .models import (
     AdmissionApplication,
     AdmissionCycle,
     AdmissionStatus,
+    ApplicationType,
+    ApplicationTypeCode,
     ContactMessage,
+    CycleStatus,
     DocumentRequest,
     PublicAnnouncement,
     WebsitePage,
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC FRONTEND HELPERS
+# Read-only helpers shared by the public pages. They never change data; they
+# only gather what the templates render so no page has to hard-code academic
+# content.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _public_events(limit=None, upcoming_only=False):
+    """Public calendar events, newest first. The operations app is optional."""
+    try:
+        from operations.models import CalendarEvent
+    except Exception:  # noqa: BLE001
+        return []
+    qs = CalendarEvent.objects.filter(is_public=True)
+    if upcoming_only:
+        from django.utils import timezone
+        qs = qs.filter(start_date__gte=timezone.localdate())
+    qs = qs.order_by("start_date", "created_at")
+    return list(qs[:limit]) if limit else list(qs)
+
+
+def _public_open_cycles():
+    """Every admission cycle currently accepting applications."""
+    today = timezone.now().date()
+    return list(
+        AdmissionCycle.objects.filter(
+            is_active=True,
+            status=CycleStatus.OPEN,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).order_by("-start_date")
+    )
+
+
+def _public_stats():
+    """Headline numbers for the public site, counted from the real records."""
+    from academics.models import Department, Faculty, Program
+    return {
+        "programmes": Program.objects.filter(is_active=True).count(),
+        "faculties": Faculty.objects.filter(is_active=True).count(),
+        "departments": Department.objects.filter(is_active=True).count(),
+    }
+
+
+def _public_faculties():
+    """Faculties with live department and programme counts for the same school."""
+    from django.db.models import Count, Prefetch, Q
+    from academics.models import Department, Faculty, Program
+    return list(
+        Faculty.objects.annotate(
+            department_count=Count("departments", filter=Q(departments__is_active=True), distinct=True),
+            programme_count=Count("departments__programs", filter=Q(departments__programs__is_active=True), distinct=True),
+        )
+        .prefetch_related(
+            Prefetch("departments", queryset=Department.objects.filter(is_active=True).select_related("hod", "faculty")),
+            Prefetch("departments__programs", queryset=Program.objects.filter(is_active=True).select_related("department__faculty")),
+        )
+        .filter(is_active=True)
+    )
+
+
+# Public "why choose us" and "student life" copy lives here so it can be
+# edited in one place. Each item is (icon, title, body); the icon is a name
+# resolved by the template against templates/portal/partials/icon.html.
+PUBLIC_HIGHLIGHTS = (
+    ("award", "Quality Education",
+     "Programmes designed to meet the standards of a modern tertiary institution, with assessment built around course work and examinations."),
+    ("users", "Experienced Faculty",
+     "Teaching delivered by academic staff organised into faculties and departments, with department heads accountable for their programmes."),
+    ("laptop", "Digital Learning",
+     "Every student works from a single portal for course materials, assignments, attendance, results and announcements."),
+    ("book", "Practical Learning",
+     "Coursework and assessment designed so graduates can apply what they learn, not only recall it."),
+    ("heart", "Student Support",
+     "Academic progress, fees, accommodation requests and support tickets are all handled inside the same student portal."),
+    ("shield", "Secure Records",
+     "Applications, results and identity records are protected by role-based access and a full audit trail of every change."),
+)
+
+PUBLIC_STUDENT_LIFE = (
+    ("book", "Learning Resources",
+     "Course notes, lecture materials, assignments and discussion forums for every registered course."),
+    ("calendar", "Academic Planning",
+     "The academic calendar, your timetable and course registration in one place, so you always know what comes next."),
+    ("home", "Accommodation",
+     "Hostel applications, allocations and payments are handled online through the same portal you use for your studies."),
+    ("chart", "Academic Progress",
+     "Follow your attendance, results and credits as they are recorded, with transcripts available when you need them."),
+    ("chat", "Support & Feedback",
+     "Raise a support ticket or send feedback to the institution and follow the response to resolution."),
+    ("card", "Fees & Payments",
+     "Fee statements, records of payment and receipts stay available to you for the whole session."),
 )
 
 
@@ -65,25 +163,177 @@ from .models import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 def home(request):
-    announcements = PublicAnnouncement.objects.filter(is_published=True)[:6]
+    from academics.models import Program
+    announcements = list(PublicAnnouncement.objects.filter(is_published=True)[:6])
+    programs = list(
+        Program.objects.select_related("department__faculty")
+        .filter(is_active=True)[:6]
+    )
     return render(request, "portal/home.html", {
         "page_title": "Welcome",
         "announcements": announcements,
+        "featured_announcement": announcements[0] if announcements else None,
+        "programs": programs,
+        "faculties": _public_faculties(),
+        "open_cycles": _public_open_cycles(),
+        "events": _public_events(limit=3, upcoming_only=True),
+        "stats": _public_stats(),
+        "highlights": PUBLIC_HIGHLIGHTS,
+        "student_life": PUBLIC_STUDENT_LIFE,
+        "application_types": ApplicationType.objects.filter(is_active=True).order_by("order", "label")[:4],
+        "home_sections": {
+            slug: WebsitePage.objects.filter(slug=slug, is_published=True).first()
+            for slug in ("mission", "vision", "values", "testimonials")
+        },
     })
 
 
 def about(request):
     page = WebsitePage.objects.filter(slug="about", is_published=True).first()
-    return render(request, "portal/page.html", {"page": page, "page_title": "About Us"})
+    # Optional CMS pages so an administrator can publish the standard
+    # institutional sections without a code change. Anything not published is
+    # simply omitted rather than filled with invented copy.
+    sections = {
+        slug: WebsitePage.objects.filter(slug=slug, is_published=True).first()
+        for slug in ("history", "mission", "vision", "values", "leadership", "facilities")
+    }
+    return render(request, "portal/page.html", {
+        "page": page,
+        "page_title": "About Us",
+        "sections": sections,
+        "faculties": _public_faculties(),
+        "stats": _public_stats(),
+    })
 
 
 def programs_public(request):
-    from academics.models import Program
+    from academics.models import Department, Faculty, Program, ProgramType
     programs = Program.objects.select_related("department__faculty").filter(is_active=True)
+
+    query = (request.GET.get("q") or "").strip()
+    program_type = (request.GET.get("type") or "").strip()
+    faculty = (request.GET.get("faculty") or "").strip()
+    department = (request.GET.get("department") or "").strip()
+
+    if query:
+        programs = programs.filter(
+            Q(name__icontains=query)
+            | Q(code__icontains=query)
+            | Q(description__icontains=query)
+            | Q(department__name__icontains=query)
+            | Q(department__faculty__name__icontains=query)
+        )
+    if program_type:
+        programs = programs.filter(program_type=program_type)
+    if faculty:
+        programs = programs.filter(department__faculty__code=faculty)
+    if department:
+        programs = programs.filter(department__code=department)
+
+    departments = Department.objects.filter(is_active=True).select_related("faculty")
+
     return render(request, "portal/programs.html", {
-        "page_title": "Programs",
+        "page_title": "Programmes",
         "programs": programs,
+        "program_types": ProgramType.choices,
+        "faculties": Faculty.objects.filter(is_active=True),
+        "departments": departments,
+        "departments_by_faculty": departments.order_by("faculty__name", "name"),
+        "selected": {
+            "q": query, "type": program_type,
+            "faculty": faculty, "department": department,
+        },
     })
+
+
+def program_detail(request, pk):
+    """Public programme profile built from the existing academic records."""
+    from academics.models import Program
+    program = get_object_or_404(
+        Program.objects.select_related("department__faculty"),
+        pk=pk, is_active=True,
+    )
+    siblings = (
+        Program.objects.filter(department=program.department, is_active=True)
+        .exclude(pk=program.pk)
+        .select_related("department__faculty")
+    )
+    return render(request, "portal/program_detail.html", {
+        "page_title": program.name,
+        "program": program,
+        "siblings": siblings,
+        "levels": program.levels.filter(is_active=True).order_by("order", "name"),
+        "department_courses": program.department.courses.filter(is_active=True)
+        .order_by("code")[:12],
+        "application_types": program.available_application_types(),
+        "open_cycles": _public_open_cycles(),
+    })
+
+
+def academic_structure(request):
+    """Faculties -> Departments -> Programmes, from the academic models."""
+    faculties = _public_faculties()
+    for faculty in faculties:
+        faculty.live_departments = list(faculty.departments.all())
+        for dept in faculty.live_departments:
+            dept.live_programs = list(dept.programs.all())
+    return render(request, "portal/academic.html", {
+        "page_title": "Faculties & Departments",
+        "faculties": faculties,
+        "stats": _public_stats(),
+    })
+
+
+def admissions_landing(request):
+    """Guidance page for prospective applicants. The application itself is
+    still started on the existing ``portal:apply`` route."""
+    from academics.models import Program
+    from .models import ApplicationRequirement
+    types = list(ApplicationType.objects.filter(is_active=True).order_by("order", "label"))
+    requirements = {}
+    if types:
+        for req in (ApplicationRequirement.objects
+                    .filter(application_type__in=types, is_required=True)
+                    .select_related("application_type")
+                    .order_by("order", "label")):
+            requirements.setdefault(req.application_type_id, []).append(req)
+    type_cards = [
+        {"type": atype, "requirements": requirements.get(atype.pk, [])}
+        for atype in types
+    ]
+    return render(request, "portal/admissions.html", {
+        "page_title": "Admissions",
+        "open_cycles": _public_open_cycles(),
+        "all_cycles": list(AdmissionCycle.objects.order_by("-start_date")[:4]),
+        "application_types": types,
+        "type_cards": type_cards,
+        "programmes": Program.objects.filter(is_active=True)
+        .select_related("department__faculty")[:8],
+        "stats": _public_stats(),
+    })
+
+
+def events_list(request):
+    """Public events from the academic calendar (is_public entries only)."""
+    from django.utils import timezone
+    today = timezone.localdate()
+    events = _public_events()
+    return render(request, "portal/events.html", {
+        "page_title": "Events",
+        "upcoming_events": [e for e in events if e.start_date >= today],
+        "past_events": [e for e in events if e.start_date < today][:12],
+    })
+
+
+def student_life(request):
+    """Student life overview. Every capability listed here is served by an
+    existing eduPro module; the page adds no new promises."""
+    return render(request, "portal/student_life.html", {
+        "page_title": "Student Life",
+        "stats": _public_stats(),
+        "events": _public_events(limit=3, upcoming_only=True),
+    })
+
 
 
 @require_http_methods(["GET", "POST"])
@@ -220,6 +470,29 @@ def _admissions_read_required(view_func):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @require_http_methods(["GET", "POST"])
+def _application_prefill(request):
+    """
+    Pre-select the programme and/or application type when the applicant
+    arrived from a deep link such as
+    ``/portal/apply/?program=<pk>&type=undergraduate``.
+
+    Convenience only: the form still validates both server-side, and unknown
+    or inactive values are ignored so a stale link can never break the form.
+    """
+    if request.method != "GET":
+        return None
+    initial = {}
+    raw_program = request.GET.get("program")
+    if raw_program and str(raw_program).isdigit():
+        from academics.models import Program
+        if Program.objects.filter(pk=int(raw_program), is_active=True).exists():
+            initial["program_applied"] = int(raw_program)
+    raw_type = (request.GET.get("type") or "").strip()
+    if raw_type in dict(ApplicationTypeCode.choices):
+        initial["application_type"] = raw_type
+    return initial or None
+
+
 def application_form(request):
     """
     Public application form.
@@ -249,6 +522,7 @@ def application_form(request):
         cycle=active_cycle,
         data=request.POST or None,
         files=request.FILES or None,
+        initial=_application_prefill(request),
     )
 
     save_as_draft = request.method == "POST" and request.POST.get("action") == "draft"
@@ -838,7 +1112,11 @@ def applicant_upload_document(request, pk):
 @login_required
 @admin_required
 def cycle_list(request):
-    cycles = AdmissionCycle.objects.order_by("-start_date")
+    # Each row renders its accepted types, so prefetch them rather than
+    # running two queries per cycle.
+    cycles = AdmissionCycle.objects.select_related("application_type").prefetch_related(
+        "application_type_links__application_type"
+    ).order_by("-start_date")
     return render(request, "portal/cycle_list.html", {
         "page_title": "Admission Cycles",
         "cycles":     cycles,

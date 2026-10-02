@@ -31,6 +31,28 @@ class HostelFinanceService:
         return fees
 
     @classmethod
+    def _booking_fees(cls, student, application):
+        """
+        The StudentFee(s) raised specifically for one booking (application).
+        Together with ``ensure_charge(application=…)`` this keeps every stay on
+        its own fee, so re-booking after vacating a room starts unpaid again.
+        """
+        from finance.models import StudentFee
+        return StudentFee.objects.filter(
+            student=student,
+            fee_structure__session=application.session,
+            fee_structure__name__endswith=f"Booking #{application.pk}",
+        ).select_related("fee_structure")
+
+    @classmethod
+    def _fees_for(cls, student, session, application=None):
+        """Booking-scoped fees when an application is known, else the legacy
+        session-wide hostel fees (used for allocations without an application)."""
+        if application is not None and application.session_id == session.id:
+            return cls._booking_fees(student, application)
+        return cls._student_fees(student, session)
+
+    @classmethod
     def fee_config_for(cls, hostel, session, semester=None, room=None):
         """
         Resolve the most specific active HostelFeeConfig for a stay context.
@@ -96,10 +118,15 @@ class HostelFinanceService:
 
     @classmethod
     def ensure_charge(cls, *, student, session, hostel=None, room=None,
-                      semester=None, actor=None):
+                      semester=None, actor=None, application=None):
         """
         Create/fetch the StudentFee record that finance will own. Returns the
         fee, or None when no matching fee config exists.
+
+        When ``application`` is supplied the charge is scoped to that booking
+        (a dedicated ``FeeStructure`` per application), so a subsequent booking
+        in the same session starts as a fresh, unpaid obligation instead of
+        inheriting the paid-off balance of the previous stay.
 
         NOTE: ``enable_hostel_charges`` intentionally does NOT gate this
         method. That policy flag controls whether payment is REQUIRED before
@@ -117,14 +144,26 @@ class HostelFinanceService:
         if not config:
             return None
 
-        if config.fee_structure_id:
+        amount = config.amount if config.amount is not None else Decimal("0")
+        if application is not None:
+            name = (
+                f"Hostel — {config.hostel.name} — {session.name} — "
+                f"Booking #{application.pk}"
+            )
+            fs, _ = FeeStructure.objects.get_or_create(
+                name=name,
+                session=session,
+                defaults={"amount": amount,
+                          "description": "Hostel accommodation charge"},
+            )
+        elif config.fee_structure_id:
             fs = config.fee_structure
         else:
             name = f"Hostel — {config.hostel.name} — {session.name}"
             fs, _ = FeeStructure.objects.get_or_create(
                 name=name,
                 session=session,
-                defaults={"amount": config.amount or Decimal("0"),
+                defaults={"amount": amount,
                           "description": "Hostel accommodation charge"},
             )
             config.fee_structure = fs
@@ -176,7 +215,7 @@ class HostelFinanceService:
         return payment
 
     @classmethod
-    def payment_satisfied(cls, student, session, policy=None):
+    def payment_satisfied(cls, student, session, policy=None, application=None):
         """
         The single financial check used before check-in.
 
@@ -184,6 +223,9 @@ class HostelFinanceService:
         * No hostel charge configured for session  → always OK
         * ``allow_partial_payment``                → ≥60% paid, no OVERDUE
         * otherwise                                → fully paid
+
+        When ``application`` is given only that booking's charge is checked,
+        so a paid-off previous stay never satisfies a new booking.
         """
         policy = policy or HostelPolicyService.get_policy()
         if not (policy and policy.require_payment_before_checkin):
@@ -192,7 +234,7 @@ class HostelFinanceService:
             return True
 
         from finance.models import FeeStatus
-        fees = cls._student_fees(student, session)
+        fees = cls._fees_for(student, session, application=application)
         counts = fees.aggregate(due=Sum("amount_due"), paid=Sum("amount_paid"))
         total_due = counts["due"] or Decimal("0")
         total_paid = counts["paid"] or Decimal("0")
@@ -207,10 +249,10 @@ class HostelFinanceService:
         )
 
     @classmethod
-    def balance_info(cls, student, session):
+    def balance_info(cls, student, session, application=None):
         """UI-friendly financial summary (all values from finance)."""
         from finance.models import FeeStatus
-        fees = cls._student_fees(student, session)
+        fees = cls._fees_for(student, session, application=application)
         counts = fees.aggregate(due=Sum("amount_due"), paid=Sum("amount_paid"))
         total_due = counts["due"] or Decimal("0")
         total_paid = counts["paid"] or Decimal("0")

@@ -1,135 +1,196 @@
-{% extends "base_public.html" %}{% block title %}Apply for Admission — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}Apply for Admission — {{ site_name }}{% endblock %}
+{% block meta_description %}Apply to {{ site_name }} online. Save a draft and finish before the intake closes, then track your application status.{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+
+{% include "portal/partials/page_hero.html" with hero_title="Apply for Admission" hero_lead=cycle.name hero_parent_label="Admissions" hero_parent_url="/portal/how-to-apply/" %}
+
+<section class="section section--tight">
   <div class="container">
-    <h1>Apply for Admission</h1>
-    <p>{{ cycle.name }} ({{ cycle.academic_year }})</p>
-  </div>
-</section>
-<section class="section">
-  <div class="container" style="max-width:820px">
-    <div class="feature-card" style="padding:2rem">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Personal Information</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">First Name</label>
-            {{ form.first_name }}
+    <div class="form-layout">
+      {# ── Form ────────────────────────────────────────────────────── #}
+      <div data-reveal>
+        <div class="card card--pad">
+          {% if form.non_field_errors %}
+          <div class="notice notice--danger mb-3">
+            <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+            <span>
+              <span class="notice__title">Please check the form</span>
+              {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+            </span>
           </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Last Name</label>
-            {{ form.last_name }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Other Names</label>
-            {{ form.other_names }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Date of Birth</label>
-            {{ form.date_of_birth }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Gender</label>
-            {{ form.gender }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Nationality</label>
-            {{ form.nationality }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Email</label>
-            {{ form.email }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Phone</label>
-            {{ form.phone }}
-          </div>
-        </div>
+          {% endif %}
 
-        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Program &amp; Academic Background</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Program Applied For</label>
-            {{ form.program_applied }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Application Type</label>
-            {{ form.application_type }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Previous School</label>
-            {{ form.previous_school }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Qualification</label>
-            {{ form.qualification }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Year of Completion</label>
-            {{ form.year_of_completion }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Aggregate Score</label>
-            {{ form.aggregate_score }}
-          </div>
-        </div>
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
 
-        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Address</h3>
-        <div style="margin-bottom:1.5rem">
-          <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Residential Address</label>
-          {{ form.address }}
-        </div>
+            <section class="form-section">
+              <h2 class="form-section__title">
+                <span class="step-num">1</span>
+                Programme &amp; application type
+              </h2>
+              <p class="form-section__hint">
+                Start with what you want to study. The application type list narrows to
+                the options that programme accepts.
+              </p>
+              <div class="form-grid form-grid--2">
+                {% include "portal/partials/form_field.html" with field=form.program_applied %}
+                {% include "portal/partials/form_field.html" with field=form.application_type %}
+              </div>
+            </section>
 
-        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Create Your Login</h3>
-        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem">Set a password so you can log in to track your application status.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Password</label>
-            {{ form.password1 }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Confirm Password</label>
-            {{ form.password2 }}
-          </div>
-        </div>
+            <section class="form-section">
+              <h2 class="form-section__title">
+                <span class="step-num">2</span>
+                Personal information
+              </h2>
+              <p class="form-section__hint">
+                Enter your names exactly as they appear on your official documents.
+              </p>
+              <div class="form-grid form-grid--2">
+                {% include "portal/partials/form_field.html" with field=form.first_name %}
+                {% include "portal/partials/form_field.html" with field=form.last_name %}
+                {% include "portal/partials/form_field.html" with field=form.other_names %}
+                {% include "portal/partials/form_field.html" with field=form.date_of_birth %}
+                {% include "portal/partials/form_field.html" with field=form.gender %}
+                {% include "portal/partials/form_field.html" with field=form.nationality %}
+                {% include "portal/partials/form_field.html" with field=form.email %}
+                {% include "portal/partials/form_field.html" with field=form.phone %}
+              </div>
+            </section>
 
-        <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">Documents</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Transcript</label>
-            {{ form.transcript }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">ID Document</label>
-            {{ form.id_document }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Passport Photo</label>
-            {{ form.passport_photo }}
-          </div>
-        </div>
-        <div style="margin-bottom:1.5rem">
-          <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Personal Statement</label>
-          {{ form.personal_statement }}
-        </div>
+            <section class="form-section">
+              <h2 class="form-section__title">
+                <span class="step-num">3</span>
+                Academic background
+              </h2>
+              <p class="form-section__hint">
+                Tell us about the qualification you are applying with. If you have more
+                than one, enter the most recent.
+              </p>
+              <div class="form-grid form-grid--2">
+                {% include "portal/partials/form_field.html" with field=form.previous_school %}
+                {% include "portal/partials/form_field.html" with field=form.qualification %}
+                {% include "portal/partials/form_field.html" with field=form.year_of_completion %}
+                {% include "portal/partials/form_field.html" with field=form.aggregate_score %}
+              </div>
+            </section>
 
-        {% if form.errors %}
-        <div style="color:var(--danger);font-size:.875rem;margin-bottom:1rem;padding:.75rem;background:rgba(220,38,38,.06);border-radius:8px">
-          {% for field, errors in form.errors.items %}{% for error in errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
-        </div>
-        {% endif %}
+            <section class="form-section">
+              <h2 class="form-section__title">
+                <span class="step-num">4</span>
+                Address
+              </h2>
+              <div class="form-grid">
+                {% include "portal/partials/form_field.html" with field=form.address full=True %}
+              </div>
+            </section>
 
-        <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
-          <button type="submit" class="btn" style="background:var(--primary);color:#fff;padding:11px 32px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Submit Application →</button>
-          <button type="submit" name="action" value="draft" class="btn" style="background:transparent;color:var(--text-muted);padding:11px 24px;border-radius:8px;font-weight:600;font-size:.875rem;border:1px solid var(--border);cursor:pointer;display:inline-flex;align-items:center;gap:6px">Save as draft</button>
+            <section class="form-section">
+              <h2 class="form-section__title">
+                <span class="step-num">5</span>
+                Create your login
+              </h2>
+              <p class="form-section__hint">
+                Set a password so you can sign in and follow your application. You will
+                need this password if you save a draft and finish later.
+              </p>
+              <div class="form-grid form-grid--2">
+                {% include "portal/partials/form_field.html" with field=form.password1 %}
+                {% include "portal/partials/form_field.html" with field=form.password2 %}
+              </div>
+            </section>
+
+            <section class="form-section">
+              <h2 class="form-section__title">
+                <span class="step-num">6</span>
+                Documents &amp; personal statement
+              </h2>
+              <p class="form-section__hint">
+                Upload clear copies. If a document is missing, save your application as a
+                draft and upload the rest before the intake closes.
+              </p>
+              <div class="form-grid form-grid--2">
+                {% include "portal/partials/form_field.html" with field=form.transcript %}
+                {% include "portal/partials/form_field.html" with field=form.id_document %}
+                {% include "portal/partials/form_field.html" with field=form.passport_photo %}
+                {% include "portal/partials/form_field.html" with field=form.personal_statement full=True %}
+              </div>
+            </section>
+
+            {% if form.errors %}
+            <div class="notice notice--danger mt-3">
+              <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+              <span>
+                <span class="notice__title">Some fields still need attention</span>
+                The highlighted fields above could not be submitted. Check them and try again.
+              </span>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg" name="action" value="submit">
+                Submit application
+                {% include "portal/partials/icon.html" with name="check" size=17 %}
+              </button>
+              <button type="submit" class="btn btn--ghost btn--lg" name="action" value="draft" formnovalidate>
+                Save as draft
+              </button>
+            </div>
+
+            <p class="field__help mt-2">
+              Not ready yet? Save a draft and finish later &mdash; you will be asked to sign
+              in, and nothing reaches the admissions office until you submit.
+            </p>
+          </form>
         </div>
-        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.85rem">
-          Not ready yet? Save a draft and finish later — you will be asked to sign in,
-          and nothing is sent to the admissions office until you submit.
-        </p>
-      </form>
+      </div>
+
+      {# ── Guidance sidebar ─────────────────────────────────────────── #}
+      <aside data-reveal data-reveal-delay="120" aria-label="Help with your application">
+        <div class="card card--pad sticky-aside">
+          <h2 class="mb-2">Before you submit</h2>
+          <ul class="auth-points" style="color:var(--text-soft)">
+            <li>
+              {% include "portal/partials/icon.html" with name="file" size=16 %}
+              <span>Have your transcript and ID document ready to upload.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="mail" size=16 %}
+              <span>Use an email address you check regularly &mdash; your reference number goes there.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="pen" size=16 %}
+              <span>Write your personal statement in your own words.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="clock" size=16 %}
+              <span>Save a draft if you need more time. Nothing is sent until you submit.</span>
+            </li>
+          </ul>
+
+          {% if cycle %}
+          <div class="cycle-card mt-3">
+            <h3 class="mb-2">This intake</h3>
+            <dl class="facts">
+              <div><dt>Intake</dt><dd>{{ cycle.name }}</dd></div>
+              <div><dt>Opens</dt><dd>{{ cycle.start_date|date:"j M Y" }}</dd></div>
+              <div><dt>Closes</dt><dd>{{ cycle.end_date|date:"j M Y" }}</dd></div>
+              {% if cycle.application_fee %}
+              <div><dt>Application fee</dt><dd>{{ cycle.application_fee }}</dd></div>
+              {% endif %}
+            </dl>
+          </div>
+          {% endif %}
+
+          <div class="mt-3">
+            <a class="btn btn--ghost btn--block" href="{% url 'portal:admissions' %}">Read the admission requirements</a>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
+
 {% endblock %}

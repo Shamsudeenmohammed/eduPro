@@ -22,6 +22,7 @@ from django.core.validators import (
     MinValueValidator,
 )
 from django.db import models, transaction
+from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -507,7 +508,215 @@ class AdmissionCycle(models.Model):
         return bool(self.application_fee) and self.application_fee > 0
 
     def admission_summary(self):
-        return f"{self.application_type.label if self.application_type else 'All types'}"
+        types = self.accepted_types()
+        if not types:
+            return "All types"
+        if len(types) == 1:
+            return types[0].label
+        return f"{types[0].label} +{len(types) - 1} more"
+
+    # ── Accepted application types ───────────────────────────────────────────
+    # `application_type` above can only name one type, but a real intake
+    # usually recruits several at once ("undergraduate" + "mature"). The
+    # accepted set therefore lives in its own join table, and the FK is kept
+    # as the *primary* type so the admin filters and every row created before
+    # the join table existed keep working untouched.
+    #
+    # Reading rules, in order:
+    #   1. join rows exist      -> exactly those types are accepted
+    #   2. no join rows, FK set -> the single referenced type
+    #   3. neither              -> the cycle accepts any type
+    # `join table missing` is a real state here: like every other table in this
+    # engine it is created from the models rather than from a migration file, so
+    # it may not exist yet on a database that predates it. Callers must go
+    # through `accepted_types()`, which degrades to the old single-type reading
+    # instead of raising.
+
+    def accepted_types(self):
+        """
+        The :class:`ApplicationType` rows this cycle accepts, in display order.
+
+        Returns an empty list when the cycle is unrestricted, which callers
+        treat as "any type". Ordering follows ``ApplicationType.order`` so the
+        list is stable no matter what order the choices were ticked in.
+        """
+        try:
+            links = list(self.application_type_links.all())
+        except (OperationalError, ProgrammingError):
+            # The join table has not been created on this database yet.
+            links = []
+        if links:
+            return sorted(
+                (link.application_type for link in links),
+                key=lambda t: (t.order, t.code),
+            )
+        return [self.application_type] if self.application_type else []
+
+    def accepts_type(self, application_type):
+        """True when *application_type* is one this cycle accepts."""
+        if application_type is None:
+            return True
+        accepted = self.accepted_types()
+        if not accepted:
+            return True
+        return any(t.pk == application_type.pk for t in accepted)
+
+    def set_accepted_types(self, application_types):
+        """
+        Replace the accepted set and keep the primary-type FK in step.
+
+        The FK is set to the first type in display order, so "the cycle's type"
+        stays deterministic and the admin list filters keep grouping sensibly.
+        """
+        types = sorted(
+            {t.pk: t for t in (application_types or [])}.values(),
+            key=lambda t: (t.order, t.code),
+        )
+        self.application_type = types[0] if types else None
+        if self.pk:
+            self.application_type_links.all().delete()
+            self.application_type_links.bulk_create([
+                CycleApplicationType(cycle=self, application_type=t)
+                for t in types
+            ])
+        return types
+
+    @property
+    def primary_application_type(self):
+        """The type used for admin filtering; falls back to the first accepted."""
+        if self.application_type:
+            return self.application_type
+        accepted = self.accepted_types()
+        return accepted[0] if accepted else None
+
+
+
+class CycleApplicationType(models.Model):
+    """
+    Links an :class:`AdmissionCycle` to one of the :class:`ApplicationType`
+    rows it accepts, so a cycle can recruit for several types at once.
+    """
+
+    cycle = models.ForeignKey(
+        AdmissionCycle, on_delete=models.CASCADE,
+        related_name="application_type_links", verbose_name=_("admission cycle"),
+    )
+    application_type = models.ForeignKey(
+        ApplicationType, on_delete=models.CASCADE,
+        related_name="cycle_links", verbose_name=_("application type"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _("cycle application type")
+        verbose_name_plural = _("cycle application types")
+        ordering            = ["application_type__order", "application_type__code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cycle", "application_type"],
+                name="uniq_cycle_application_type",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.cycle_id}: {self.application_type.code}"
+
+
+
+class ProgramApplicationType(models.Model):
+    """
+    Which :class:`ApplicationType` rows a particular ``academics.Program``
+    accepts.
+
+    A programme is not a catch-all: a Higher National Diploma programme should
+    not offer postgraduate entry, and a Master's programme should not offer a
+    certificate. ``academics.Program.program_type`` already uses the same
+    vocabulary as :class:`ApplicationTypeCode`, so that field is the default
+    answer and this table is the explicit override — add rows when a programme
+    accepts something beyond (or instead of) its own type.
+
+    A programme with no rows here accepts exactly the type that matches its
+    ``program_type``. See :meth:`academics.Program.available_application_types`
+    for the full reading, including the fallback when types are not seeded.
+    """
+
+    program = models.ForeignKey(
+        "academics.Program", on_delete=models.CASCADE,
+        related_name="application_type_links", verbose_name=_("programme"),
+    )
+    application_type = models.ForeignKey(
+        ApplicationType, on_delete=models.CASCADE,
+        related_name="program_links", verbose_name=_("application type"),
+    )
+    is_active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _("programme application type")
+        verbose_name_plural = _("programme application types")
+        ordering            = ["application_type__order", "application_type__code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["program", "application_type"],
+                name="uniq_program_application_type",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.program_id}: {self.application_type.code}"
+
+
+#: How a programme's own ``program_type`` maps onto an application type.
+#:
+#: The two enumerations mostly overlap, but not quite: doctoral entry is
+#: postgraduate entry, and a professional programme is diploma-level. Without
+#: this a doctorate programme would fall through to "accepts everything".
+PROGRAM_TYPE_TO_APPLICATION_TYPE = {
+    "undergraduate": "undergraduate",
+    "postgraduate":  "postgraduate",
+    "doctorate":     "postgraduate",
+    "diploma":       "diploma",
+    "certificate":   "certificate",
+    "professional":  "diploma",
+}
+
+
+def program_available_types(program):
+    """
+    The application types *program* accepts, as a list of
+    :class:`ApplicationType`.
+
+    Reading order:
+
+    1. explicit :class:`ProgramApplicationType` rows -> exactly those;
+    2. otherwise the type matching ``program.program_type`` (see
+       :data:`PROGRAM_TYPE_TO_APPLICATION_TYPE`), so a diploma programme does
+       not offer postgraduate and a postgraduate programme does not offer
+       diploma;
+    3. if no type row matches — the catalogue has not been seeded, or the
+       programme has a ``program_type`` with no equivalent application type —
+       fall back to every active type, so the dropdown is never empty just
+       because the catalogue has not been populated.
+
+    An inactive programme is treated as accepting everything, because the
+    callers filter on ``is_active`` themselves and an over-narrow list here
+    would hide types from an admin editing the programme.
+    """
+    active = ApplicationType.objects.filter(is_active=True).order_by("order", "code")
+    if program is None or not program.is_active:
+        return list(active)
+
+    overrides = [
+        link.application_type
+        for link in program.application_type_links.select_related("application_type")
+        if link.is_active and link.application_type.is_active
+    ]
+    if overrides:
+        return sorted(overrides, key=lambda t: (t.order, t.code))
+
+    code = PROGRAM_TYPE_TO_APPLICATION_TYPE.get(program.program_type)
+    own = [t for t in active if t.code == code] if code else []
+    return own if own else list(active)
 
 
 

@@ -1,25 +1,52 @@
-{% extends "base_public.html" %}{% block title %}Admissions Closed — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}Admissions Closed &middot; {{ site_name }}{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+<section class="page-hero">
   <div class="container">
-    <h1>Admissions Closed</h1>
-    <p>We are not currently accepting applications</p>
+    <h1>Admissions are currently closed</h1>
+    <p>New applications are not being accepted at this time.</p>
   </div>
 </section>
+
 <section class="section">
-  <div class="container" style="max-width:550px;text-align:center">
-    <div class="feature-card" style="padding:2.5rem">
-      <div style="font-size:3rem;margin-bottom:1rem">📋</div>
-      <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;margin-bottom:.75rem">Applications Are Currently Closed</h2>
-      <p style="color:var(--text-muted);margin-bottom:1.5rem">We are not accepting new applications at this time. Please check back later for the next intake cycle.</p>
+  <div class="container container--narrow">
+
+    <div class="confirm-card">
+      <span class="confirm-card__mark confirm-card__mark--muted">
+        {% include "portal/partials/icon.html" with name="clock" size=28 %}
+      </span>
+      <h2>We are not accepting applications right now</h2>
+      <p class="confirm-card__lead">
+        The admissions window is closed. Browse the programmes in the meantime and
+        check back when the next intake opens.
+      </p>
+
       {% if cycle %}
-      <div style="background:var(--surface2);padding:1rem;border-radius:10px;margin-bottom:1.5rem">
-        <p style="font-weight:600;margin-bottom:.25rem">{{ cycle.name }}</p>
-        <p style="font-size:.85rem;color:var(--text-muted)">{{ cycle.start_date|date:"M j, Y" }} – {{ cycle.end_date|date:"M j, Y" }}</p>
+      <div class="cycle-strip">
+        <div>
+          <span class="cycle-strip__label">Cycle</span>
+          <strong class="cycle-strip__value">{{ cycle.name }}</strong>
+        </div>
+        <div>
+          <span class="cycle-strip__label">Window</span>
+          <strong class="cycle-strip__value">
+            {{ cycle.start_date|date:"M j, Y" }} &ndash; {{ cycle.end_date|date:"M j, Y" }}
+          </strong>
+        </div>
       </div>
       {% endif %}
-      <a href="{% url 'portal:home' %}" class="btn" style="display:inline-flex;align-items:center;gap:6px;color:var(--primary);text-decoration:none;font-weight:600">← Back to Home</a>
+
+      <div class="confirm-actions">
+        <a class="btn btn--primary" href="{% url 'portal:programs' %}">
+          Browse programmes
+          {% include "portal/partials/icon.html" with name="arrow-right" size=16 %}
+        </a>
+        <a class="btn btn--ghost" href="{% url 'portal:admissions' %}">How to apply</a>
+        <a class="btn btn--ghost" href="{% url 'portal:contact' %}">Contact admissions</a>
+      </div>
     </div>
+
   </div>
 </section>
 {% endblock %}

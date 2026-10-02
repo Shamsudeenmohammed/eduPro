@@ -37,6 +37,31 @@ class PaystackService:
     def enabled(cls):
         return bool(getattr(settings, "PAYSTACK_SECRET_KEY", ""))
 
+    @classmethod
+    def _key(cls):
+        return getattr(settings, "PAYSTACK_SECRET_KEY", "") or ""
+
+    @classmethod
+    def live_mode(cls):
+        """True when the configured key is a Paystack LIVE key (real money)."""
+        return cls._key().startswith("sk_live_")
+
+    @classmethod
+    def test_mode(cls):
+        """True when the configured key is a Paystack TEST key (no real money)."""
+        return cls.enabled() and not cls.live_mode()
+
+    @classmethod
+    def simulate_allowed(cls):
+        """
+        Simulated payments may ONLY be completed locally when the installed
+        key is a Paystack TEST key. A live key is never simulated (real money
+        must always go through Paystack), and an unconfigured gateway is never
+        auto-satisfied either — otherwise a misconfigured server would become
+        a free-payment hole.
+        """
+        return cls._key().startswith("sk_test_")
+
     @staticmethod
     def _headers():
         return {

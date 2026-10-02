@@ -1,108 +1,164 @@
-{% extends "base_public.html" %}{% block title %}Check Application Status — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}Check Application Status — {{ site_name }}{% endblock %}
+{% block meta_description %}Track your application to {{ site_name }} with your reference number and email address.{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+
+{% include "portal/partials/page_hero.html" with hero_title="Check Application Status" hero_lead="Enter your reference number and the email you applied with to see the current stage of your application." hero_parent_label="Admissions" hero_parent_url="/portal/how-to-apply/" %}
+
+<section class="section section--tight">
   <div class="container">
-    <h1>Check Application Status</h1>
-    <p>Enter your reference number and email to track your application</p>
-  </div>
-</section>
-<section class="section">
-  <div class="container" style="max-width:580px">
-    <div class="feature-card" style="padding:2rem">
-      <form method="post">
+    {# ── Lookup form ───────────────────────────────────────────────── #}
+    <div class="card card--pad card--pad-narrow" data-reveal>
+      <h2 class="mb-1">Find your application</h2>
+      <p class="text-muted" style="font-size:.93rem">
+        Your reference number was issued when you applied. It is in your confirmation
+        screen and in the email we sent you.
+      </p>
+
+      <form method="post" novalidate>
         {% csrf_token %}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Reference Number</label>
-            {{ form.reference_number }}
-          </div>
-          <div>
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">Email Address</label>
-            {{ form.email }}
-          </div>
+        <div class="form-grid form-grid--2">
+          {% include "portal/partials/form_field.html" with field=form.reference_number %}
+          {% include "portal/partials/form_field.html" with field=form.email %}
         </div>
-        <div style="margin-top:1rem">
-          <button type="submit" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px">Check Status →</button>
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary btn--lg">
+            Check status
+            {% include "portal/partials/icon.html" with name="search" size=17 %}
+          </button>
+          <a class="btn btn--ghost" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">Sign in instead</a>
         </div>
       </form>
     </div>
 
+    {# ── Result ────────────────────────────────────────────────────── #}
     {% if application %}
-    <div class="feature-card" style="margin-top:1.5rem;padding:1.75rem">
-      <h3 style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;margin-bottom:1rem">Application Status</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.9rem">
-        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Reference</div>
-          <div style="font-family:monospace;font-weight:700">{{ application.reference_number }}</div>
+    <div class="card card--pad mt-4" data-reveal>
+      <div class="result-head">
+        <div>
+          <p class="eyebrow mb-1">Application found</p>
+          <h2 class="mb-0">{{ application.get_full_name|default:"Your application" }}</h2>
         </div>
-        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Program</div>
-          <div>{{ application.program_applied.name|default:"—" }}</div>
-        </div>
-        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Applicant</div>
-          <div>{{ application.get_full_name }}</div>
-        </div>
-        <div style="padding:.75rem;background:var(--surface2);border-radius:8px">
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Status</div>
-          <div><span style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:600;{% if application.status == 'approved' or application.status == 'accepted' %}background:rgba(5,150,105,.12);color:var(--success){% elif application.status == 'rejected' %}background:rgba(220,38,38,.12);color:var(--danger){% elif application.status == 'reviewing' or application.status == 'review' %}background:rgba(217,119,6,.12);color:var(--warning){% else %}background:var(--surface2);color:var(--text-muted){% endif %}">{{ application.get_status_display }}</span></div>
-        </div>
+        <span class="badge badge--lg status-{{ application.status }}">
+          {{ application.get_status_display }}
+        </span>
       </div>
 
-      {% if application.user_id and application.status == 'approved' %}
-      <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
-        <p style="font-weight:600;color:var(--success);margin-bottom:.25rem">✅ Application Approved</p>
-        {% with sp=application.user.academic_profile %}
-        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">
-          Congratulations! Your application has been approved.
-        </p>
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.85rem;padding:.5rem 0">
-          <span style="font-weight:600;color:var(--text-muted)">Student ID:</span>
-          <span style="font-family:monospace;font-weight:700;color:var(--text)">{{ sp.student_number }}</span>
-          <span style="font-weight:600;color:var(--text-muted)">Default Password:</span>
-          <span style="font-family:monospace;font-weight:700;color:var(--text)">0123456789</span>
-        </div>
-        <p style="font-size:.82rem;color:var(--text-muted)">
-          Sign in at <strong>/accounts/login/</strong> using your <strong>Student ID</strong> and the default password above.
-        </p>
-        {% endwith %}
-        <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
-          <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn" style="background:var(--surface2);color:var(--text);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px">📄 Application Letter</a>
-          <a href="{% url 'portal:admission_letter_pdf' application.reference_number %}" class="btn" style="background:var(--success);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">🎓 Admission Letter</a>
-          <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In →</a>
-        </div>
+      <dl class="facts mt-3">
+        <div><dt>Reference number</dt><dd><code>{{ application.reference_number }}</code></dd></div>
+        <div><dt>Programme</dt><dd>{{ application.program_applied.name|default:"—" }}</dd></div>
+        <div><dt>Application type</dt><dd>{{ application.get_application_type_display|default:"—" }}</dd></div>
+        <div><dt>Submitted</dt><dd>{{ application.created_at|date:"j M Y" }}</dd></div>
+      </dl>
+
+      {# Approved and a portal account exists ──}
+      {% if application.user_id and application.status == "approved" %}
+      <div class="notice notice--success mt-3">
+        <span class="notice__icon">{% include "portal/partials/icon.html" with name="check-circle" size=18 %}</span>
+        <span>
+          <span class="notice__title">Application approved</span>
+          Your application has been approved and your student portal account is ready.
+          {% with sp=application.user.academic_profile %}
+          {% if sp %}
+          <span class="student-credentials">
+            <span><strong>Student ID:</strong> <code>{{ sp.student_number }}</code></span>
+            <span><strong>Default password:</strong> <code>0123456789</code></span>
+          </span>
+          {% endif %}
+          {% endwith %}
+          Sign in with your <strong>Student ID</strong> and the default password above, then change it straight away.
+        </span>
       </div>
-      {% elif application.status == 'approved' or application.status == 'accepted' %}
-      <div style="margin-top:1rem;padding:1rem;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:10px">
-        <p style="font-weight:600;color:var(--success);margin-bottom:.25rem">✅ Application Approved</p>
-        <p style="font-size:.85rem;color:var(--text-muted)">Congratulations! Your application has been approved. You will receive an email with login instructions.</p>
+      <div class="cluster mt-3">
+        <a class="btn btn--primary" href="{% url 'accounts:login' %}">Sign in to the portal</a>
+        <a class="btn btn--ghost" href="{% url 'portal:admission_letter_pdf' application.reference_number %}">Download admission letter</a>
+        <a class="btn btn--ghost" href="{% url 'portal:application_letter_pdf' application.reference_number %}">Download application letter</a>
+      </div>
+
+      {# Approved but no account yet ──}
+      {% elif application.status == "approved" or application.status == "accepted" %}
+      <div class="notice notice--success mt-3">
+        <span class="notice__icon">{% include "portal/partials/icon.html" with name="check-circle" size=18 %}</span>
+        <span>
+          <span class="notice__title">Application approved</span>
+          Congratulations. You will receive an email with your portal login details once
+          your account is activated.
+        </span>
       </div>
       {% endif %}
 
-      {% if application.status == 'pending' or application.status == 'reviewing' or application.status == 'review' %}
-      <div style="margin-top:1rem;padding:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
-        {% if application.user_id %}
-        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem">Your account is active. Log in to the student portal to check for updates.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">
-          <a href="{% url 'portal:application_letter_pdf' application.reference_number %}" class="btn" style="background:var(--surface2);color:var(--text);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px">📄 Application Letter</a>
-          <a href="{% url 'accounts:login' %}" class="btn" style="background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;gap:6px">Log In to Portal →</a>
-        </div>
-        {% endif %}
-        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}">
-          {% csrf_token %}
-          <button type="submit" class="btn" style="background:rgba(220,38,38,.08);color:var(--danger);padding:8px 18px;border-radius:8px;font-weight:600;font-size:.85rem;border:1px solid rgba(220,38,38,.2);cursor:pointer" onclick="return confirm('Withdraw this application? This cannot be undone.')">Withdraw Application</button>
-        </form>
+      {# Still in progress ──}
+      {% if application.status == "pending" or application.status == "reviewing" or application.status == "review" %}
+      <div class="notice notice--info mt-3">
+        <span class="notice__icon">{% include "portal/partials/icon.html" with name="clock" size=18 %}</span>
+        <span>
+          <span class="notice__title">In progress</span>
+          The admissions office is still working on your application. This page updates
+          as soon as the stage changes &mdash; you do not need to submit again.
+        </span>
       </div>
+
+      {% if application.user_id %}
+      <div class="cluster mt-3">
+        <a class="btn btn--primary" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">Open the student portal</a>
+        <a class="btn btn--ghost" href="{% url 'portal:application_letter_pdf' application.reference_number %}">Download application letter</a>
+      </div>
+      {% endif %}
+
+      <details class="disclosure mt-3">
+        <summary>Withdraw this application</summary>
+        <p class="field__help mt-2">
+          Withdrawing is permanent. If this was submitted by mistake, contact the
+          admissions office instead of withdrawing.
+        </p>
+        <form method="post" action="{% url 'portal:application_withdraw' application.reference_number %}" class="mt-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--danger-soft btn--sm"
+                  onclick="return confirm('Withdraw this application? This cannot be undone.');">
+            Yes, withdraw my application
+          </button>
+        </form>
+      </details>
       {% endif %}
 
       {% if application.rejection_reason %}
-      <div style="margin-top:1rem;padding:1rem;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.12);border-radius:10px">
-        <p style="font-weight:600;color:var(--danger);margin-bottom:.25rem">Reason</p>
-        <p style="font-size:.875rem;color:var(--text-muted)">{{ application.rejection_reason }}</p>
+      <div class="notice notice--danger mt-3">
+        <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+        <span>
+          <span class="notice__title">Reason given</span>
+          {{ application.rejection_reason }}
+        </span>
       </div>
       {% endif %}
     </div>
     {% endif %}
+
+    {# ── Help ──────────────────────────────────────────────────────── #}
+    <div class="grid grid--3 mt-4">
+      <div class="value-card card" data-reveal>
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="file" size=20 %}</span>
+        <h3>Lost your reference?</h3>
+        <p>It appears on your confirmation screen and at the top of every email from the admissions office.</p>
+      </div>
+      <div class="value-card card" data-reveal data-reveal-delay="100">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="shield" size=20 %}</span>
+        <h3>Signed in already?</h3>
+        <p>If you have a portal account, your applications are listed on your dashboard &mdash; no lookup needed.</p>
+        <a class="link-arrow mt-2" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">Go to my dashboard</a>
+      </div>
+      <div class="value-card card" data-reveal data-reveal-delay="200">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name="chat" size=20 %}</span>
+        <h3>Still stuck?</h3>
+        <p>Send us your name, programme and reference number and we will look it up for you.</p>
+        <a class="link-arrow mt-2" href="{% url 'portal:contact' %}">Contact the admissions office</a>
+      </div>
+    </div>
   </div>
 </section>
+
+{% with cta_title="Need to apply instead?" cta_text="Applications are open for the current intake. Start online and save a draft if you need more time." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
 {% endblock %}

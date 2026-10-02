@@ -38,6 +38,28 @@ def _current_semester_for(session):
     return None
 
 
+def _simulate_test_payment(request, application, fee, actor):
+    """Complete a hostel charge locally for a Paystack TEST gateway (no real
+    money). Only reachable when ``PaystackService.simulate_allowed()``."""
+    reference = f"TEST-{application.pk}-{uuid.uuid4().hex[:12]}"
+    services.HostelFinanceService.record_external_payment(
+        fee=fee, amount=fee.balance, reference=reference,
+        method="paystack_test", actor=actor,
+    )
+    try:
+        services.HostelApplicationService.mark_payment_verified(
+            application, actor=actor
+        )
+    except services.HostelServiceError as exc:
+        _service_message(request, exc)
+        return redirect("hostel:hostel")
+    messages.success(
+        request,
+        "Payment confirmed (test mode). A bed will be allocated by hostel staff shortly.",
+    )
+    return redirect("hostel:hostel")
+
+
 @login_required
 def hostel_list(request):
     services.HostelAllocationService.expire_due_reservations()
@@ -109,14 +131,20 @@ def hostel_list(request):
                 and my_allocation.days_left <= 60
             )
             if session:
+                try:
+                    booking = my_allocation.application
+                except Exception:
+                    booking = None
                 balance_info = services.HostelFinanceService.balance_info(
-                    request.user, session
+                    request.user, session, application=booking
                 )
             show_form = False
         else:
             session = my_application.session if my_application else None
             if session:
-                balance_info = services.HostelFinanceService.balance_info(request.user, session)
+                balance_info = services.HostelFinanceService.balance_info(
+                    request.user, session, application=my_application
+                )
             live_statuses = (
                 HostelApplication.Status.PENDING,
                 HostelApplication.Status.UNDER_REVIEW,
@@ -256,6 +284,7 @@ def hostel_pay_initiate(request, pk):
         hostel=application.room.hostel,
         room=application.room,
         semester=_current_semester_for(application.session),
+        application=application,
     )
     if fee is None:
         messages.error(request, "No hostel charge is configured for this session.")
@@ -265,6 +294,9 @@ def hostel_pay_initiate(request, pk):
     if balance <= 0:
         messages.info(request, "Your hostel charge is already fully paid.")
         return redirect("hostel:hostel")
+
+    if services.PaystackService.simulate_allowed():
+        return _simulate_test_payment(request, application, fee, request.user)
 
     if not request.user.email:
         messages.error(request, "Your account has no email address. Contact the finance office to update it.")
@@ -336,6 +368,7 @@ def hostel_pay_callback(request):
             hostel=application.room.hostel,
             room=application.room,
             semester=_current_semester_for(application.session),
+            application=application,
         )
     if fee is not None:
         amount = services.PaystackService.minor_to_major(data.get("amount"))
@@ -410,6 +443,7 @@ def hostel_pay_webhook(request):
         hostel=application.room.hostel,
         room=application.room,
         semester=_current_semester_for(application.session),
+        application=application,
     )
     if fee is not None:
         amount = services.PaystackService.minor_to_major(verified.get("amount"))

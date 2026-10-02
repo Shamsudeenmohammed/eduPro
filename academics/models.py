@@ -196,6 +196,21 @@ class Program(TimeStampedModel):
         """
         return self.levels.filter(is_active=True).order_by("order").first()
 
+    def available_application_types(self):
+        """
+        The admission application types this program accepts.
+
+        Keeps a programme from offering entry it does not run: a diploma
+        programme does not offer postgraduate, and a Master's programme does
+        not offer a certificate. The rules live in
+        ``portal.models.program_available_types`` so the portal stays the only
+        place that knows about application types; the import is local to avoid
+        a circular import at module load.
+        """
+        from portal.models import program_available_types
+
+        return program_available_types(self)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ACADEMIC SESSION  (unchanged)

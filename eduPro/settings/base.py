@@ -143,8 +143,11 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@edupro.com")
 # Mode (test vs live) is selected by the secret key you supply per environment:
 #   * Test mode (development) — use your Paystack TEST secret key. Checkout is
 #     fully simulated, no real money moves. Safe for local / staging servers.
+#     With a KEY that starts with "sk_test_" the hostel "Pay & Confirm" flow is
+#     completed locally (test payment), so every component updates end-to-end
+#     even without internet access to Paystack.
 #   * Live mode (production)  — use your Paystack LIVE secret key. Charges real
-#     money. Never commit live keys; set them as env vars on the production host.
+#     money. The test-payment shortcut is NEVER available here.
 # Both modes share the same API base URL; only the key differs.
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="")
 PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY", default="")

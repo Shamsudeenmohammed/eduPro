@@ -4,9 +4,13 @@ portal/urls.py
 Merged URL configuration — preserves every original route and adds
 the new admissions-workflow routes alongside them.
 
-Original routes (unchanged):
+    Original routes (unchanged):
     home, about, programs, contact, admission_apply,
     news_list, news_detail, admin_contacts, admin_admissions
+
+    Public discovery routes (added by the frontend redesign — read-only):
+    program_detail, academic, admissions, events_list, student_life
+
 
 New routes (added by refactor):
     apply, application_confirmed, application_status, application_withdraw,
@@ -30,6 +34,13 @@ urlpatterns = [
     path("contact/",            views.contact,          name="contact"),
     path("news/",               views.news_list,        name="news_list"),
     path("news/<int:pk>/",      views.news_detail,      name="news_detail"),
+
+    # Public discovery pages (read-only views over existing records)
+    path("programs/<int:pk>/",  views.program_detail,   name="program_detail"),
+    path("academics/",          views.academic_structure, name="academic"),
+    path("how-to-apply/",       views.admissions_landing,  name="admissions"),
+    path("events/",             views.events_list,      name="events_list"),
+    path("student-life/",       views.student_life,     name="student_life"),
 
     # Original simple admission form (legacy — kept for backward compat)
     path("admission/",          views.admission_apply,  name="admission_apply"),

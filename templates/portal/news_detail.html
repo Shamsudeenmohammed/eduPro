@@ -1,20 +1,51 @@
-{% extends "base_public.html" %}{% block title %}{{ item.title }} — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}{{ item.title }} — {{ site_name }}{% endblock %}
+{% block meta_description %}{{ item.summary|truncatewords:26|default:item.title }}{% endblock %}
+
 {% block content %}
-<section class="page-banner">
-  <div class="container">
-    <h1>{{ item.title }}</h1>
-    <p>{{ item.published_at|date:"F j, Y" }}</p>
-  </div>
-</section>
-<section class="section">
-  <div class="container" style="max-width:800px">
-    <div class="feature-card" style="padding:2rem">
-      {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%;max-height:400px;object-fit:cover;border-radius:8px;margin-bottom:1.5rem">{% endif %}
-      <div style="font-size:1rem;color:var(--text-muted);line-height:1.8">{{ item.content|linebreaks }}</div>
-      <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)">
-        <a href="{% url 'portal:news_list' %}" style="color:var(--primary);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:6px">← Back to News</a>
+
+{% include "portal/partials/page_hero.html" with hero_title=item.title hero_parent_label="News" hero_parent_url="/portal/news/" %}
+
+<section class="section section--tight">
+  <div class="container container--narrow">
+    <article>
+      <p class="news-card__meta mb-3">
+        <span class="badge badge--neutral">Announcement</span>
+        {% if item.is_featured %}<span class="badge">Featured</span>{% endif %}
+        {% if item.published_at %}
+        <time datetime="{{ item.published_at|date:'c' }}">{{ item.published_at|date:"j F Y" }}</time>
+        {% endif %}
+      </p>
+
+      {% if item.image %}
+      <img src="{{ item.image.url }}" alt="{{ item.title }}" class="mb-3" style="border-radius:var(--radius-lg);width:100%">
+      {% endif %}
+
+      {% if item.summary %}
+      <p class="lead">{{ item.summary }}</p>
+      {% endif %}
+
+      <div class="prose">
+        {% if item.content %}
+          {{ item.content|safe }}
+        {% else %}
+          <p>{{ item.summary }}</p>
+        {% endif %}
       </div>
+    </article>
+
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="{% url 'portal:news_list' %}">
+        {% include "portal/partials/icon.html" with name="arrow" size=16 %}
+        Back to all news
+      </a>
+      <a class="btn btn--primary" href="{% url 'portal:admissions' %}">Admissions information</a>
     </div>
   </div>
 </section>
+
+{% with cta_title="Questions about this announcement?" cta_text="Send us a message and the relevant office will get back to you." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
 {% endblock %}

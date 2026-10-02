@@ -18,7 +18,9 @@ from .models import (
     ApplicationPayment,
     ApplicationRequirement,
     ApplicationType,
+    CycleApplicationType,
     DocumentRequest,
+    ProgramApplicationType,
 )
 
 
@@ -80,10 +82,22 @@ def reject_applications(modeladmin, request, queryset):
 
 # ── Cycle Admin ────────────────────────────────────────────────────────────
 
+class CycleApplicationTypeInline(admin.TabularInline):
+    """The full set of types a cycle accepts, editable next to the cycle."""
+    model = CycleApplicationType
+    extra = 0
+    fields = ("application_type",)
+    raw_id_fields = ("application_type",)
+    verbose_name = _("accepted application type")
+    verbose_name_plural = _("accepted application types")
+
+
 @admin.register(AdmissionCycle)
 class AdmissionCycleAdmin(admin.ModelAdmin):
+    # "accepted_types" shows the whole chosen set; the `application_type` FK is
+    # only the primary one, so listing it alone would hide the rest.
     list_display  = (
-        "name", "academic_year", "academic_session", "application_type",
+        "name", "academic_year", "academic_session", "accepted_types",
         "application_fee", "status", "is_active", "start_date", "end_date",
         "max_applications",
     )
@@ -91,6 +105,7 @@ class AdmissionCycleAdmin(admin.ModelAdmin):
     search_fields = ("name", "academic_year")
     raw_id_fields = ("academic_session", "application_type")
     readonly_fields = ("created_at", "updated_at")
+    inlines = (CycleApplicationTypeInline,)
     fieldsets = (
         (_("Cycle"), {
             "fields": (
@@ -106,6 +121,10 @@ class AdmissionCycleAdmin(admin.ModelAdmin):
             "fields": ("created_at", "updated_at"),
         }),
     )
+    @admin.display(description=_("accepted application types"))
+    def accepted_types(self, obj):
+        return obj.admission_summary()
+
 
 
 # ── Application Admin ──────────────────────────────────────────────────────
@@ -281,6 +300,31 @@ class ApplicationRequirementAdmin(admin.ModelAdmin):
     search_fields = ("code", "label", "help_text")
     raw_id_fields = ("application_type", "program")
     ordering      = ("application_type", "order")
+
+
+@admin.register(ProgramApplicationType)
+class ProgramApplicationTypeAdmin(admin.ModelAdmin):
+    """
+    The explicit override: a programme normally accepts the application type
+    matching its own ``program_type``, and only needs a row here when it
+    accepts something different or additional. A programme with no rows at all
+    is not "no restriction" — see ``portal.models.program_available_types``.
+    """
+    list_display  = ("program", "application_type", "is_active", "created_at")
+    list_filter   = ("is_active", "application_type")
+    search_fields = ("program__name", "program__code", "application_type__label")
+    raw_id_fields = ("program", "application_type")
+    autocomplete_fields = ()
+    ordering      = ("program", "application_type__order")
+
+
+@admin.register(CycleApplicationType)
+class CycleApplicationTypeAdmin(admin.ModelAdmin):
+    list_display  = ("cycle", "application_type", "created_at")
+    list_filter   = ("application_type",)
+    search_fields = ("cycle__name", "application_type__label")
+    raw_id_fields = ("cycle", "application_type")
+    ordering      = ("cycle", "application_type__order")
 
 
 @admin.register(ApplicationDocument)

@@ -1307,3 +1307,151 @@ class HostelPaymentFlowTests(HostelBaseTestCase):
             title="Hostel payment confirmed",
         ).count()
         self.assertEqual(count, 1)
+
+    @override_settings(PAYSTACK_SECRET_KEY="sk_test_devsim")
+    def test_test_key_simulates_payment_in_development(self):
+        student = self._student("dev@school.edu")
+        app = HostelApplicationService.submit_application(student=student, room=self.room)
+        HostelApplicationService.review_application(app, self.officer, approve=True)
+
+        HostelFeeConfig.objects.create(
+            hostel=self.hostel, session=self.session,
+            fee_structure=None, amount=Decimal("2700.00"), is_active=True,
+        )
+        self.policy.enable_hostel_charges = True
+        self.policy.require_payment_before_checkin = True
+        self.policy.allow_partial_payment = False
+        self.policy.save()
+
+        self.client.force_login(student)
+        resp = self.client.post(reverse("hostel:hostel_pay_initiate", args=[app.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("hostel:hostel"))
+
+        app.refresh_from_db()
+        self.assertIsNotNone(app.payment_verified_at)
+        self.assertEqual(StudentFee.objects.filter(student=student).count(), 1)
+        fee = StudentFee.objects.get(student=student)
+        self.assertEqual(fee.amount_paid, Decimal("2700.00"))
+        self.assertEqual(fee.status, "paid")
+        self.assertTrue(
+            FeePayment.objects.filter(
+                student_fee=fee, payment_method="paystack_test",
+                amount=Decimal("2700.00"),
+            ).exists()
+        )
+        self.assertTrue(
+            StudentNotification.objects.filter(
+                student=student, category="hostel",
+                title="Hostel payment confirmed",
+            ).exists()
+        )
+
+    @override_settings(PAYSTACK_SECRET_KEY="sk_live_real")
+    def test_live_key_never_simulates(self):
+        """A live gateway must always go through Paystack — never simulate."""
+        student = self._student("live@school.edu")
+        app = HostelApplicationService.submit_application(student=student, room=self.room)
+        HostelApplicationService.review_application(app, self.officer, approve=True)
+
+        HostelFeeConfig.objects.create(
+            hostel=self.hostel, session=self.session,
+            fee_structure=None, amount=Decimal("2700.00"), is_active=True,
+        )
+        self.policy.enable_hostel_charges = True
+        self.policy.require_payment_before_checkin = True
+        self.policy.allow_partial_payment = False
+        self.policy.save()
+
+        self.client.force_login(student)
+        auth_url = "https://checkout.paystack.com/live-hostel-charge"
+        with mock.patch.object(
+            services.PaystackService, "initialize",
+            return_value={"authorization_url": auth_url},
+        ):
+            resp = self.client.post(
+                reverse("hostel:hostel_pay_initiate", args=[app.pk])
+            )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, auth_url)
+        app.refresh_from_db()
+        self.assertIsNone(app.payment_verified_at)
+        self.assertFalse(
+            FeePayment.objects.filter(payment_method="paystack_test").exists()
+        )
+
+    @override_settings(PAYSTACK_SECRET_KEY="sk_test_rebook")
+    def test_rebooking_after_vacate_requires_fresh_payment(self):
+        """Vacating then re-booking must start a fresh, unpaid charge — the
+        previous stay's payment can never satisfy the new booking."""
+        student = self._student("rebook@school.edu")
+        HostelFeeConfig.objects.create(
+            hostel=self.hostel, session=self.session,
+            fee_structure=None, amount=Decimal("2700.00"), is_active=True,
+        )
+        self.policy.enable_hostel_charges = True
+        self.policy.require_payment_before_checkin = True
+        self.policy.allow_partial_payment = False
+        self.policy.save()
+
+        # ── First stay: apply → approve → pay → allocate → check in → vacate.
+        first = HostelApplicationService.submit_application(student=student, room=self.room)
+        HostelApplicationService.review_application(first, self.officer, approve=True)
+        self.client.force_login(student)
+        self.client.post(reverse("hostel:hostel_pay_initiate", args=[first.pk]))
+        first.refresh_from_db()
+        self.assertIsNotNone(first.payment_verified_at)
+        fee1 = StudentFee.objects.get(
+            student=student, fee_structure__name__endswith=f"Booking #{first.pk}"
+        )
+        self.assertEqual(fee1.amount_paid, Decimal("2700.00"))
+
+        alloc1 = self.allocate(student=student, bed=self.bed_a, application=first)
+        self.check_in(alloc1)
+        HostelCheckoutService.checkout(allocation=alloc1, actor=self.officer)
+        self.assertEqual(
+            HostelAllocation.objects.get(pk=alloc1.pk).status,
+            HostelAllocation.Status.CHECKED_OUT,
+        )
+        self.assertEqual(
+            HostelBed.objects.get(pk=self.bed_a.pk).state,
+            HostelBed.BedState.AVAILABLE,
+        )
+
+        # ── Second stay: apply → approve. MUST be unpaid again.
+        second = HostelApplicationService.submit_application(student=student, room=self.room)
+        HostelApplicationService.review_application(second, self.officer, approve=True)
+
+        fee2 = HostelFinanceService.ensure_charge(
+            student=student, session=self.session, hostel=self.hostel,
+            room=self.room, application=second,
+        )
+        self.assertIsNotNone(fee2)
+        self.assertNotEqual(fee2.pk, fee1.pk)
+        self.assertEqual(fee2.amount_paid, Decimal("0"))
+
+        info = HostelFinanceService.balance_info(
+            student, self.session, application=second
+        )
+        self.assertEqual(info["balance"], Decimal("2700.00"))
+        self.assertEqual(info["status"], "unpaid")
+        self.assertFalse(
+            HostelFinanceService.payment_satisfied(
+                student, self.session, policy=self.policy, application=second
+            )
+        )
+
+        # ── Paying the NEW booking confirms it — and only it.
+        self.client.post(reverse("hostel:hostel_pay_initiate", args=[second.pk]))
+        second.refresh_from_db()
+        self.assertIsNotNone(second.payment_verified_at)
+        fee2.refresh_from_db()
+        self.assertEqual(fee2.amount_paid, Decimal("2700.00"))
+        self.assertEqual(fee2.status, "paid")
+
+        # The old booking's fee is untouched and its record is kept for audit.
+        fee1.refresh_from_db()
+        self.assertEqual(fee1.status, "paid")
+        self.assertEqual(
+            StudentFee.objects.filter(student=student).count(), 2
+        )

@@ -1,29 +1,174 @@
-{% extends "base_public.html" %}{% block title %}About Us {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}About {{ site_name }}{% endblock %}
+{% block meta_description %}{% firstof page.meta_description page.title site_name "About the institution" %}{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+
+{% with hero_title="About "|add:site_name hero_lead="Our academic structure, our standards and how we work." %}
+  {% include "portal/partials/page_hero.html" %}
+{% endwith %}
+
+{# ── Identity ─────────────────────────────────────────────────────────── #}
+<section class="section section--tight">
   <div class="container">
-    <h1>About Us</h1>
-    <p>Learn more about {{ site_name }}</p>
-  </div>
-</section>
-<section class="section">
-  <div class="container" style="max-width:800px">
-    {% if page %}{{ page.content|safe }}{% else %}
-    <div class="feature-card" style="padding:2.5rem">
-      <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin-bottom:1rem">Our Mission</h2>
-      <p style="color:var(--text-muted);line-height:1.8;margin-bottom:1.5rem">{{ site_name }} is committed to academic excellence and student success. We provide a modern, technology-driven learning environment that empowers students to achieve their full potential.</p>
-      <div class="grid-2" style="margin-top:2rem">
-        <div class="feature-card" style="border:none;background:var(--surface2);padding:1.5rem;text-align:center">
-          <div style="font-size:2rem;font-weight:800;color:var(--primary);font-family:var(--font-display)">{{ stats.total_students|default:"5,000+" }}</div>
-          <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">Students Enrolled</div>
-        </div>
-        <div class="feature-card" style="border:none;background:var(--surface2);padding:1.5rem;text-align:center">
-          <div style="font-size:2rem;font-weight:800;color:var(--primary);font-family:var(--font-display)">{{ stats.total_programs|default:"50+" }}</div>
-          <div style="font-size:.85rem;color:var(--text-muted);margin-top:.25rem">Academic Programs</div>
+    <div class="split">
+      <div data-reveal>
+        <p class="eyebrow">Who we are</p>
+        <h2 class="mb-2">An institution built on clear academic structure</h2>
+        {% if page and page.content %}
+        <div class="prose">{{ page.content|safe }}</div>
+        {% else %}
+        <p class="lead">
+          {{ site_name }} delivers its programmes through a defined academic structure:
+          faculties, each made up of departments, each owning the programmes it teaches.
+          That structure is why a student can always name the department responsible for
+          their course, their result and their progress.
+        </p>
+        <p class="text-muted">
+          The information below is drawn from the institution's own records. Where a
+          detail has not been published yet, it is left out rather than guessed &mdash;
+          so everything you see here is verifiable.
+        </p>
+        {% endif %}
+      </div>
+
+      <div data-reveal data-reveal-delay="120">
+        <div class="card card--pad">
+          <h3 class="mb-2">At a glance</h3>
+          <dl class="facts">
+            <div><dt>Faculties</dt><dd>{{ stats.faculties }}</dd></div>
+            <div><dt>Departments</dt><dd>{{ stats.departments }}</dd></div>
+            <div><dt>Programmes</dt><dd>{{ stats.programmes }}</dd></div>
+            {% if institution.short_name %}<div><dt>Institution code</dt><dd>{{ institution.short_name }}</dd></div>{% endif %}
+            {% if institution.address %}<div><dt>Location</dt><dd>{{ institution.address }}</dd></div>{% endif %}
+            {% if institution.motto %}<div><dt>Motto</dt><dd>{{ institution.motto }}</dd></div>{% endif %}
+          </dl>
+          {% if institution.logo %}
+          <div class="cluster mt-3">
+            <img src="{{ institution.logo.url }}" alt="{{ site_name }} crest" style="height:56px;width:auto">
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
-    {% endif %}
   </div>
 </section>
+
+{# ── Mission / vision / values ────────────────────────────────────────── #}
+{% if sections.mission or sections.vision or sections.values or sections.history %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Our direction</p>
+      <h2>What we are here to do</h2>
+    </div>
+
+    <div class="pillars" data-reveal>
+      {% if sections.history %}
+      <div class="pillar">
+        <span class="pillar__label">
+          <span class="pillar__icon">{% include "portal/partials/icon.html" with name="book" size=18 %}</span>
+          Our history
+        </span>
+        <p>{{ sections.history.content|striptags|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if sections.mission %}
+      <div class="pillar">
+        <span class="pillar__label">
+          <span class="pillar__icon">{% include "portal/partials/icon.html" with name="compass" size=18 %}</span>
+          Our mission
+        </span>
+        <p>{{ sections.mission.content|striptags|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if sections.vision %}
+      <div class="pillar">
+        <span class="pillar__label">
+          <span class="pillar__icon">{% include "portal/partials/icon.html" with name="award" size=18 %}</span>
+          Our vision
+        </span>
+        <p>{{ sections.vision.content|striptags|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+      {% if sections.values %}
+      <div class="pillar">
+        <span class="pillar__label">
+          <span class="pillar__icon">{% include "portal/partials/icon.html" with name="heart" size=18 %}</span>
+          Our values
+        </span>
+        <p>{{ sections.values.content|striptags|truncatewords:60 }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Leadership & facilities (only when published) ────────────────────── #}
+{% if sections.leadership or sections.facilities %}
+<section class="section">
+  <div class="container">
+    <div class="grid grid--2">
+      {% if sections.leadership %}
+      <div class="card card--pad" data-reveal>
+        <p class="eyebrow">Leadership</p>
+        <h2 class="mb-2">Who leads {{ site_name }}</h2>
+        <div class="prose">{{ sections.leadership.content|safe }}</div>
+      </div>
+      {% endif %}
+      {% if sections.facilities %}
+      <div class="card card--pad" data-reveal data-reveal-delay="120">
+        <p class="eyebrow">Facilities</p>
+        <h2 class="mb-2">What we have on the ground</h2>
+        <div class="prose">{{ sections.facilities.content|safe }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Faculties ────────────────────────────────────────────────────────── #}
+{% if faculties %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Academic structure</p>
+      <h2>Our faculties</h2>
+      <p>Each faculty is led by a dean and made up of departments responsible for their own programmes.</p>
+    </div>
+
+    <div class="grid grid--3" data-reveal>
+      {% for faculty in faculties|slice:":3" %}
+      <article class="card card--hover faculty-card">
+        <div class="faculty-card__head">
+          <span class="faculty-card__code">{{ faculty.code }}</span>
+          <div>
+            <h3>{{ faculty.name }}</h3>
+            {% if faculty.dean %}
+            <p class="faculty-card__dean">Dean: {{ faculty.dean.get_full_name|default:faculty.dean }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% if faculty.description %}<p>{{ faculty.description|truncatewords:26 }}</p>{% endif %}
+        <p class="faculty-card__foot">
+          <strong>{{ faculty.department_count }}</strong> department{% if faculty.department_count != 1 %}s{% endif %}
+          &nbsp;&middot;&nbsp; <strong>{{ faculty.programme_count }}</strong> programme{% if faculty.programme_count != 1 %}s{% endif %}
+        </p>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a class="btn btn--ghost" href="{% url 'portal:academic' %}">Explore faculties &amp; departments</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% with cta_title="Come and study with us" cta_text="See the programmes we run, check what you need, and apply online when you are ready." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
 {% endblock %}

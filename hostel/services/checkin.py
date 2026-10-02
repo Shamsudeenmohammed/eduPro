@@ -36,10 +36,17 @@ class HostelCheckInService:
                     % alloc.get_status_display()
                 )
 
-            # Financial gate (finance is the source of truth).
+            # Financial gate (finance is the source of truth). The check is
+            # scoped to the booking's own charge so a paid-off previous stay
+            # can never satisfy a fresh booking.
+            try:
+                application = alloc.application
+            except Exception:
+                application = None
             if policy and policy.require_payment_before_checkin and policy.enable_hostel_charges:
                 if not HostelFinanceService.payment_satisfied(
-                    alloc.student, alloc.session, policy=policy
+                    alloc.student, alloc.session, policy=policy,
+                    application=application,
                 ):
                     raise PaymentRequiredError(
                         _("Hostel check-in cannot be completed because the required payment "

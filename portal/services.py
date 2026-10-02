@@ -1191,4 +1191,77 @@ class CycleService:
         return cycle
 
 
+class ApplicationTypeCatalog:
+    """
+    Answers the question "what may an applicant choose right now?".
+
+    Two limits are applied, in this order:
+
+    1. the cycle — if the cycle names the types it accepts, only those;
+    2. the programme — a programme only offers the types it actually runs, so a
+       diploma programme is not offered postgraduate and the reverse.
+
+    Either limit being absent (a cycle that accepts anything, a programme that
+    has no restriction recorded) means "no restriction from here".
+    """
+
+    @staticmethod
+    def active_types():
+        return ApplicationType.objects.filter(is_active=True).order_by("order", "code")
+
+    @classmethod
+    def for_cycle(cls, cycle):
+        """
+        Types the given cycle accepts, ignoring programmes.
+
+        An unrestricted cycle falls back to every active type, so the dropdown
+        is never empty just because nobody configured it.
+        """
+        accepted = cycle.accepted_types() if cycle is not None else []
+        usable = [t for t in accepted if t.is_active]
+        return usable if usable else list(cls.active_types())
+
+    @classmethod
+    def for_program(cls, program):
+        """Types *program* accepts, ignoring the cycle."""
+        from .models import program_available_types
+
+        return program_available_types(program)
+
+    @classmethod
+    def available(cls, cycle=None, program=None):
+        """
+        The types to offer, narrowed by the cycle and then by the programme.
+
+        Returns an empty list only when both limits genuinely rule everything
+        out; callers should treat that as "nothing to offer" rather than
+        silently widening the list.
+        """
+        types = cls.for_cycle(cycle)
+        if program is not None:
+            allowed = {t.pk for t in cls.for_program(program)}
+            types = [t for t in types if t.pk in allowed]
+        return types
+
+    @classmethod
+    def is_valid_pair(cls, cycle, program, application_type):
+        """
+        True when this programme may be applied for under this type.
+
+        Used for server-side validation so a crafted POST cannot post a
+        combination the dropdown never offered.
+        """
+        if application_type is None:
+            return True
+        atype = ApplicationType.for_code(application_type) if isinstance(
+            application_type, str
+        ) else application_type
+        if atype is None:
+            return True
+        if not cls.active_types().filter(pk=atype.pk).exists():
+            return False
+        allowed = {t.pk for t in cls.available(cycle=cycle, program=program)}
+        return atype.pk in allowed
+
+
 # Imported late to avoid a circular import at module load time.

@@ -1,29 +1,83 @@
-{% extends "base_public.html" %}{% block title %}News &amp; Announcements — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}News &amp; Announcements — {{ site_name }}{% endblock %}
+{% block meta_description %}Official announcements, notices and updates from {{ site_name }}.{% endblock %}
+
 {% block content %}
-<section class="page-banner">
-  <div class="container">
-    <h1>News &amp; Announcements</h1>
-    <p>Stay informed with the latest updates from {{ site_name }}</p>
-  </div>
-</section>
-<section class="section">
+
+{% include "portal/partials/page_hero.html" with hero_title="News & Announcements" hero_lead="Official announcements and notices published by the institution." %}
+
+<section class="section section--tight">
   <div class="container">
     {% if page_obj %}
-    <div class="feature-grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">
-      {% for item in page_obj %}
-      <div class="feature-card" onclick="window.location='{% url 'portal:news_detail' item.pk %}'" style="cursor:pointer">
-        {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem">{% endif %}
-        <h3 style="font-size:1.05rem;margin-bottom:.5rem">{{ item.title }}</h3>
-        <p style="font-size:.875rem;color:var(--text-muted);line-height:1.6">{{ item.summary|truncatewords:30 }}</p>
-        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.75rem">{{ item.published_at|date:"F j, Y" }}</p>
+      {# ── Featured item ───────────────────────────────────────────── #}
+      {% with featured=page_obj.0 %}
+        {% if featured.is_featured %}
+        <article class="card card--flush news-feature mb-4" data-reveal>
+          <div class="news-feature__media">
+            {% if featured.image %}
+              <img src="{{ featured.image.url }}" alt="" loading="lazy">
+            {% endif %}
+          </div>
+          <div class="news-feature__body">
+            <p class="news-card__meta">
+              <span class="badge">Featured</span>
+              <time datetime="{{ featured.published_at|date:'c' }}">{{ featured.published_at|date:"j F Y" }}</time>
+            </p>
+            <h2 class="mb-1">{{ featured.title }}</h2>
+            <p class="lead">{{ featured.summary|truncatewords:34 }}</p>
+            <div class="mt-3">
+              <a class="btn btn--primary" href="{% url 'portal:news_detail' featured.pk %}">Read the announcement</a>
+            </div>
+          </div>
+        </article>
+        {% endif %}
+      {% endwith %}
+
+      <div class="section-head section-head--left mb-3">
+        <h2 class="mb-0">{% if page_obj.0.is_featured %}More news{% else %}All announcements{% endif %}</h2>
+        <p class="mb-0">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
       </div>
-      {% endfor %}
-    </div>
+
+      {# ── Grid ─────────────────────────────────────────────────────── #}
+      <div class="grid grid--auto">
+        {% for item in page_obj %}
+          {% include "portal/partials/news_card.html" with item=item %}
+        {% endfor %}
+      </div>
+
+      {# ── Pagination ───────────────────────────────────────────────── #}
+      {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="pagination mt-4" aria-label="News pages">
+        {% if page_obj.has_previous %}
+        <a class="btn btn--ghost btn--sm" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="pagination__status">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a class="btn btn--ghost btn--sm" href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </nav>
+      {% endif %}
     {% else %}
-    <div class="feature-card" style="text-align:center;padding:3rem">
-      <p style="color:var(--text-muted)">No announcements yet. Check back soon.</p>
+    <div class="card card--pad empty-state">
+      <span class="empty-state__icon">{% include "portal/partials/icon.html" with name="megaphone" size=28 %}</span>
+      <h3>No announcements yet</h3>
+      <p>
+        Nothing has been published here so far. In the meantime, the
+        <a href="{% url 'portal:admissions' %}">admissions page</a> and
+        <a href="{% url 'portal:events_list' %}">events page</a> carry the information
+        prospective students need most.
+      </p>
+      <div class="cluster mt-3" style="justify-content:center">
+        <a class="btn btn--primary" href="{% url 'portal:admissions' %}">Admission information</a>
+        <a class="btn btn--ghost" href="{% url 'portal:events_list' %}">See events</a>
+      </div>
     </div>
     {% endif %}
   </div>
 </section>
+
+{% with cta_title="Never miss an update" cta_text="Check the events page for upcoming open days and public activities, and follow your application status from the portal." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
 {% endblock %}

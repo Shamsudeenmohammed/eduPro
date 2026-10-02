@@ -846,7 +846,13 @@ def outstanding_balances(request):
     for alloc in allocs:
         if not alloc.session:
             continue
-        info = HostelFinanceService.balance_info(alloc.student, alloc.session)
+        try:
+            booking = alloc.application
+        except Exception:
+            booking = None
+        info = HostelFinanceService.balance_info(
+            alloc.student, alloc.session, application=booking
+        )
         if info["status"] not in ("none", "paid"):
             rows.append({"allocation": alloc, "finance": info})
 

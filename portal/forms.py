@@ -7,7 +7,15 @@ All forms for the admissions portal.
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import AdmissionApplication, AdmissionCycle, ContactMessage, DocumentRequest
+import json
+
+from .models import (
+    AdmissionApplication,
+    AdmissionCycle,
+    ApplicationType,
+    ContactMessage,
+    DocumentRequest,
+)
 
 
 # ── Original forms (PRESERVED — used by legacy views) ────────────────────────
@@ -144,15 +152,126 @@ class AdmissionApplicationForm(StyledFieldsMixin, forms.ModelForm):
         )
         self.fields["program_applied"].empty_label = "— Select a program —"
         self.fields["program_applied"].required = False
+        self._scope_application_types()
 
-    def clean_email(self):
-        email = self.cleaned_data.get("email", "").lower().strip()
-        # Allow re-applications from the same email in different cycles.
-        # Uniqueness per cycle is checked below.
-        return email
+    def _scope_application_types(self):
+        """
+        Offer only the application types the active cycle actually accepts.
+
+        The model field carries all nine :class:`ApplicationTypeCode` choices,
+        which is wrong on the public page: if the cycle is running for
+        undergraduate and mature applicants only, an applicant must not be able
+        to post ``certificate`` and be believed. Narrowing the choices here also
+        makes the browser reject an out-of-list value on its own, and
+        :meth:`clean` re-checks on the server.
+        """
+        from .services import ApplicationTypeCatalog
+
+        allowed = ApplicationTypeCatalog.for_cycle(self._cycle)
+        codes = [t.code for t in allowed]
+        self.available_type_codes = codes
+
+        field = self.fields["application_type"]
+        # Keep the model default out of the narrowed list, otherwise an
+        # unrestricted cycle would silently pre-select "undergraduate" for
+        # somebody applying for a certificate.
+        if field.initial is None and not self.is_bound:
+            field.initial = codes[0] if len(codes) == 1 else None
+        field.choices = [
+            (code, label) for code, label in field.choices if code in codes
+        ] or field.choices
+        field.widget.choices = field.choices
+        # Narrowing the choices means Django's own check rejects an out-of-list
+        # value with "Select a valid choice", which means nothing to an
+        # applicant. Say what is actually on offer instead.
+        field.error_messages = dict(
+            field.error_messages,
+            invalid_choice=(
+                "This intake is not accepting applications for that type. "
+                "Please choose: %s."
+                % (", ".join(
+                    str(dict(field.choices).get(c, c)) for c in codes
+                ) or "no application types")
+            ),
+        )
+        # The browser re-renders nothing on its own, so the page needs the full
+        # per-programme map to narrow the list as the programme changes.
+        field.widget.attrs["data-types-by-program"] = json.dumps(
+            self._types_by_program()
+        )
+        field.widget.attrs["data-types-all"] = json.dumps(codes)
+
+    def _types_by_program(self):
+        """
+        ``{program_id: [type codes]}`` for every active programme.
+
+        A programme with no entry accepts everything the cycle does, which is
+        what a missing entry means in
+        :meth:`~portal.services.ApplicationTypeCatalog.for_program`.
+        """
+        from academics.models import Program
+
+        from .services import ApplicationTypeCatalog
+
+        allowed = {t.code for t in ApplicationTypeCatalog.for_cycle(self._cycle)}
+        mapping = {}
+        for program in Program.objects.filter(is_active=True).only("id", "program_type"):
+            codes = {
+                t.code
+                for t in ApplicationTypeCatalog.for_program(program)
+                if t.is_active
+            }
+            narrowed = sorted(codes & allowed)
+            if narrowed:
+                mapping[str(program.pk)] = narrowed
+        return mapping
+
+    def clean_application_type(self):
+        code = self.cleaned_data.get("application_type")
+        if not code:
+            return code
+        # The cycle limit, checked independently of the widget's choices so a
+        # crafted POST cannot slip a type past a narrowed dropdown.
+        if self._cycle is not None:
+            allowed = set(getattr(self, "available_type_codes", []))
+            if allowed and code not in allowed:
+                label = str(
+                    dict(self.fields["application_type"].choices).get(code, code)
+                )
+                raise forms.ValidationError(
+                    "This intake is not accepting applications for %s." % label
+                )
+        return code
 
     def clean(self):
         cleaned = super().clean()
+        # The programme limit, which can only be checked once both parts of the
+        # pair are known.
+        program = cleaned.get("program_applied")
+        code = cleaned.get("application_type")
+        if program is not None and code:
+            from .services import ApplicationTypeCatalog
+
+            if not ApplicationTypeCatalog.is_valid_pair(
+                self._cycle, program, code
+            ):
+                allowed = sorted(
+                    t.label
+                    for t in ApplicationTypeCatalog.for_program(program)
+                    if t.is_active
+                )
+                cleaned.pop("application_type", None)
+                self.add_error(
+                    "application_type",
+                    "This program does not accept %s applications. It accepts: %s."
+                    % (
+                        str(
+                            dict(self.fields["application_type"].choices).get(code, code)
+                        ),
+                        ", ".join(str(label) for label in allowed)
+                        or "no application types",
+                    ),
+                )
         email = cleaned.get("email")
         if email and self._cycle:
             existing = AdmissionApplication.objects.filter(
@@ -257,14 +376,59 @@ class DocumentRequestForm(StyledFieldsMixin, forms.ModelForm):
 
 # ── Admin: Admission Cycle Form ───────────────────────────────────────────────
 
+class ApplicationTypeSelectMultiple(forms.SelectMultiple):
+    """
+    Renders every application type with its machine code and description
+    attached as data attributes.
+
+    ``code`` is what staff see as the short note beside the label, and both
+    code and description are added to the text selector2 searches, so a type can
+    be found by its label, its code or a word from its description.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._by_pk = {}
+
+    def set_types(self, queryset):
+        """Cache the rows the option list is being built from."""
+        self._by_pk = {str(t.pk): t for t in queryset}
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        atype = self._by_pk.get(str(value))
+        if atype is not None:
+            option["attrs"]["data-note"] = atype.code
+            option["attrs"]["data-search"] = " ".join(
+                part for part in (atype.code, atype.description) if part
+            )
+        return option
+
+
 class AdmissionCycleForm(StyledFieldsMixin, forms.ModelForm):
+    # A cycle can recruit for several application types at once, so the types
+    # are a multi-select. `AdmissionCycle.application_type` is no longer a
+    # form field: it is derived from the chosen set on save (the first type in
+    # display order) so staff are never asked the same question twice and the
+    # admin filters still have a single value to group on.
+    application_types = forms.ModelMultipleChoiceField(
+        queryset=ApplicationType.objects.none(),
+        required=False,
+        widget=ApplicationTypeSelectMultiple,
+        label=_("Application types accepted"),
+        help_text=_(
+            "Choose every application type this cycle accepts. Leave empty to "
+            "accept any type."
+        ),
+    )
+
     class Meta:
         model  = AdmissionCycle
         fields = [
             "name", "academic_year", "start_date", "end_date",
             "is_active", "max_applications",
             # Added by the admissions upgrade — all optional.
-            "academic_session", "application_type", "application_fee",
+            "academic_session", "application_fee",
             "status", "payment_required_to_progress",
         ]
         widgets = {
@@ -281,7 +445,6 @@ class AdmissionCycleForm(StyledFieldsMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from academics.models import AcademicSession
-        from .models import ApplicationType
 
         self.fields["academic_session"].queryset = (
             AcademicSession.objects.order_by("-start_date")
@@ -289,13 +452,43 @@ class AdmissionCycleForm(StyledFieldsMixin, forms.ModelForm):
         self.fields["academic_session"].empty_label = "— Select academic session —"
         self.fields["academic_session"].required = False
 
-        self.fields["application_type"].queryset = ApplicationType.objects.filter(
+        # Every application type, ordered the way they are shown everywhere
+        # else, so the first ticked one is the primary type on save.
+        self.application_type_options = ApplicationType.objects.filter(
             is_active=True
-        )
-        self.fields["application_type"].empty_label = "— Any application type —"
-        self.fields["application_type"].required = False
+        ).order_by("order", "code")
+        self.fields["application_types"].queryset = self.application_type_options
+        self.fields["application_types"].widget.set_types(self.application_type_options)
+
+        # Opt this field into selector2: searchable, multi-select. The opt-in is
+        # a data attribute rather than a class so the styling of the clipped
+        # native select is decided by the component, not by the form.
+        self.fields["application_types"].widget.attrs.update({
+            "data-selector2": "1",
+            "data-search-placeholder": "Search application types…",
+            "data-search-label": "Search application types",
+            "data-placeholder": "Any application type",
+            "size": "8",
+        })
+        if self.instance and self.instance.pk:
+            self.fields["application_types"].initial = [
+                t.pk for t in self.instance.accepted_types()
+            ]
+
         self.fields["application_fee"].required = False
         self.fields["status"].required = False
+
+    def clean_application_types(self):
+        types = self.cleaned_data.get("application_types")
+        if not types:
+            return ApplicationType.objects.none()
+        inactive = types.exclude(is_active=True)
+        if inactive.exists():
+            raise forms.ValidationError(
+                "These application types are no longer active: %s"
+                % ", ".join(t.code for t in inactive)
+            )
+        return types
 
     def clean(self):
         cleaned = super().clean()
@@ -305,6 +498,15 @@ class AdmissionCycleForm(StyledFieldsMixin, forms.ModelForm):
                 "end_date", _("The closing date must be on or after the opening date.")
             )
         return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Set the single-value FK from the chosen set before writing, so the
+        # row and its join rows are always consistent.
+        instance.set_accepted_types(self.cleaned_data.get("application_types"))
+        if commit:
+            instance.save()
+        return instance
 
 
 # ─────────────────────────────────────────────────────────────────────────────

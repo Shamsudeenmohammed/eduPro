@@ -1,78 +1,459 @@
-{% extends "base_public.html" %}{% block title %}Welcome {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}{{ site_name }} — {{ institution.motto|default:"Study, grow and belong" }}{% endblock %}
+{% block meta_description %}{% if home_sections.mission %}{{ home_sections.mission.content|striptags|truncatewords:28 }}{% else %}{{ site_name }} — explore our academic programmes, apply online and track your admission journey.{% endif %}{% endblock %}
+
 {% block content %}
+
+{# ── Hero ─────────────────────────────────────────────────────────────── #}
 <section class="hero">
-  <div class="container hero-content">
-    <h1>Shape Your Future at<br>{{ site_name }}</h1>
-    <p>A modern academic management platform designed to empower students, teachers, and administrators with seamless digital tools for learning and institutional management.</p>
+  <div class="hero__grid" aria-hidden="true"></div>
+  <div class="container hero__inner">
+    <div>
+      {% if open_cycles %}
+      <p class="hero__eyebrow">
+        <span class="pulse" aria-hidden="true"></span>
+        Applications are open{% for cycle in open_cycles|slice:":1" %} &middot; {{ cycle.name }}{% endfor %}
+      </p>
+      {% endif %}
+
+      <h1>Study with purpose at <em>{{ site_name }}</em></h1>
+
+      <p class="hero__lead">
+        {% if home_sections.mission %}
+          {{ home_sections.mission.content|striptags|truncatewords:34 }}
+        {% else %}
+          {{ site_name }} offers a structured path from application to graduation &mdash;
+          with clear entry requirements, transparent assessment and a student portal
+          that keeps your whole academic life in one place.
+        {% endif %}
+      </p>
+
+      <div class="hero__actions">
+        <a class="btn btn--white btn--lg" href="{% url 'portal:apply' %}">
+          Apply Now
+          {% include "portal/partials/icon.html" with name="pen" size=17 %}
+        </a>
+        <a class="btn btn--light btn--lg" href="{% url 'portal:programs' %}">Explore Programmes</a>
+        <a class="btn btn--light btn--lg" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">Student Portal</a>
+      </div>
+
+      {% if institution.motto %}
+      <p class="hero__motto">
+        {% include "portal/partials/icon.html" with name="award" size=17 %}
+        {{ institution.motto }}
+      </p>
+      {% endif %}
+
+      <div class="hero__meta">
+        <div class="hero__meta-item">
+          <span class="hero__meta-value">{{ stats.programmes }}</span>
+          <span class="hero__meta-label">Programmes</span>
+        </div>
+        <div class="hero__meta-item">
+          <span class="hero__meta-value">{{ stats.departments }}</span>
+          <span class="hero__meta-label">Departments</span>
+        </div>
+        <div class="hero__meta-item">
+          <span class="hero__meta-value">{{ stats.faculties }}</span>
+          <span class="hero__meta-label">Faculties</span>
+        </div>
+        {% if open_cycles %}
+        <div class="hero__meta-item">
+          <span class="hero__meta-value">{{ open_cycles.0.end_date|date:"j M" }}</span>
+          <span class="hero__meta-label">Closing date</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="hero__media">
+      <div class="hero__panel">
+        <div class="hero__crest">
+          {% if institution and institution.logo %}
+            <img src="{{ institution.logo.url }}" alt="{{ site_name }} crest" width="92" height="92">
+          {% else %}{% if institution and institution.short_name %}{{ institution.short_name }}{% else %}{{ site_name|slice:":2"|upper }}{% endif %}{% endif %}
+        </div>
+        <h2>Everything you need to begin</h2>
+        <p>Start here &mdash; the information prospective students ask for most, in one place.</p>
+        <ul class="hero__list">
+          <li>{% include "portal/partials/icon.html" with name="check" size=16 %} Choose a programme and check its entry requirements</li>
+          <li>{% include "portal/partials/icon.html" with name="check" size=16 %} Apply online &mdash; save a draft and finish when you are ready</li>
+          <li>{% include "portal/partials/icon.html" with name="check" size=16 %} Track your application status with your reference number</li>
+          <li>{% include "portal/partials/icon.html" with name="check" size=16 %} Sign in to the portal for results, fees and course materials</li>
+        </ul>
+      </div>
+
+      {% if open_cycles %}
+      <div class="hero__float">
+        <span class="hero__float-icon">{% include "portal/partials/icon.html" with name="calendar" size=19 %}</span>
+        <span>
+          <strong>{{ open_cycles.0.name }}</strong>
+          <span>Applications close {{ open_cycles.0.end_date|date:"j F Y" }}</span>
+        </span>
+      </div>
+      {% endif %}
+    </div>
   </div>
 </section>
 
+{# ── Quick access ─────────────────────────────────────────────────────── #}
+<section class="section quicklinks" aria-label="Quick access">
+  <div class="container">
+    <div class="quicklinks__grid" data-reveal>
+      <a class="quicklink" href="{% url 'portal:apply' %}">
+        <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="pen" size=20 %}</span>
+        <span>
+          <span class="quicklink__label">Apply for Admission</span>
+          <span class="quicklink__hint">{% if open_cycles %}Applications are open{% else %}Check the next intake{% endif %}</span>
+        </span>
+      </a>
+      <a class="quicklink" href="{% url 'portal:programs' %}">
+        <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="book" size=20 %}</span>
+        <span>
+          <span class="quicklink__label">Programmes</span>
+          <span class="quicklink__hint">{{ stats.programmes }} available to apply for</span>
+        </span>
+      </a>
+      <a class="quicklink" href="{% url 'portal:admissions' %}">
+        <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="file" size=20 %}</span>
+        <span>
+          <span class="quicklink__label">Admissions</span>
+          <span class="quicklink__hint">Requirements &amp; how to apply</span>
+        </span>
+      </a>
+      <a class="quicklink" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}">
+        <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="shield" size=20 %}</span>
+        <span>
+          <span class="quicklink__label">Student Portal</span>
+          <span class="quicklink__hint">{% if user.is_authenticated %}Go to your dashboard{% else %}Sign in securely{% endif %}</span>
+        </span>
+      </a>
+      <a class="quicklink" href="{% url 'portal:events_list' %}">
+        <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="calendar" size=20 %}</span>
+        <span>
+          <span class="quicklink__label">Academic Calendar</span>
+          <span class="quicklink__hint">Events &amp; key dates</span>
+        </span>
+      </a>
+      <a class="quicklink" href="{% url 'portal:contact' %}">
+        <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="chat" size=20 %}</span>
+        <span>
+          <span class="quicklink__label">Contact Us</span>
+          <span class="quicklink__hint">Speak to admissions or the registrar</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+{# ── About the institution ────────────────────────────────────────────── #}
 <section class="section">
-  <div class="container section-center">
-    <h2 class="section-title">Why Choose Us</h2>
-    <p class="section-subtitle">We provide a world-class education experience with modern tools and dedicated support.</p>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🎓</div>
-        <h3>Quality Programs</h3>
-        <p>Accredited programs designed to meet global standards, taught by experienced faculty committed to your success.</p>
+  <div class="container">
+    <div class="split">
+      <div data-reveal>
+        <p class="eyebrow">About the Institution</p>
+        <h2>Where academic work meets real ambition</h2>
+        {% if home_sections.mission %}
+        <p class="lead">{{ home_sections.mission.content|striptags|truncatewords:60 }}</p>
+        {% else %}
+        <p class="lead">
+          {{ site_name }} organises its teaching into faculties and departments, so every
+          programme sits inside a clear academic structure with an accountable head of
+          department.
+        </p>
+        {% endif %}
+        <p class="text-muted">
+          Study, apply and manage your academic record through one connected system &mdash;
+          from the moment you submit an application to the day you collect your results.
+        </p>
+
+        <div class="stats-grid mt-3">
+          <div class="stat">
+            <span class="stat__value">{{ stats.programmes }}</span>
+            <span class="stat__label">Programmes</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">{{ stats.faculties }}</span>
+            <span class="stat__label">Faculties</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value">{{ stats.departments }}</span>
+            <span class="stat__label">Departments</span>
+          </div>
+        </div>
+
+        <div class="cluster mt-3">
+          <a class="btn btn--primary" href="{% url 'portal:about' %}">
+            Learn More
+            {% include "portal/partials/icon.html" with name="check" size=16 %}
+          </a>
+          <a class="btn btn--ghost" href="{% url 'portal:academic' %}">Explore Faculties &amp; Departments</a>
+        </div>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">💻</div>
-        <h3>Digital Campus</h3>
-        <p>Access courses, results, and resources through our integrated online portal. Learn anytime, anywhere.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🤝</div>
-        <h3>Student Support</h3>
-        <p>Dedicated support services including academic advising, counseling, and career guidance to help you thrive.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Real-time Analytics</h3>
-        <p>Track academic progress, attendance, and performance with detailed analytics and insights.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <h3>Secure &amp; Reliable</h3>
-        <p>Enterprise-grade security ensuring your academic data and personal information are always protected.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌍</div>
-        <h3>Global Community</h3>
-        <p>Join a diverse community of learners from around the world and build your international network.</p>
+
+      <div data-reveal data-reveal-delay="120">
+        {# Replace this figure with a photograph of the campus or a student
+           activity. The institution logo is shown until one is uploaded. #}
+        <div class="media-frame">
+          {% if institution and institution.logo %}
+            <img src="{{ institution.logo.url }}" alt="{{ site_name }} crest" loading="lazy">
+          {% endif %}
+          <div class="media-frame__label">
+            <strong>{{ site_name }}</strong>
+            <span>{% if institution.motto %}{{ institution.motto }}{% else %}Accredited programmes in a structured academic environment{% endif %}</span>
+          </div>
+        </div>
+
+        {% if home_sections.vision or home_sections.values %}
+        <div class="pillars mt-3">
+          {% if home_sections.vision %}
+          <div class="pillar">
+            <span class="pillar__label">
+              <span class="pillar__icon">{% include "portal/partials/icon.html" with name="compass" size=18 %}</span>
+              Vision
+            </span>
+            <p>{{ home_sections.vision.content|striptags|truncatewords:34 }}</p>
+          </div>
+          {% endif %}
+          {% if home_sections.values %}
+          <div class="pillar">
+            <span class="pillar__label">
+              <span class="pillar__icon">{% include "portal/partials/icon.html" with name="heart" size=18 %}</span>
+              Core Values
+            </span>
+            <p>{{ home_sections.values.content|striptags|truncatewords:34 }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </section>
 
-{% if announcements %}
-<section class="section" style="padding-top:0">
-  <div class="container section-center">
-    <h2 class="section-title">Latest News</h2>
-    <p class="section-subtitle">Stay updated with the latest announcements and events.</p>
-    <div class="feature-grid">
-      {% for item in announcements %}
-      <div class="feature-card" onclick="window.location='{% url 'portal:news_detail' item.pk %}'" style="cursor:pointer">
-        {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}" style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:1rem">{% endif %}
-        <h3 style="font-size:1rem">{{ item.title }}</h3>
-        <p style="font-size:.85rem">{{ item.summary|truncatewords:20 }}</p>
-        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.75rem">{{ item.published_at|date:"M j, Y" }}</p>
-      </div>
+{# ── Programmes ───────────────────────────────────────────────────────── #}
+{% if programs %}
+<section class="section section--tint" id="programmes">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Academic Programmes</p>
+      <h2>Find the programme that fits your ambition</h2>
+      <p>Every programme below is live in our academic structure. Open one to see the department it belongs to, how long it runs and how to apply.</p>
+    </div>
+
+    <div class="grid grid--auto" data-reveal>
+      {% for program in programs|slice:":6" %}
+        {% include "portal/partials/program_card.html" with program=program %}
       {% endfor %}
     </div>
-    <div class="mt-3"><a href="{% url 'portal:news_list' %}" class="btn" style="background:var(--primary);color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px">View All News →</a></div>
+
+    <div class="text-center mt-4">
+      <a class="btn btn--primary" href="{% url 'portal:programs' %}">
+        View All {{ stats.programmes }} Programme{% if stats.programmes != 1 %}s{% endif %}
+        {% include "portal/partials/icon.html" with name="check" size=16 %}
+      </a>
+    </div>
   </div>
 </section>
 {% endif %}
 
-<section class="section" style="padding-top:0">
+{# ── Why choose us ────────────────────────────────────────────────────── #}
+<section class="section">
   <div class="container">
-    <div class="cta-section">
-      <h2>Ready to Begin Your Journey?</h2>
-      <p>Apply now and take the first step toward a brighter future at {{ site_name }}.</p>
-      <a href="{% url 'portal:apply' %}" class="btn">Apply for Admission →</a>
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Why Choose Us</p>
+      <h2>Support that runs from application to graduation</h2>
+      <p>Study in a connected academic environment where the systems you use every day are built to work together.</p>
+    </div>
+
+    <div class="grid grid--3" data-reveal>
+      {% for icon, title, body in highlights %}
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name=icon size=22 %}</span>
+        <h3>{{ title|safe }}</h3>
+        <p>{{ body }}</p>
+      </article>
+      {% endfor %}
     </div>
   </div>
 </section>
+
+{# ── Admissions ───────────────────────────────────────────────────────── #}
+<section class="section section--dark" id="admissions">
+  <div class="container">
+    <div class="admissions-panel" data-reveal>
+      <div class="admissions-panel__main">
+        <p class="eyebrow">Admissions</p>
+        <h2>Start your journey with us</h2>
+        <p>
+          Applications are handled in one place: submit once online, follow every stage
+          from the admissions office, and receive your decision in the same system.
+        </p>
+
+        {% if open_cycles %}
+        <ul class="auth-points">
+          {% for cycle in open_cycles %}
+          <li>
+            {% include "portal/partials/icon.html" with name="calendar" size=16 %}
+            <span><strong>{{ cycle.name }}</strong> &mdash; open {{ cycle.start_date|date:"j M Y" }} to {{ cycle.end_date|date:"j M Y" }}{% if cycle.application_fee %} &middot; application fee {{ cycle.application_fee }}{% endif %}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>Applications are not open at this moment. Check the admissions page for the next intake and what to prepare in the meantime.</p>
+        {% endif %}
+
+        <div class="cluster mt-4">
+          <a class="btn btn--white" href="{% url 'portal:apply' %}">
+            Apply Now
+            {% include "portal/partials/icon.html" with name="pen" size=16 %}
+          </a>
+          <a class="btn btn--light" href="{% url 'portal:admissions' %}">Admission Requirements</a>
+          <a class="btn btn--light" href="{% url 'portal:application_status' %}">Check My Status</a>
+        </div>
+      </div>
+
+      <div class="admissions-panel__side">
+        <h3 class="mb-2">Choose your application type</h3>
+        {% if application_types %}
+        <div class="grid" style="gap:.75rem">
+          {% for atype in application_types %}
+          <div class="type-card card" style="padding:.9rem 1rem">
+            <span class="type-card__icon" style="width:36px;height:36px">{% include "portal/partials/icon.html" with name="file" size=17 %}</span>
+            <div>
+              <h3>{{ atype.label }}</h3>
+              {% if atype.description %}<p>{{ atype.description|truncatewords:16 }}</p>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <a class="btn btn--primary btn--block mt-3" href="{% url 'portal:admissions' %}">See the full admissions process</a>
+        {% else %}
+        <p class="text-muted">Application types will appear here once the admissions office publishes them.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Faculties ────────────────────────────────────────────────────────── #}
+{% if faculties %}
+<section class="section">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Academic Structure</p>
+      <h2>Faculties, departments and programmes</h2>
+      <p>Our teaching is organised into faculties, each made up of departments that own the programmes they teach.</p>
+    </div>
+
+    <div class="grid grid--3" data-reveal>
+      {% for faculty in faculties|slice:":3" %}
+      <article class="card card--hover faculty-card">
+        <div class="faculty-card__head">
+          <span class="faculty-card__code">{{ faculty.code }}</span>
+          <div>
+            <h3>{{ faculty.name }}</h3>
+            {% if faculty.dean %}<p class="faculty-card__dean">Dean: {{ faculty.dean.get_full_name|default:faculty.dean }}</p>{% endif %}
+          </div>
+        </div>
+        {% if faculty.description %}<p>{{ faculty.description|truncatewords:24 }}</p>{% endif %}
+        <p class="faculty-card__foot">
+          <strong>{{ faculty.department_count }}</strong> department{% if faculty.department_count != 1 %}s{% endif %}
+          &nbsp;&middot;&nbsp; <strong>{{ faculty.programme_count }}</strong> programme{% if faculty.programme_count != 1 %}s{% endif %}
+        </p>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a class="btn btn--ghost" href="{% url 'portal:academic' %}">Explore Faculties &amp; Departments</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Student life ─────────────────────────────────────────────────────── #}
+<section class="section section--tint">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Student Life</p>
+      <h2>Life on campus, all in one portal</h2>
+      <p>Learning, fees, accommodation and support are handled digitally, so you spend less time queueing and more time studying.</p>
+    </div>
+
+    <div class="grid grid--3" data-reveal>
+      {% for icon, title, body in student_life %}
+      <article class="card card--hover value-card">
+        <span class="value-card__icon">{% include "portal/partials/icon.html" with name=icon size=22 %}</span>
+        <h3>{{ title|safe }}</h3>
+        <p>{{ body }}</p>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a class="btn btn--ghost" href="{% url 'portal:student_life' %}">More about student life</a>
+    </div>
+  </div>
+</section>
+
+{# ── News ─────────────────────────────────────────────────────────────── #}
+{% if announcements %}
+<section class="section">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">News &amp; Announcements</p>
+      <h2>Latest from {{ institution.short_name|default:site_name }}</h2>
+      <p>Official updates, notices and announcements from the institution.</p>
+    </div>
+
+    <div class="grid grid--3" data-reveal>
+      {% for item in announcements|slice:":3" %}
+        {% include "portal/partials/news_card.html" with item=item %}
+      {% endfor %}
+    </div>
+
+    <div class="text-center mt-4">
+      <a class="btn btn--ghost" href="{% url 'portal:news_list' %}">View All News</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Events ───────────────────────────────────────────────────────────── #}
+{% if events %}
+<section class="section section--tint">
+  <div class="container">
+    <div class="split split--reverse">
+      <div data-reveal>
+        <p class="eyebrow">Events</p>
+        <h2>What is coming up</h2>
+        <p class="lead">Public lectures, open days and institution activities &mdash; open to prospective students, parents and visitors.</p>
+        <a class="btn btn--primary mt-2" href="{% url 'portal:events_list' %}">View All Events</a>
+      </div>
+      <div class="event-list" data-reveal data-reveal-delay="120">
+        {% for event in events %}
+          {% include "portal/partials/event_card.html" with event=event %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Testimonials (only rendered when real content is published) ───────── #}
+{% if home_sections.testimonials %}
+<section class="section">
+  <div class="container container--narrow">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Student Voices</p>
+      <h2>{{ home_sections.testimonials.title }}</h2>
+    </div>
+    <div class="prose text-center" data-reveal>{{ home_sections.testimonials.content|safe }}</div>
+  </div>
+</section>
+{% endif %}
+
+{% include "portal/partials/cta_band.html" %}
+
 {% endblock %}

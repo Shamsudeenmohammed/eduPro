@@ -1,44 +1,147 @@
-{% extends "base_public.html" %}{% block title %}Academic Programs  {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}Programmes — {{ site_name }}{% endblock %}
+{% block meta_description %}Browse the academic programmes offered at {{ site_name }}, filter by type, faculty or department, and apply online.{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+
+{% include "portal/partials/page_hero.html" with hero_title="Academic Programmes" hero_lead="Every programme below is part of our published academic structure. Open one to see the department that owns it, how long it runs, and how to apply." %}
+
+<section class="section section--tight">
   <div class="container">
-    <h1>Academic Programs</h1>
-    <p>Explore our range of accredited programs</p>
+    {# ── Filter bar ─────────────────────────────────────────────────── #}
+    <form class="filterbar" method="get" action="{% url 'portal:programs' %}" data-filter-form="programmes" role="search" aria-label="Filter programmes">
+      <div class="filterbar__field">
+        <label for="q">Search</label>
+        <div class="search-field">
+          {% include "portal/partials/icon.html" with name="search" size=17 %}
+          <input type="search" id="q" name="q" value="{{ selected.q }}" placeholder="Programme, code or keyword&hellip;" data-filter-search autocomplete="off">
+        </div>
+      </div>
+
+      <div class="filterbar__field">
+        <label for="type">Award type</label>
+        <select id="type" name="type" data-filter-select>
+          <option value="">All types</option>
+          {% for value, label in program_types %}
+          <option value="{{ value }}" {% if selected.type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filterbar__field">
+        <label for="faculty">Faculty</label>
+        <select id="faculty" name="faculty" data-filter-select>
+          <option value="">All faculties</option>
+          {% for faculty in faculties %}
+          <option value="{{ faculty.code }}" {% if selected.faculty == faculty.code %}selected{% endif %}>{{ faculty.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filterbar__field">
+        <label for="department">Department</label>
+        <select id="department" name="department" data-filter-select>
+          <option value="">All departments</option>
+          {% for department in departments %}
+          <option value="{{ department.code }}" {% if selected.department == department.code %}selected{% endif %}>{{ department.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filterbar__actions">
+        <button type="button" class="btn btn--ghost" data-filter-reset>Clear</button>
+        <button type="submit" class="btn btn--primary">Search</button>
+      </div>
+    </form>
+
+    <p class="result-count" data-filter-count aria-live="polite"></p>
+
+    {# ── Quick type chips ───────────────────────────────────────────── #}
+    <div class="chip-row">
+      <span class="chip-row__label">Quick filter:</span>
+      <button type="button" class="chip" data-filter-chip data-filter-name="type" data-filter-value="" aria-pressed="{% if not selected.type %}true{% else %}false{% endif %}">All</button>
+      {% for value, label in program_types %}
+      <button type="button" class="chip" data-filter-chip data-filter-name="type" data-filter-value="{{ value }}" aria-pressed="{% if selected.type == value %}true{% else %}false{% endif %}">{{ label }}</button>
+      {% endfor %}
+    </div>
+
+    {# ── Results ────────────────────────────────────────────────────── #}
+    {% if programs %}
+    <div class="grid grid--auto">
+      {% for program in programs %}
+        {% include "portal/partials/program_card.html" with program=program %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card card--pad empty-state">
+      <span class="empty-state__icon">{% include "portal/partials/icon.html" with name="search" size=28 %}</span>
+      <h3>No programmes match those filters</h3>
+      <p>Try a different keyword, or clear the filters to see every programme we run.</p>
+      <a class="btn btn--primary mt-3" href="{% url 'portal:programs' %}">Show all programmes</a>
+    </div>
+    {% endif %}
+
+    {# Shown by JS only when the client-side filter hides everything. #}
+    <div class="card card--pad empty-state" data-filter-empty hidden>
+      <span class="empty-state__icon">{% include "portal/partials/icon.html" with name="search" size=28 %}</span>
+      <h3>No programmes match those filters</h3>
+      <p>Try a different keyword, or clear the filters to see every programme we run.</p>
+      <button type="button" class="btn btn--primary mt-3" data-filter-reset>Clear filters</button>
+    </div>
   </div>
 </section>
-<section class="section">
+
+{# ── How to choose ─────────────────────────────────────────────────────── #}
+<section class="section section--tint">
   <div class="container">
-    <div class="feature-card" style="padding:0;overflow:hidden">
-      <div class="table-wrap">
-        <table style="width:100%;border-collapse:collapse;font-size:.9rem">
-          <thead>
-            <tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
-              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Code</th>
-              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Program</th>
-              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Department</th>
-              <th style="padding:14px 18px;text-align:left;font-weight:700;text-transform:uppercase;font-size:.75rem;letter-spacing:.08em;color:var(--text-muted)">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in programs %}
-            <tr style="border-bottom:1px solid var(--border);transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-              <td style="padding:12px 18px;font-family:monospace;font-size:.85rem;color:var(--primary)">{{ p.code }}</td>
-              <td style="padding:12px 18px;font-weight:600">{{ p.name }}</td>
-              <td style="padding:12px 18px;color:var(--text-muted)">{{ p.department.name }}</td>
-              <td style="padding:12px 18px">{{ p.duration_years }} years</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" style="padding:3rem;text-align:center;color:var(--text-muted)">No programs listed yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="split">
+      <div data-reveal>
+        <p class="eyebrow">Choosing a programme</p>
+        <h2>Not sure where to start?</h2>
+        <p class="lead">
+          Work down the structure. Pick a faculty that matches the field you want to
+          study in, choose a department within it, then the programme itself. Each
+          programme page tells you the department that owns it, how long it takes and
+          what you will need to apply.
+        </p>
+        <div class="cluster mt-3">
+          <a class="btn btn--primary" href="{% url 'portal:academic' %}">See faculties &amp; departments</a>
+          <a class="btn btn--ghost" href="{% url 'portal:admissions' %}">Admission requirements</a>
+        </div>
+      </div>
+
+      <div data-reveal data-reveal-delay="120">
+        <div class="stack">
+          {% for faculty in faculties|slice:":3" %}
+          <div class="card card--pad">
+            <div class="faculty-card__head">
+              <span class="faculty-card__code">{{ faculty.code }}</span>
+              <div>
+                <h3 class="mb-0">{{ faculty.name }}</h3>
+                <p class="faculty-card__dean mb-0">
+                  {{ faculty.department_count }} department{% if faculty.department_count != 1 %}s{% endif %} &middot;
+                  {{ faculty.programme_count }} programme{% if faculty.programme_count != 1 %}s{% endif %}
+                </p>
+              </div>
+            </div>
+            <ul class="program-card__facts mt-2 mb-0">
+              {% for department in faculty.departments.all|slice:":4" %}
+              <li>
+                {% include "portal/partials/icon.html" with name="building" size=15 %}
+                {{ department.name }} <code style="color:var(--text-muted)">{{ department.code }}</code>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
-    <div class="cta-section" style="margin-top:2.5rem">
-      <h2>Find Your Program</h2>
-      <p>Ready to take the next step? Apply today and start your journey.</p>
-      <a href="{% url 'portal:apply' %}" class="btn">Apply Now →</a>
-    </div>
   </div>
 </section>
+
+{% with cta_title="Found the programme?" cta_text="Start an application online. You can save a draft and come back to it before the intake closes." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
 {% endblock %}

@@ -1,31 +1,88 @@
-{% extends "base_public.html" %}{% block title %}Apply for Admission — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}Apply for Admission — {{ site_name }}{% endblock %}
+{% block meta_description %}Apply to {{ site_name }} online using the simple application form.{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+
+{% include "portal/partials/page_hero.html" with hero_title="Apply for Admission" hero_lead="The quick application form. For a guided application with programme pre-selection and document uploads, use the full form." hero_parent_label="Admissions" hero_parent_url="/portal/how-to-apply/" %}
+
+<section class="section section--tight">
   <div class="container">
-    <h1>Apply for Admission</h1>
-    <p>Start your academic journey with {{ site_name }}</p>
-  </div>
-</section>
-<section class="section">
-  <div class="container" style="max-width:750px">
-    <div class="feature-card" style="padding:2rem">
-      <div style="background:rgba(79,70,229,.06);border:1px solid rgba(79,70,229,.15);border-radius:10px;padding:1rem;margin-bottom:1.5rem;font-size:.875rem;color:var(--text-muted)">
-        <strong style="color:var(--primary)">Looking for the new application experience?</strong> Try our <a href="{% url 'portal:apply' %}" style="color:var(--primary);text-decoration:underline">improved application form</a> with guided steps and real-time validation.
-      </div>
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          {% for field in form %}
-          <div style="{% if field.name == 'qualifications' or field.name == 'documents' %}grid-column:1/-1{% endif %}">
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}<div style="color:var(--danger);font-size:.85rem;margin-top:.25rem">{{ field.errors.0 }}</div>{% endif %}
-          </div>
-          {% endfor %}
+    <div class="form-layout">
+      <div data-reveal>
+        <div class="notice notice--info mb-3">
+          <span class="notice__icon">{% include "portal/partials/icon.html" with name="info" size=18 %}</span>
+          <span>
+            <span class="notice__title">This is the short form</span>
+            The <a href="{% url 'portal:apply' %}">full application form</a> walks you through the same
+            questions in numbered steps, pre-selects your programme if you arrived from a
+            programme page, and lets you save a draft to finish later.
+          </span>
         </div>
-        <button type="submit" class="btn" style="margin-top:1.25rem;background:var(--primary);color:#fff;padding:11px 28px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Submit Application →</button>
-      </form>
+
+        <div class="card card--pad">
+          <h2 class="mb-2">Your details</h2>
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="notice notice--danger mb-3">
+              <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+              <span>
+                <span class="notice__title">Please check the form</span>
+                {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+              </span>
+            </div>
+            {% endif %}
+
+            <div class="form-grid form-grid--2">
+              {% for field in form %}
+                {% if field.name == "qualifications" or field.name == "documents" %}
+                  {% include "portal/partials/form_field.html" with field=field full=True %}
+                {% else %}
+                  {% include "portal/partials/form_field.html" with field=field %}
+                {% endif %}
+              {% endfor %}
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">
+                Submit application
+                {% include "portal/partials/icon.html" with name="check" size=17 %}
+              </button>
+              <a class="btn btn--ghost" href="{% url 'portal:apply' %}">Use the full form instead</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <aside data-reveal data-reveal-delay="120" aria-label="Application help">
+        <div class="card card--pad sticky-aside">
+          <h2 class="mb-2">What happens next</h2>
+          <ol class="auth-points" style="color:var(--text-soft)">
+            <li>
+              {% include "portal/partials/icon.html" with name="check-circle" size=16 %}
+              <span>We confirm receipt and issue your reference number.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="search" size=16 %}
+              <span>Your application is screened against the programme requirements.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="file" size=16 %}
+              <span>The admissions office reviews it and records a decision.</span>
+            </li>
+            <li>
+              {% include "portal/partials/icon.html" with name="mail" size=16 %}
+              <span>You get the outcome by email, and can check the status any time.</span>
+            </li>
+          </ol>
+          <a class="btn btn--ghost btn--block mt-3" href="{% url 'portal:application_status' %}">Check an application you already sent</a>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
+
 {% endblock %}

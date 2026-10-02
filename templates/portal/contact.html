@@ -1,28 +1,149 @@
-{% extends "base_public.html" %}{% block title %}Contact Us — {{ site_name }}{% endblock %}
+{% extends "base_public.html" %}
+{% block title %}Contact Us — {{ site_name }}{% endblock %}
+{% block meta_description %}Contact {{ site_name }}: send a message to the admissions office, the registrar or the department you are asking about.{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+
+{% include "portal/partials/page_hero.html" with hero_title="Contact Us" hero_lead="Questions about applying, a programme, or your application status? Send a message and it goes straight to the office that deals with it." %}
+
+<section class="section section--tight">
   <div class="container">
-    <h1>Contact Us</h1>
-    <p>We'd love to hear from you. Get in touch with our team.</p>
-  </div>
-</section>
-<section class="section">
-  <div class="container" style="max-width:650px">
-    <div class="feature-card" style="padding:2rem">
-      <form method="post">
-        {% csrf_token %}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          {% for field in form %}
-          <div style="{% if field.name == 'message' or field.name == 'subject' %}grid-column:1/-1{% endif %}">
-            <label style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.875rem">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}<div style="color:var(--danger);font-size:.85rem;margin-top:.25rem">{{ field.errors.0 }}</div>{% endif %}
-          </div>
-          {% endfor %}
+    <div class="split">
+      {# ── Form ────────────────────────────────────────────────────── #}
+      <div data-reveal>
+        <div class="card card--pad">
+          <h2 class="mb-1">Send us a message</h2>
+          <p class="text-muted" style="font-size:.93rem">
+            Fields marked <span class="req" style="color:var(--red-600)">*</span> are required.
+            If your question is about an existing application, use the
+            <a href="{% url 'portal:application_status' %}">status checker</a> instead &mdash; it
+            gives you the current stage straight away.
+          </p>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="notice notice--danger mb-2">
+              <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+              <span>
+                <span class="notice__title">Please fix the following</span>
+                <ul class="mb-0" style="padding-left:1.1rem">
+                  {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+              </span>
+            </div>
+            {% endif %}
+
+            <div class="form-grid form-grid--2">
+              {% for field in form %}
+              <div class="field{% if field.name == "message" or field.name == "subject" %} field--full{% endif %}{% if field.errors %} field--error{% endif %}">
+                <label for="{{ field.id_for_label }}">
+                  {{ field.label }}
+                  {% if field.field.required %}<span class="req" aria-hidden="true">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}<span class="field__help">{{ field.help_text|safe }}</span>{% endif %}
+                {% for error in field.errors %}
+                <span class="field__error">{{ error }}</span>
+                {% endfor %}
+              </div>
+              {% endfor %}
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary btn--lg">
+                Send message
+                {% include "portal/partials/icon.html" with name="mail" size=17 %}
+              </button>
+              <a class="btn btn--ghost" href="{% url 'portal:admissions' %}">Read admission requirements first</a>
+            </div>
+          </form>
         </div>
-        <button type="submit" class="btn" style="margin-top:1.25rem;background:var(--primary);color:#fff;padding:11px 28px;border-radius:8px;font-weight:600;font-size:.9rem;border:none;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px">Send Message →</button>
-      </form>
+      </div>
+
+      {# ── Contact details ──────────────────────────────────────────── #}
+      <div data-reveal data-reveal-delay="120">
+        <div class="card card--pad">
+          <h2 class="mb-2">Reach us directly</h2>
+
+          <ul class="contact-list">
+            {% if institution.address %}
+            <li>
+              <span class="contact-list__icon">{% include "portal/partials/icon.html" with name="pin" size=18 %}</span>
+              <span>
+                <strong>Address</strong>
+                <span class="text-muted">{{ institution.address }}</span>
+              </span>
+            </li>
+            {% endif %}
+            {% if institution.email %}
+            <li>
+              <span class="contact-list__icon">{% include "portal/partials/icon.html" with name="mail" size=18 %}</span>
+              <span>
+                <strong>Email</strong>
+                <a href="mailto:{{ institution.email }}">{{ institution.email }}</a>
+              </span>
+            </li>
+            {% endif %}
+            {% if institution.phone %}
+            <li>
+              <span class="contact-list__icon">{% include "portal/partials/icon.html" with name="phone" size=18 %}</span>
+              <span>
+                <strong>Telephone</strong>
+                <a href="tel:{{ institution.phone|cut:" " }}">{{ institution.phone }}</a>
+              </span>
+            </li>
+            {% endif %}
+            {% if institution.website %}
+            <li>
+              <span class="contact-list__icon">{% include "portal/partials/icon.html" with name="globe" size=18 %}</span>
+              <span>
+                <strong>Website</strong>
+                <a href="{{ institution.website }}" rel="noopener">{{ institution.website }}</a>
+              </span>
+            </li>
+            {% endif %}
+          </ul>
+
+          {% if not institution.address and not institution.email and not institution.phone %}
+          <p class="text-muted">No contact details have been published yet. Use the form and your message will still reach the institution.</p>
+          {% endif %}
+        </div>
+
+        <div class="card card--pad mt-3">
+          <h3 class="mb-2">Faster routes</h3>
+          <div class="stack">
+            <a class="quicklink" href="{% url 'portal:application_status' %}" style="border:1px solid var(--border);border-radius:var(--radius-sm)">
+              <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="search" size=18 %}</span>
+              <span>
+                <span class="quicklink__label">Check my application</span>
+                <span class="quicklink__hint">Track your current stage by reference number</span>
+              </span>
+            </a>
+            <a class="quicklink" href="{% url 'portal:programs' %}" style="border:1px solid var(--border);border-radius:var(--radius-sm)">
+              <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="book" size=18 %}</span>
+              <span>
+                <span class="quicklink__label">Browse programmes</span>
+                <span class="quicklink__hint">Entry requirements, duration and credits</span>
+              </span>
+            </a>
+            <a class="quicklink" href="{% if user.is_authenticated %}{% url 'accounts:dashboard_redirect' %}{% else %}{% url 'accounts:login' %}{% endif %}" style="border:1px solid var(--border);border-radius:var(--radius-sm)">
+              <span class="quicklink__icon">{% include "portal/partials/icon.html" with name="shield" size=18 %}</span>
+              <span>
+                <span class="quicklink__label">Student portal</span>
+                <span class="quicklink__hint">{% if user.is_authenticated %}Go to your dashboard{% else %}Sign in to check fees, results and materials{% endif %}</span>
+              </span>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
+
+{% with cta_title="Applying soon?" cta_text="Start your application online and follow every stage from submission to decision." %}
+  {% include "portal/partials/cta_band.html" %}
+{% endwith %}
+
 {% endblock %}

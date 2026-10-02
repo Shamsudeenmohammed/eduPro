@@ -127,7 +127,7 @@ class HostelApplicationService:
                 raise HostelServiceError(_("Only approved applications can confirm payment."))
             if policy and policy.require_payment_before_checkin and policy.enable_hostel_charges:
                 if not HostelFinanceService.payment_satisfied(
-                    app.student, app.session, policy=policy
+                    app.student, app.session, policy=policy, application=app
                 ):
                     raise PaymentRequiredError(
                         _("Your hostel payment has not been fully confirmed. "

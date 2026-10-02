@@ -1,98 +1,105 @@
-{% extends "base_public.html" %}{% block title %}Submit Application — {{ site_name }}{% endblock %}
+﻿{% extends "base_public.html" %}
+{% block title %}Submit Application &middot; {{ site_name }}{% endblock %}
+
 {% block content %}
-<section class="page-banner">
+<section class="page-hero">
   <div class="container">
-    <h1>Submit Your Application</h1>
-    <p>{{ application.reference_number }} — {{ application.get_program_name }}</p>
+    <h1>Submit your application</h1>
+    <p>{{ application.reference_number }} &middot; {{ application.get_program_name }}</p>
   </div>
 </section>
-<section class="section">
-  <div class="container" style="max-width:760px">
 
-    {# ── Readiness banner ─────────────────────────────────────────────── #}
-    <div class="feature-card" style="padding:1.25rem;margin-bottom:1.25rem;
-         border-left:3px solid {% if checklist.satisfied %}var(--success){% else %}var(--danger){% endif %}">
-      {% if checklist.satisfied %}
-        <div style="font-weight:700;color:var(--success);margin-bottom:.35rem">Ready to submit</div>
-        <div style="font-size:.875rem;color:var(--text-muted)">
-          All required information and documents are in place. Submitting sends your
-          application to the admissions office and locks your details until a decision
-          is made.
-        </div>
-      {% else %}
-        <div style="font-weight:700;color:var(--danger);margin-bottom:.35rem">Not ready to submit</div>
-        <div style="font-size:.875rem;color:var(--text-muted)">
-          {{ checklist.missing|length }} required item{{ checklist.missing|pluralize }}
-          still {{ checklist.missing|length|pluralize:"is,are" }} missing:
-        </div>
-        <ul style="margin:.6rem 0 0 1.1rem;font-size:.85rem;color:var(--text-muted)">
+<section class="section">
+  <div class="container container--narrow">
+
+    {# â”€â”€ Readiness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+    {% if checklist.satisfied %}
+    <div class="notice notice--success mb-4">
+      <span class="notice__icon">{% include "portal/partials/icon.html" with name="check-circle" size=18 %}</span>
+      <span>
+        <span class="notice__title">Ready to submit</span>
+        Everything required is in place. Submitting sends your application to the
+        admissions office and locks your details until a decision is made.
+      </span>
+    </div>
+    {% else %}
+    <div class="notice notice--danger mb-4">
+      <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+      <span>
+        <span class="notice__title">Not ready to submit</span>
+        {{ checklist.missing|length }} required item{{ checklist.missing|pluralize }}
+        {{ checklist.missing|length|pluralize:"is,are" }} still missing:
+        <ul class="mb-0 mt-1">
           {% for m in checklist.missing %}<li>{{ m }}</li>{% endfor %}
         </ul>
-      {% endif %}
+      </span>
     </div>
+    {% endif %}
 
-    {# ── What will be sent ────────────────────────────────────────────── #}
-    <div class="feature-card" style="padding:1.5rem;margin-bottom:1.25rem">
-      <h3 style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:1rem">Summary</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;font-size:.875rem">
-        <div>
-          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Applicant</div>
-          <div style="font-weight:600">{{ application.get_full_name }}</div>
-          <div style="color:var(--text-muted)">{{ application.email }}</div>
+    {# â”€â”€ Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+    <div class="card card--pad mb-4">
+      <h2 class="mb-3">Summary</h2>
+      <dl class="summary-grid">
+        <div class="summary-grid__item">
+          <dt>Applicant</dt>
+          <dd>{{ application.get_full_name }}<br><span class="text-muted">{{ application.email }}</span></dd>
         </div>
-        <div>
-          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Application type</div>
-          <div style="font-weight:600">{{ application.get_application_type_display }}</div>
+        <div class="summary-grid__item">
+          <dt>Application type</dt>
+          <dd>{{ application.get_application_type_display }}</dd>
         </div>
-        <div>
-          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Programme</div>
-          <div style="font-weight:600">{{ application.get_program_name }}</div>
+        <div class="summary-grid__item">
+          <dt>Programme</dt>
+          <dd>{{ application.get_program_name }}</dd>
         </div>
-        <div>
-          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Cycle</div>
-          <div style="font-weight:600">{{ application.cycle.name }}</div>
+        <div class="summary-grid__item">
+          <dt>Cycle</dt>
+          <dd>{{ application.cycle.name }}</dd>
         </div>
         {% if application.cycle.requires_payment %}
-        <div>
-          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600;margin-bottom:.25rem">Application fee</div>
-          <div style="font-weight:600">{{ application.application_fee }}</div>
-          <div style="color:var(--text-muted);font-size:.8rem">Payable after submitting</div>
+        <div class="summary-grid__item">
+          <dt>Application fee</dt>
+          <dd>{{ application.application_fee }}<br><span class="text-muted">Payable after submitting</span></dd>
         </div>
         {% endif %}
-      </div>
+      </dl>
     </div>
 
-    {# ── Confirmation form ────────────────────────────────────────────── #}
-    <div class="feature-card" style="padding:1.75rem">
+    {# â”€â”€ Confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ #}
+    <div class="card card--pad">
+      <h2 class="mb-3">Confirm and submit</h2>
+
       <form method="post" novalidate>
         {% csrf_token %}
+
         {% if form.non_field_errors %}
-        <div style="padding:.85rem 1rem;margin-bottom:1rem;border-radius:8px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);font-size:.85rem">
-          {% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}
+        <div class="notice notice--danger mb-3" role="alert">
+          <span class="notice__icon">{% include "portal/partials/icon.html" with name="alert" size=18 %}</span>
+          <span>{% for e in form.non_field_errors %}<p class="mb-0">{{ e }}</p>{% endfor %}</span>
         </div>
         {% endif %}
 
         {% for field in form %}
-        <div style="margin-bottom:1.1rem">
-          <label style="display:flex;align-items:flex-start;gap:.55rem;font-size:.875rem;cursor:pointer">
-            {{ field }}
-            <span>{{ field.label }}{% if field.field.required %}<span style="color:var(--danger)">*</span>{% endif %}</span>
+        <div class="confirm-check{% if field.errors %} field--error{% endif %}">
+          <label for="{{ field.id_for_label }}">
+            <span class="confirm-check__box">{{ field }}</span>
+            <span>
+              {{ field.label }}{% if field.field.required %}<span class="req">*</span>{% endif %}
+              {% if field.help_text %}<span class="field__help">{{ field.help_text }}</span>{% endif %}
+            </span>
           </label>
-          {% for e in field.errors %}
-          <div style="font-size:.78rem;color:var(--danger);margin-top:.3rem;margin-left:1.6rem">{{ e }}</div>
-          {% endfor %}
+          {% for e in field.errors %}<span class="field__error">{{ e }}</span>{% endfor %}
         </div>
         {% endfor %}
 
-        <div style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
-          <button type="submit" {% if not checklist.satisfied %}disabled{% endif %}
-            style="padding:10px 22px;border-radius:8px;font-weight:600;font-size:.88rem;
-                   background:{% if checklist.satisfied %}var(--primary){% else %}var(--surface2){% endif %};
-                   color:{% if checklist.satisfied %}#fff{% else %}var(--text-muted){% endif %};
-                   border:none;cursor:{% if checklist.satisfied %}pointer{% else %}not-allowed{% endif %}">
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary" {% if not checklist.satisfied %}disabled{% endif %}>
             Submit application
           </button>
-          <a href="{% url 'portal:applicant_checklist' application.pk %}" class="btn" style="padding:10px 22px;border-radius:8px;font-weight:600;font-size:.88rem;border:1px solid var(--border);background:var(--surface);color:var(--text);text-decoration:none">Back to checklist</a>
+          <a class="btn btn--ghost" href="{% url 'portal:applicant_checklist' application.pk %}">
+            {% include "portal/partials/icon.html" with name="arrow" size=16 %}
+            Back to checklist
+          </a>
         </div>
       </form>
     </div>
